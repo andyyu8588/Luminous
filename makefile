@@ -5,10 +5,8 @@ WARNINGS_FLAGS = -Wall -Wextra
 
 SRC_FILES = $(wildcard $(SRCDIR)/*.cpp)
 
-setup:
-	mkdir -p $(BINDIR)
-
 main:
+	mkdir -p $(BINDIR)
 	$(CC) -o $(BINDIR)/lum $(SRC_FILES) $(WARNINGS_FLAGS)
 
 clean:
