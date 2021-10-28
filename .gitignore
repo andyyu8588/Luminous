@@ -30,6 +30,4 @@
 *.exe
 *.out
 *.app
-
-# VSCode
-.vscode/
+/bin
