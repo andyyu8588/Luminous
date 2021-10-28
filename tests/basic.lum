@@ -1,0 +1,11 @@
+basic() {
+    x = addr(x);
+    y = at(y);
+    Nice.x
+    Nice.y
+    Nice.r
+}
+
+Nice {
+    x, y, r
+}
