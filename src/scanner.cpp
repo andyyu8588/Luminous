@@ -3,9 +3,6 @@
 #include <exception>
 #include "scanner.h"
 
-// Scanner implementation for Luminous by Yun Ze Zhou and Andy Yu
-// Written by Yun Ze Zhou (responsible for main debugging).
-
 Scanner::Scanner(std::string code) {
     this->code = code;
 }
