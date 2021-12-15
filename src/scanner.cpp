@@ -6,151 +6,226 @@
 // Scanner implementation for Luminous by Yun Ze Zhou and Andy Yu
 // Written by Yun Ze Zhou (responsible for main debugging).
 
-Scanner::Scanner() {}
+Scanner::Scanner(std::string code) {
+    this->code = code;
+}
 
-std::vector<Token> Scanner::tokenize() {
-    std::string curStr;
-    std::vector<Token> tokens;
-    std::map<std::string, std::string> tokenMap;
+void Scanner::error(int line, std::string message) {
+    std::cerr << "ERROR: " << message << " (line " << line << ")." << std::endl;
+    errorOccured = true;
+}
 
-    // preprocessing token map
-    // Parentheses:
-    tokenMap.emplace("(", "LPAREN");
-    tokenMap.emplace(")", "RPAREN");
-    tokenMap.emplace("{", "LBRACE");
-    tokenMap.emplace("}", "RBRACE");
-    tokenMap.emplace("[", "LBRACK");
-    tokenMap.emplace("]", "RBRACK");
-    tokenMap.emplace("\"", "QUOTE");
-    
-    // Operators:
-    tokenMap.emplace("=", "BECOMES");
-    tokenMap.emplace(".", "DOT");
-    tokenMap.emplace(",", "COMMA");
-    tokenMap.emplace("+", "PLUS");
-    tokenMap.emplace("-", "MINUS");
-    tokenMap.emplace("*", "STAR");
-    tokenMap.emplace("/", "SLASH");
-    tokenMap.emplace(";", "SEMI");
-    
-    // Comparators:
-    tokenMap.emplace("equals", "EQ");
-    tokenMap.emplace("and", "AND");
-    tokenMap.emplace("or", "OR");
-    tokenMap.emplace("not", "NOT");
-    tokenMap.emplace("<", "LT");
-    tokenMap.emplace(">", "GT");
-    tokenMap.emplace("<=", "LE");
-    tokenMap.emplace(">=", "GE");
-    
-    // Control flow:
-    tokenMap.emplace("if", "IF");
-    tokenMap.emplace("else", "ELSE");
-    tokenMap.emplace("while", "WHILE");
-    tokenMap.emplace("return", "RETURN");
-    
-    // Built-in functions:
-    tokenMap.emplace("print", "PRINT");
-    tokenMap.emplace("addr", "ADDR");
-    tokenMap.emplace("at", "AT");
+bool Scanner::isAtEnd() {
+    return (unsigned int)current >= code.length();
+}
 
-    while(std::cin >> curStr) {
-        std::string word = "";
-        // separating id and symbol part:
-        for(unsigned int i = 0; i < curStr.size(); i++) {
-            // if current character is a valid symbol token:
-            std::string curCharStr = std::string(1, curStr.at(i));
-            if(tokenMap.find(curCharStr) != tokenMap.end()) {
-                // need to first tokenize the id part if there is a leading id part:
-                // if leading character is an integer (then maybe it's an integer):
-                if(word.size() >= 1) {
-                    if(word.at(0) >= 48 && word.at(0) <= 57) {
-                        try {
-                            std::size_t index = 0;
-                            int parsed = std::stoi(word, &index);   // for out of bounds detection
-                            (void) parsed; // to get rid of the warnings
-                            // if stoi length is not word length, then it means that there are other characters after the integers
-                            if(index != word.size()) {
-                                std::cerr << "SFAULT: Cannot start an ID name with an integer" << std::endl;
-                                throw new std::runtime_error("SFAULT: Cannot start an ID name with an integer");
-                            }
-                            Token num{"NUM", word};
-                            tokens.push_back(num);
-                        }
-                        catch(std::out_of_range OR) {
-                            std::cerr << "MFAULT: Integer out of bounds" << std::endl;
-                            throw new std::runtime_error("MFAULT: Integer out of bounds");
-                        }
-                    }
-                    // or maybe it's a build it function
-                    else if(tokenMap.find(word) != tokenMap.end()) {
-                        Token func{tokenMap[word], word};
-                        tokens.push_back(func);
-                    }
-                    // if not, then it must be an ID
-                    else {
-                        Token id{"ID", word};
-                        tokens.push_back(id);
-                    }
-                }
-                // and then tokenize the symbol part:
-                // doubly symbols cases:
-                if(curStr.at(i) == '<' && i != curStr.size() - 1 && curStr.at(i + 1) == '=') {
-                    Token symbol{"LE", "<="};
-                    tokens.push_back(symbol);
-                    i++;
-                }
-                else if(curStr.at(i) == '>' && i != curStr.size() - 1 && curStr.at(i + 1) == '=') {
-                    Token symbol{"GE", ">="};
-                    tokens.push_back(symbol);
-                    i++;
-                }
-                // TODO: think about how to deal with quotes and comments (either in the tokenizer or in the parser)
-                // singly symbols case:
-                else {
-                    Token symbol{tokenMap[curCharStr], curCharStr};
-                    tokens.push_back(symbol);
-                }
-                word = "";
-            }
-            // if no separation needed, keep getting the id:
-            else {
-                word += curStr.at(i);
-            }
+bool Scanner::isNumber(char c) {
+    return c >= '0' && c <= '9';
+}
+
+bool Scanner::isAlphabet(char c) {
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
+}
+
+char Scanner::nextChar() {
+    current++;
+    return code.at(current - 1);
+}
+
+void Scanner::addToken(TokenType type) {
+    std::string lexeme = code.substr(start, current - start);
+    tokens.push_back(std::make_shared<Token>(type, lexeme, line));
+}
+
+void Scanner::addToken(TokenType type, std::string lexeme) {
+    tokens.push_back(std::make_shared<Token>(type, lexeme, line));
+}
+
+bool Scanner::match(char expected) {
+    if(isAtEnd() || code.at(current) != expected) return false;
+
+    current++;
+    return true;
+}
+
+char Scanner::peek() {
+    if(isAtEnd()) return '\0';
+    return code.at(current);
+}
+
+char Scanner::lookAhead() {
+    if((unsigned int)current + 1 >= code.length()) return '\0';
+    return code.at(current + 1);
+}
+
+void Scanner::string() {
+    // getting string
+    while(peek() != '"' && !isAtEnd()) {
+        if(peek() == '\n') {
+            line++;
         }
-        
-        // processing the last word:
-        if(word.size() >= 1) {
-            // maybe it's a number
-            if(word.at(0) >= 48 && word.at(0) <= 57) {
-                try {
-                    std::size_t index = 0;
-                    int parsed = std::stoi(word, &index);   // for out of bounds detection
-                    (void) parsed; // to get rid of the warnings
-                    // if stoi length is not word length, then it means that there are other characters after the integers
-                    if(index != word.size()) {
-                        std::cerr << "SFAULT: Cannot start an ID name with an integer" << std::endl;
-                        throw new std::runtime_error("SFAULT: Cannot start an ID name with an integer");
-                    }
-                    Token num{"NUM", word};
-                    tokens.push_back(num);
-                }
-                catch(std::out_of_range OR) {
-                    std::cerr << "MFAULT: Integer out of bounds" << std::endl;
-                    throw new std::runtime_error("MFAULT: Integer out of bounds");
-                }
-            }
-            // or an existing token in the map
-            else if(tokenMap.find(word) != tokenMap.end()) {
-                Token tok{tokenMap[word], word};
-                tokens.push_back(tok);
-            }
-            // or it is simply an ID
-            else {
-                Token id{"ID", word};
-                tokens.push_back(id);
-            }
+        nextChar();
+    }
+
+    if(isAtEnd()) {
+        error(line, "Missing end of string");
+        return;
+    }
+
+    // remove closing quote symbol
+    nextChar();
+
+    std::string str = code.substr(start + 1, current - 1 - (start + 1));
+    addToken(TokenType::STRING, str);
+}
+
+void Scanner::number() {
+    // getting integer
+    while(isNumber(peek())) {
+        nextChar();
+    }
+
+    // Handling floating point numbers
+    if(peek() == '.' && isNumber(lookAhead())) {
+        // consume '.'
+        nextChar();
+        while(isNumber(peek())) {
+            nextChar();
         }
+    }
+
+    // case where variable name starts with a number
+    if(isAlphabet(peek())) {
+        error(line, "Variable names cannot start with a number");
+    }
+
+    addToken(TokenType::NUM, code.substr(start, current - start));
+}
+
+void Scanner::id() {
+    char curChar = peek();
+    // checking for id
+    while(isNumber(curChar) || isAlphabet(curChar)) {
+        nextChar();
+        curChar = peek();
+    }
+
+    std::string id = code.substr(start, current - start);
+    auto typeIter = keywords.find(id);
+    if(typeIter != keywords.end()) {
+        addToken(typeIter->second);
+    }
+    else {
+        addToken(TokenType::ID);
+    }
+}
+
+void Scanner::scanToken() {
+    char c = nextChar();
+    switch (c) {
+        case '(':
+            addToken(TokenType::LPAREN);
+            break;
+        case ')':
+            addToken(TokenType::RPAREN);
+            break;
+        case '{':
+            addToken(TokenType::LBRACE);
+            break;
+        case '}':
+            addToken(TokenType::RBRACE);
+            break;
+        case '[':
+            addToken(TokenType::LBRACK);
+            break;
+        case ']':
+            addToken(TokenType::RBRACK);
+            break;
+        case '=':
+            addToken(TokenType::BECOMES);
+            break;
+        case '.':
+            addToken(TokenType::DOT);
+            break;
+        case '-':
+            addToken(TokenType::MINUS);
+            break;
+        case '+':
+            addToken(TokenType::PLUS);
+            break;
+        case ',':
+            addToken(TokenType::COMMA);
+            break;
+        case '*':
+            addToken(TokenType::STAR);
+            break;
+        case ';':
+            addToken(TokenType::SEMI);
+            break;
+        case '<':
+            if(match('=')) {
+                addToken(TokenType::LE);
+            }
+            else {
+                addToken(TokenType::LT);
+            }
+            break;
+        case '>':
+            if(match('=')) {
+                addToken(TokenType::GE);
+            }
+            else {
+                addToken(TokenType::GT);
+            }
+            break;
+        case '/':
+            // Handling single line comments:
+            if(match('/')) {
+                while(peek() != '\n' && !isAtEnd()) {
+                    nextChar();
+                }
+            }
+            else {
+                addToken(TokenType::SLASH);
+            }
+            break;
+        // useless characters filters:
+        case ' ': break;
+        case '\r': break;
+        case '\t': break;
+        // newline:
+        case '\n':
+            line++;
+            break;
+        // strings:
+        case '"':
+            string();
+            break;
+        default:
+            if(isNumber(c)) {
+                // could be a number
+                number();
+            }
+            else if(isAlphabet(c)) {
+                // could be an id or keyword
+                id();
+            }
+            else {
+                std::string message = "Unexpected character \'";
+                message.push_back(c);
+                message += "\'";
+                error(line, message);
+                break;
+            }
+    }
+}
+
+std::vector<std::shared_ptr<Token>> Scanner::tokenize() {
+    // this loop scans token by token
+    while(!isAtEnd()) {
+        // next lexeme
+        start = current;
+        scanToken();
     }
 
     return tokens;
