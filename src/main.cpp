@@ -5,6 +5,7 @@
 #include "vm.h"
 
 int main(int argc, char *argv[]) {
+  // test commit
   (void)argc;
   (void)argv;
   VM vm;
