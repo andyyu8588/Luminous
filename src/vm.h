@@ -1,8 +1,6 @@
 #pragma once
 #include <memory>
 
-#include "chunk.h"
-
 class Chunk;
 
 enum InterpretResult {
@@ -16,6 +14,5 @@ class VM {
   std::unique_ptr<Chunk> chunk;
 
  public:
-  InterpretResult interpret(Chunk& chunk);
-  // VM(std::unique_ptr<Chunk> chunk) : chunk{std::move(chunk)} {}
+  InterpretResult interpret(const std::string& source);
 };
