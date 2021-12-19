@@ -28,5 +28,5 @@ class Chunk {
   // constants vector getters and setters:
   double getConstantAt(size_t index);
 
-  size_t addConstant(double constant); // returns the index in the vector
+  size_t addConstant(double constant);  // returns the index in the vector
 };

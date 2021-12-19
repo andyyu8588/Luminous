@@ -24,7 +24,8 @@ void disassembleChunk(Chunk& chunk, std::string name) {
 
 size_t disassembleInstruction(Chunk& chunk, size_t index) {
   std::cout << std::setfill('0') << std::setw(5) << index << " ";
-  std::cout << std::setfill(' ') << std::setw(5) << chunk.getBytecodeAt(index).line << " ";
+  std::cout << std::setfill(' ') << std::setw(5)
+            << chunk.getBytecodeAt(index).line << " ";
   uint8_t instruction = chunk.getBytecodeAt(index).code;
   switch (instruction) {
     case OP_CONSTANT:
