@@ -4,6 +4,7 @@ Created by Yun Ze Zhou and Andy Yu.
 */
 
 #pragma once
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -70,10 +71,12 @@ class Scanner {
   // error handler:
   void error(int line, std::string message);
 
+ public:
+  Scanner(const std::string& code);
+  void tokenize();
+
   // reset the scanner:
   void reset(std::string code);
 
- public:
-  Scanner(std::string code);
-  void tokenize();
+  std::shared_ptr<Token> getNextToken();
 };

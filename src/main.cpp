@@ -1,6 +1,8 @@
+#include <fstream>
 #include <iostream>
 
 #include "chunk.h"
+#include "compiler.h"
 #include "debug.h"
 #include "vm.h"
 
@@ -16,25 +18,40 @@ static void repl() {
       break;
     }
 
-    vm.interpret(input);
+    // vm.interpret(input);
   }
 }
 
 static void runFile(char* path) {
-  // TODO
+  std::ifstream sourceFile(path);
+  std::string code((std::istreambuf_iterator<char>(sourceFile)),
+                   std::istreambuf_iterator<char>());
+
+  Compiler compiler = Compiler(code);
+  compiler.compile();
   VM vm;
-  (void)path;
+  InterpretResult interpretResult = vm.interpret(compiler.getCurrentChunk());
+  std::cout << interpretResult << std::endl;
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 1) {
+  int counter = 0;
+  char* path;
+  for (int i = 0; i < argc; i++) {
+    if (argv[i][0] != '-') {
+      if (counter == 1) {
+        path = argv[i];
+      }
+      counter++;
+    }
+  }
+  if (counter == 1) {
     repl();
-  } else if (argc == 2) {
-    runFile(argv[1]);
+  } else if (counter == 2) {
+    runFile(path);
   } else {
-    std::cout << "Usage: luminous [path]" << std::endl;
+    std::cerr << "Usage ./luminous [path]" << std::endl;
     return 1;
   }
-
   return 0;
 }

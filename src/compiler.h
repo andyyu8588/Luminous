@@ -1,16 +1,37 @@
 #pragma once
+#include "chunk.h"
 #include "scanner.h"
 
 struct Parser {
-    Token current;
-    Token prev;
-}
+  std::shared_ptr<Token> current;
+  std::shared_ptr<Token> prev;
+};
 
 class Compiler {
-    Parser parser;
-    Scanner scanner;
+  Parser parser;
+  Scanner scanner;
+  std::unique_ptr<Chunk> currentChunk;
 
-    static void init(std::string code);
+  // advance to the next token in the stream
+  void advance();
 
-    void advance();
-}
+  // advance with type checking
+  void consume(TokenType type, const std::string message);
+
+  // add given byte to the current chunk
+  void emitByte(uint8_t byte);
+
+  // for NUM token type:
+  void number();
+  uint8_t makeConstant(double number);
+
+ public:
+  Compiler(const std::string& code);
+
+  std::unique_ptr<Chunk> getCurrentChunk();
+
+  // for recompilation while begin active
+  void compile(std::string code);
+
+  void compile();
+};

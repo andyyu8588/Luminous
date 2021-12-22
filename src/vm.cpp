@@ -4,7 +4,11 @@
 
 #include "chunk.h"
 
-double VM::binaryOperation(char operation) {
+#ifdef DEBUG
+#include <iostream>
+#endif
+
+void VM::binaryOperation(char operation) {
   double a = memory.top();
   memory.pop();
   double b = memory.top();
@@ -39,7 +43,7 @@ InterpretResult VM::run() {
     ByteCode bytecode = chunk->getBytecodeAtPC();
     switch (bytecode.code) {
       case OP_CONSTANT: {
-        double constant = chunk->constants[chunk->getBytecodeAtPC()];
+        double constant = chunk->getConstantAt(chunk->getBytecodeAtPC().code);
         memory.push(constant);
         break;
       }
@@ -66,6 +70,16 @@ InterpretResult VM::run() {
         break;
       }
       case OP_RETURN: {
+#ifdef DEBUG
+        std::cout << "Stack size: " << memory.size() << std::endl;
+        int counter = 0;
+        while (memory.size() != 0) {
+          std::cout << "Element " << counter << ": " << memory.top()
+                    << std::endl;
+          memory.pop();
+          ++counter;
+        }
+#endif
         return INTERPRET_OK;
       }
     }

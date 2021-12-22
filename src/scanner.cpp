@@ -4,7 +4,7 @@
 #include <iostream>
 #include <map>
 
-Scanner::Scanner(std::string code) { this->code = code; }
+Scanner::Scanner(const std::string& code) { this->code = code; }
 
 void Scanner::error(int line, std::string message) {
   std::cerr << "ERROR: " << message << " (line " << line << ")." << std::endl;
@@ -226,4 +226,12 @@ void Scanner::reset(std::string code) {
   errorOccured = false;
   this->code = code;
   tokens.clear();
+}
+
+std::shared_ptr<Token> Scanner::getNextToken() {
+  try {
+    return tokens.at(curToken++);
+  } catch (std::out_of_range) {
+    return nullptr;
+  }
 }

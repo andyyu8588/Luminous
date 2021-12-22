@@ -15,7 +15,7 @@ class VM {
   std::unique_ptr<Chunk> chunk;
   std::stack<double> memory;
 
-  double binaryOperation(char operation);
+  void binaryOperation(char operation);
   InterpretResult run();
 
  public:

@@ -1,7 +1,6 @@
 #include "chunk.h"
 
-ByteCode::ByteCode(uint8_t code = 0, unsigned int line = 0)
-    : code{code}, line{line} {}
+ByteCode::ByteCode(uint8_t code, unsigned int line) : code{code}, line{line} {}
 
 size_t Chunk::getBytecodeSize() { return bytecode.size(); }
 
