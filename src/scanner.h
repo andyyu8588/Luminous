@@ -26,7 +26,6 @@ class Scanner {
   int current = 0;
   int line = 1;
   size_t curToken = 0;
-  bool errorOccured = false;
 
   // return true if the scanner reached the end of file
   bool isAtEnd();
@@ -67,9 +66,6 @@ class Scanner {
 
   // identifier and keyword handler
   void id();
-
-  // error handler:
-  void error(int line, std::string message);
 
  public:
   Scanner(const std::string& code);

@@ -28,7 +28,11 @@ static void runFile(char* path) {
                    std::istreambuf_iterator<char>());
 
   Compiler compiler = Compiler(code);
-  compiler.compile();
+  try {
+    compiler.compile();
+  } catch (const std::exception& e) {
+    return;
+  }
   VM vm;
   InterpretResult interpretResult = vm.interpret(compiler.getCurrentChunk());
   std::cout << interpretResult << std::endl;

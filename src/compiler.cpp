@@ -1,12 +1,23 @@
 #include "compiler.h"
 
+#include <exception>
+
+#include "error.h"
+
 Compiler::Compiler(const std::string& code)
     : parser{Parser()}, scanner{Scanner(code)} {
   currentChunk = std::make_unique<Chunk>();
 }
 
+void Compiler::expression() {
+  // TODO handle expressions
+}
+
 void Compiler::compile() {
   scanner.tokenize();
+  if (errorOccured) {
+    throw std::exception();
+  }
   while (true) {
     advance();
     if (parser.current == nullptr) {
@@ -24,7 +35,7 @@ void Compiler::compile(std::string code) {
 }
 
 void Compiler::consume(TokenType type, const std::string message) {
-  (void)message;  // error message, void for now
+  error(parser.current->line, message);
   if (parser.current->type == type) {
     advance();
   }
@@ -66,4 +77,9 @@ void Compiler::number() {
   double number = std::stod(parser.prev->lexeme);
   emitByte(OP_CONSTANT);
   emitByte(makeConstant(number));
+}
+
+void Compiler::grouping() {
+  expression();
+  consume(TokenType::RPAREN, "Expect ')' after expression.");
 }

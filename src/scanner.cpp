@@ -4,12 +4,9 @@
 #include <iostream>
 #include <map>
 
-Scanner::Scanner(const std::string& code) { this->code = code; }
+#include "error.h"
 
-void Scanner::error(int line, std::string message) {
-  std::cerr << "ERROR: " << message << " (line " << line << ")." << std::endl;
-  errorOccured = true;
-}
+Scanner::Scanner(const std::string& code) { this->code = code; }
 
 bool Scanner::isAtEnd() { return (unsigned int)current >= code.length(); }
 

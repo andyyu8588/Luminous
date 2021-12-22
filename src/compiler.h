@@ -2,6 +2,8 @@
 #include "chunk.h"
 #include "scanner.h"
 
+extern bool errorOccured;
+
 struct Parser {
   std::shared_ptr<Token> current;
   std::shared_ptr<Token> prev;
@@ -11,6 +13,8 @@ class Compiler {
   Parser parser;
   Scanner scanner;
   std::unique_ptr<Chunk> currentChunk;
+
+  void expression();
 
   // advance to the next token in the stream
   void advance();
@@ -24,6 +28,8 @@ class Compiler {
   // for NUM token type:
   void number();
   uint8_t makeConstant(double number);
+
+  void grouping();
 
  public:
   Compiler(const std::string& code);
