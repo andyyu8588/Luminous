@@ -4,7 +4,8 @@
 #include "debug.h"
 #include "vm.h"
 
-static void repl(VM& vm) {
+static void repl() {
+  VM vm;
   std::string input;
 
   while (true) {
@@ -19,19 +20,17 @@ static void repl(VM& vm) {
   }
 }
 
-static void runFile(VM& vm, char* path) {
+static void runFile(char* path) {
   // TODO
-  (void)vm;
+  VM vm;
   (void)path;
 }
 
 int main(int argc, char* argv[]) {
-  VM vm;
-
   if (argc == 1) {
-    repl(vm);
+    repl();
   } else if (argc == 2) {
-    runFile(vm, argv[1]);
+    runFile(argv[1]);
   } else {
     std::cout << "Usage: luminous [path]" << std::endl;
     return 1;

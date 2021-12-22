@@ -209,13 +209,21 @@ void Scanner::scanToken() {
   }
 }
 
-std::vector<std::shared_ptr<Token>> Scanner::tokenize() {
+void Scanner::tokenize() {
   // this loop scans token by token
   while (!isAtEnd()) {
     // next lexeme
     start = current;
     scanToken();
   }
+}
 
-  return tokens;
+void Scanner::reset(std::string code) {
+  start = 0;
+  current = 0;
+  curToken = 0;
+  line = 1;
+  errorOccured = false;
+  this->code = code;
+  tokens.clear();
 }

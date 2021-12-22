@@ -24,6 +24,7 @@ class Scanner {
   int start = 0;
   int current = 0;
   int line = 1;
+  size_t curToken = 0;
   bool errorOccured = false;
 
   // return true if the scanner reached the end of file
@@ -69,7 +70,10 @@ class Scanner {
   // error handler:
   void error(int line, std::string message);
 
+  // reset the scanner:
+  void reset(std::string code);
+
  public:
   Scanner(std::string code);
-  std::vector<std::shared_ptr<Token>> tokenize();
+  void tokenize();
 };
