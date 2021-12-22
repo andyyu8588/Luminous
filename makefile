@@ -1,4 +1,4 @@
-CC = clang++
+CC = clang++ -std=c++2a
 BINDIR = bin
 SRCDIR = src
 WARNINGS_FLAGS = -Wall -Wextra

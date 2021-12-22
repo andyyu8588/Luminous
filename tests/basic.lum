@@ -1,11 +1,11 @@
 basic() {
-    x = addr(x);
-    y = at(y);
-    Nice.x
-    Nice.y
-    Nice.r
-}
-
-Nice {
-    x, y, r
+    1 < 2
+    3.14 >= 5
+    6 > 7
+    4.25 <= 7.14
+    addr equals and or not if while
+    else print at
+    ~
+    123abc
+    "
 }
