@@ -6,8 +6,17 @@
 #include "debug.h"
 #include "vm.h"
 
-static void repl() {
-  VM vm;
+static void run(Compiler& compiler, VM& vm, const std::string& code) {
+  try {
+    compiler.compile(code);
+  } catch (const std::exception& e) {
+    return;
+  }
+  InterpretResult interpretResult = vm.interpret(compiler.getCurrentChunk());
+  std::cout << interpretResult << std::endl;
+}
+
+static void repl(Compiler& compiler, VM& vm) {
   std::string input;
 
   while (true) {
@@ -18,41 +27,37 @@ static void repl() {
       break;
     }
 
-    // vm.interpret(input);
+    run(compiler, vm, input);
   }
 }
 
-static void runFile(char* path) {
+static void runFile(Compiler& compiler, VM& vm, char* path) {
   std::ifstream sourceFile(path);
   std::string code((std::istreambuf_iterator<char>(sourceFile)),
                    std::istreambuf_iterator<char>());
-
-  Compiler compiler = Compiler(code);
-  try {
-    compiler.compile();
-  } catch (const std::exception& e) {
-    return;
-  }
-  VM vm;
-  InterpretResult interpretResult = vm.interpret(compiler.getCurrentChunk());
-  std::cout << interpretResult << std::endl;
+  run(compiler, vm, code);
 }
 
 int main(int argc, char* argv[]) {
-  int counter = 0;
+  int argcWithoutFlags = 0;
   char* path;
   for (int i = 0; i < argc; i++) {
     if (argv[i][0] != '-') {
-      if (counter == 1) {
+      if (argcWithoutFlags == 1) {
         path = argv[i];
       }
-      counter++;
+      argcWithoutFlags++;
     }
   }
-  if (counter == 1) {
-    repl();
-  } else if (counter == 2) {
-    runFile(path);
+
+  Compiler compiler;
+  VM vm;
+
+  // interpret depending on num args
+  if (argcWithoutFlags == 1) {
+    repl(compiler, vm);
+  } else if (argcWithoutFlags == 2) {
+    runFile(compiler, vm, path);
   } else {
     std::cerr << "Usage ./luminous [path]" << std::endl;
     return 1;

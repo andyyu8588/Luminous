@@ -5,7 +5,4 @@ basic() {
     4.25 <= 7.14
     addr equals and or not if while
     else print at
-    ~~
-    123abc
-    "
 }

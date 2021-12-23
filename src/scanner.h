@@ -13,7 +13,7 @@ Created by Yun Ze Zhou and Andy Yu.
 #include "token.h"
 
 class Scanner {
-  std::string code;
+  const std::string* code;
   std::vector<std::shared_ptr<Token>> tokens;
   std::unordered_map<std::string, TokenType> keywords = {
       {"equals", TokenType::EQ},   {"and", TokenType::AND},
@@ -68,11 +68,12 @@ class Scanner {
   void id();
 
  public:
-  Scanner(const std::string& code);
+  Scanner();
+
   void tokenize();
 
   // reset the scanner:
-  void reset(std::string code);
+  void reset(const std::string& code);
 
   std::shared_ptr<Token> getNextToken();
 };

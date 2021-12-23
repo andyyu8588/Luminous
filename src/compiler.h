@@ -20,7 +20,7 @@ class Compiler {
   void advance();
 
   // advance with type checking
-  void consume(TokenType type, const std::string message);
+  void consume(TokenType type, const std::string& message);
 
   // add given byte to the current chunk
   void emitByte(uint8_t byte);
@@ -32,12 +32,9 @@ class Compiler {
   void grouping();
 
  public:
-  Compiler(const std::string& code);
+  Compiler();
 
   std::unique_ptr<Chunk> getCurrentChunk();
 
-  // for recompilation while begin active
-  void compile(std::string code);
-
-  void compile();
+  void compile(const std::string& code);
 };

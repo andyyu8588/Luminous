@@ -4,16 +4,15 @@
 
 #include "error.h"
 
-Compiler::Compiler(const std::string& code)
-    : parser{Parser()}, scanner{Scanner(code)} {
-  currentChunk = std::make_unique<Chunk>();
-}
+Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {}
 
 void Compiler::expression() {
   // TODO handle expressions
 }
 
-void Compiler::compile() {
+void Compiler::compile(const std::string& code) {
+  currentChunk = std::make_unique<Chunk>();
+  scanner.reset(code);
   scanner.tokenize();
   if (errorOccured) {
     throw std::exception();
@@ -27,14 +26,7 @@ void Compiler::compile() {
   emitByte(OP_RETURN);
 }
 
-void Compiler::compile(std::string code) {
-  scanner.reset(code);
-  scanner.tokenize();
-  // TODO reset chunk (which way)???
-  emitByte(OP_RETURN);
-}
-
-void Compiler::consume(TokenType type, const std::string message) {
+void Compiler::consume(TokenType type, const std::string& message) {
   error(parser.current->line, message);
   if (parser.current->type == type) {
     advance();

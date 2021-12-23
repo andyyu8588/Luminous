@@ -6,9 +6,9 @@
 
 #include "error.h"
 
-Scanner::Scanner(const std::string& code) { this->code = code; }
+Scanner::Scanner() {}
 
-bool Scanner::isAtEnd() { return (unsigned int)current >= code.length(); }
+bool Scanner::isAtEnd() { return (unsigned int)current >= code->length(); }
 
 bool Scanner::isNumber(char c) { return c >= '0' && c <= '9'; }
 
@@ -18,11 +18,11 @@ bool Scanner::isAlphabet(char c) {
 
 char Scanner::nextChar() {
   current++;
-  return code.at(current - 1);
+  return code->at(current - 1);
 }
 
 void Scanner::addToken(TokenType type) {
-  std::string lexeme = code.substr(start, current - start);
+  std::string lexeme = code->substr(start, current - start);
   tokens.push_back(std::make_shared<Token>(type, lexeme, line));
 }
 
@@ -31,7 +31,7 @@ void Scanner::addToken(TokenType type, std::string lexeme) {
 }
 
 bool Scanner::match(char expected) {
-  if (isAtEnd() || code.at(current) != expected) return false;
+  if (isAtEnd() || code->at(current) != expected) return false;
 
   current++;
   return true;
@@ -39,12 +39,12 @@ bool Scanner::match(char expected) {
 
 char Scanner::peek() {
   if (isAtEnd()) return '\0';
-  return code.at(current);
+  return code->at(current);
 }
 
 char Scanner::lookAhead() {
-  if ((unsigned int)current + 1 >= code.length()) return '\0';
-  return code.at(current + 1);
+  if ((unsigned int)current + 1 >= code->length()) return '\0';
+  return code->at(current + 1);
 }
 
 void Scanner::string() {
@@ -64,7 +64,7 @@ void Scanner::string() {
   // remove closing quote symbol
   nextChar();
 
-  std::string str = code.substr(start + 1, current - 1 - (start + 1));
+  std::string str = code->substr(start + 1, current - 1 - (start + 1));
   addToken(TokenType::STRING, str);
 }
 
@@ -88,7 +88,7 @@ void Scanner::number() {
     error(line, "Variable names cannot start with a number");
   }
 
-  addToken(TokenType::NUM, code.substr(start, current - start));
+  addToken(TokenType::NUM, code->substr(start, current - start));
 }
 
 void Scanner::id() {
@@ -99,7 +99,7 @@ void Scanner::id() {
     curChar = peek();
   }
 
-  std::string id = code.substr(start, current - start);
+  std::string id = code->substr(start, current - start);
   auto typeIter = keywords.find(id);
   if (typeIter != keywords.end()) {
     addToken(typeIter->second);
@@ -215,13 +215,13 @@ void Scanner::tokenize() {
   }
 }
 
-void Scanner::reset(std::string code) {
+void Scanner::reset(const std::string& code) {
   start = 0;
   current = 0;
   curToken = 0;
   line = 1;
   errorOccured = false;
-  this->code = code;
+  this->code = &code;
   tokens.clear();
 }
 
