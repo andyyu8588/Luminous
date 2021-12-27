@@ -42,6 +42,9 @@ enum TokenType {
   TOKEN_PRINT,
   TOKEN_ADDR,
   TOKEN_AT,
+  TOKEN_TRUE,
+  TOKEN_FALSE,
+  TOKEN_NULL,
 
   // Misc:
   TOKEN_EOF

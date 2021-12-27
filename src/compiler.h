@@ -65,7 +65,7 @@ class Compiler {
 
   // for NUM token type and expressions:
   void number();
-  uint8_t makeConstant(double number);
+  uint8_t makeConstant(Value number);
   void grouping();
 
   void unary();

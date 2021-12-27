@@ -2,6 +2,8 @@
 #include <memory>
 #include <stack>
 
+#include "value.h"
+
 class Chunk;
 
 enum InterpretResult {
@@ -13,7 +15,7 @@ enum InterpretResult {
 class VM {
  private:
   std::unique_ptr<Chunk> chunk;
-  std::stack<double> memory;
+  std::stack<Value> memory;
 
   void binaryOperation(char operation);
   InterpretResult run();

@@ -10,10 +10,10 @@ void Chunk::addBytecode(uint8_t byte, unsigned int line) {
   bytecode.emplace_back(byte, line);
 }
 
-double Chunk::getConstantAt(size_t index) { return constants[index]; }
+Value Chunk::getConstantAt(size_t index) { return constants[index]; }
 
-size_t Chunk::addConstant(double constant) {
-  constants.emplace_back(constant);
+size_t Chunk::addConstant(Value value) {
+  constants.emplace_back(value);
   return constants.size() - 1;
 }
 

@@ -78,8 +78,8 @@ void Compiler::parsePrecendence(Precedence precedence) {
   }
 }
 
-uint8_t Compiler::makeConstant(double number) {
-  size_t constant = currentChunk->addConstant(number);
+uint8_t Compiler::makeConstant(Value value) {
+  size_t constant = currentChunk->addConstant(value);
   if (constant > UINT8_MAX) {
     std::cerr << "Too many constants in one chunk!" << std::endl;
     return 0;
@@ -91,7 +91,7 @@ uint8_t Compiler::makeConstant(double number) {
 void Compiler::number() {
   double number = std::stod(parser.prev->lexeme);
   emitByte(OP_CONSTANT);
-  emitByte(makeConstant(number));
+  emitByte(makeConstant(NUM_VAL(number)));
 }
 
 void Compiler::grouping() {

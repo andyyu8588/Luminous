@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "value.h"
+
 enum OpCode {
   OP_CONSTANT,
   OP_ADD,
@@ -23,7 +25,7 @@ class ByteCode {
 class Chunk {
  private:
   std::vector<ByteCode> bytecode;
-  std::vector<double> constants;
+  std::vector<Value> constants;
   size_t PC = 0;
 
  public:
@@ -35,9 +37,9 @@ class Chunk {
   void addBytecode(uint8_t byte, unsigned int line);
 
   // constants vector getters and setters:
-  double getConstantAt(size_t index);
+  Value getConstantAt(size_t index);
 
-  size_t addConstant(double constant);  // returns the index in the vector
+  size_t addConstant(Value value);  // returns the index in the vector
 
   ByteCode getBytecodeAtPC();
 };

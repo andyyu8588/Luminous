@@ -19,7 +19,8 @@ class Scanner {
       {"equals", TOKEN_EQ},   {"and", TOKEN_AND},       {"or", TOKEN_OR},
       {"not", TOKEN_NOT},     {"if", TOKEN_IF},         {"else", TOKEN_ELSE},
       {"while", TOKEN_WHILE}, {"return", TOKEN_RETURN}, {"print", TOKEN_PRINT},
-      {"addr", TOKEN_ADDR},   {"at", TOKEN_AT}};
+      {"addr", TOKEN_ADDR},   {"at", TOKEN_AT},         {"true", TOKEN_TRUE},
+      {"false", TOKEN_FALSE}, {"null", TOKEN_NULL}};
   int start = 0;
   int current = 0;
   int line = 1;

@@ -13,7 +13,8 @@ size_t simpleInstruction(std::string name, size_t index) {
 
 size_t constantInstruction(std::string name, Chunk& chunk, size_t index) {
   uint8_t constantIndex = chunk.getBytecodeAt(index).code;
-  std::cout << name << " " << chunk.getConstantAt(constantIndex) << std::endl;
+  std::cout << name << " " << AS_NUM(chunk.getConstantAt(constantIndex))
+            << std::endl;
   return index + 2;
 }
 
@@ -144,6 +145,15 @@ void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
       case TOKEN_AT:
         std::cout << "AT" << std::endl;
         break;
+      case TOKEN_TRUE:
+        std::cout << "TRUE" << std::endl;
+        break;
+      case TOKEN_FALSE:
+        std::cout << "FALSE" << std::endl;
+        break;
+      case TOKEN_NULL:
+        std::cout << "NULL" << std::endl;
+        break;
       case TOKEN_EOF:
         std::cout << "EOF" << std::endl;
         break;
@@ -152,12 +162,13 @@ void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
   std::cout << std::endl;
 }
 
-void printStack(std::stack<double>& memory) {
+void printStack(std::stack<Value>& memory) {
   std::cout << "== STACK ==" << std::endl;
   std::cout << "Stack size: " << memory.size() << std::endl;
   int counter = 0;
   while (memory.size() != 0) {
-    std::cout << "Element " << counter << ": " << memory.top() << std::endl;
+    std::cout << "Element " << counter << ": " << AS_NUM(memory.top())
+              << std::endl;
     memory.pop();
     ++counter;
   }

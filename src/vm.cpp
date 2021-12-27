@@ -9,25 +9,25 @@
 #endif
 
 void VM::binaryOperation(char operation) {
-  double a = memory.top();
+  double a = AS_NUM(memory.top());
   memory.pop();
-  double b = memory.top();
+  double b = AS_NUM(memory.top());
   memory.pop();
   switch (operation) {
     case '+': {
-      memory.push(b + a);
+      memory.push(NUM_VAL(b + a));
       break;
     }
     case '-': {
-      memory.push(b - a);
+      memory.push(NUM_VAL(b - a));
       break;
     }
     case '*': {
-      memory.push(b * a);
+      memory.push(NUM_VAL(b * a));
       break;
     }
     case '/': {
-      memory.push(b / a);
+      memory.push(NUM_VAL(b / a));
       break;
     }
   }
@@ -43,7 +43,7 @@ InterpretResult VM::run() {
     ByteCode bytecode = chunk->getBytecodeAtPC();
     switch (bytecode.code) {
       case OP_CONSTANT: {
-        double constant = chunk->getConstantAt(chunk->getBytecodeAtPC().code);
+        Value constant = chunk->getConstantAt(chunk->getBytecodeAtPC().code);
         memory.push(constant);
         break;
       }
@@ -64,9 +64,13 @@ InterpretResult VM::run() {
         break;
       }
       case OP_NEGATE: {
-        double top = memory.top();
+        if (!IS_NUM(memory.top())) {
+          // TODO: runtimeError printer
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        double a = AS_NUM(memory.top());
         memory.pop();
-        memory.push(-top);
+        memory.push(NUM_VAL(-a));
         break;
       }
       case OP_RETURN: {
