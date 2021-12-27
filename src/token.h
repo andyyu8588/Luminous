@@ -43,6 +43,8 @@ enum TokenType {
   TOKEN_ADDR,
   TOKEN_AT,
 
+  // Misc:
+  TOKEN_EOF
 };
 
 class Token {
