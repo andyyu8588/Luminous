@@ -1,7 +1,13 @@
 #pragma once
+#include <memory>
+#include <stack>
 #include <string>
+#include <vector>
 
-#include "chunk.h"
+class Chunk;
+class Token;
 
-void disassembleChunk(Chunk& chunk, std::string name);
-size_t disassembleInstruction(Chunk& chunk, size_t index);
+void printChunk(Chunk& chunk);
+size_t printInstruction(Chunk& chunk, size_t index);
+void printTokens(const std::vector<std::shared_ptr<Token>>& tokens);
+void printStack(std::stack<double>& memory);

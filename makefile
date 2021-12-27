@@ -1,4 +1,4 @@
-default: main
+default: debug
 
 CC = clang++ -std=c++2a
 BINDIR = bin
@@ -24,6 +24,7 @@ main:
 debug:
 	$(MAKE) setup	
 	$(CC) -o $(BINDIR)/$(EXECUTABLE) $(SRC_FILES) $(WARNINGS_FLAGS) $(TESTING_FLAGS)
+	gdb ./$(BINDIR)/$(EXECUTABLE)
 
 clean:
 	rm -r $(BINDIR)

@@ -13,7 +13,7 @@ static void run(Compiler& compiler, VM& vm, const std::string& code) {
     return;
   }
   InterpretResult interpretResult = vm.interpret(compiler.getCurrentChunk());
-  std::cout << interpretResult << std::endl;
+  (void)interpretResult;
 }
 
 static void repl(Compiler& compiler, VM& vm) {
@@ -26,8 +26,9 @@ static void repl(Compiler& compiler, VM& vm) {
       std::cout << std::endl;
       break;
     }
-
-    run(compiler, vm, input);
+    if (!input.empty()) {
+      run(compiler, vm, input);
+    }
   }
 }
 
@@ -35,7 +36,9 @@ static void runFile(Compiler& compiler, VM& vm, char* path) {
   std::ifstream sourceFile(path);
   std::string code((std::istreambuf_iterator<char>(sourceFile)),
                    std::istreambuf_iterator<char>());
-  run(compiler, vm, code);
+  if (!code.empty()) {
+    run(compiler, vm, code);
+  }
 }
 
 int main(int argc, char* argv[]) {

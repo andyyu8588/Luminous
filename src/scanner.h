@@ -16,12 +16,10 @@ class Scanner {
   const std::string* code;
   std::vector<std::shared_ptr<Token>> tokens;
   std::unordered_map<std::string, TokenType> keywords = {
-      {"equals", TokenType::EQ},   {"and", TokenType::AND},
-      {"or", TokenType::OR},       {"not", TokenType::NOT},
-      {"if", TokenType::IF},       {"else", TokenType::ELSE},
-      {"while", TokenType::WHILE}, {"return", TokenType::RETURN},
-      {"print", TokenType::PRINT}, {"addr", TokenType::ADDR},
-      {"at", TokenType::AT}};
+      {"equals", TOKEN_EQ},   {"and", TOKEN_AND},       {"or", TOKEN_OR},
+      {"not", TOKEN_NOT},     {"if", TOKEN_IF},         {"else", TOKEN_ELSE},
+      {"while", TOKEN_WHILE}, {"return", TOKEN_RETURN}, {"print", TOKEN_PRINT},
+      {"addr", TOKEN_ADDR},   {"at", TOKEN_AT}};
   int start = 0;
   int current = 0;
   int line = 1;

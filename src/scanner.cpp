@@ -6,6 +6,10 @@
 
 #include "error.h"
 
+#ifdef DEBUG
+#include "debug.h"
+#endif
+
 Scanner::Scanner() {}
 
 bool Scanner::isAtEnd() { return (unsigned int)current >= code->length(); }
@@ -65,7 +69,7 @@ void Scanner::string() {
   nextChar();
 
   std::string str = code->substr(start + 1, current - 1 - (start + 1));
-  addToken(TokenType::STRING, str);
+  addToken(TOKEN_STRING, str);
 }
 
 void Scanner::number() {
@@ -88,7 +92,7 @@ void Scanner::number() {
     error(line, "Variable names cannot start with a number");
   }
 
-  addToken(TokenType::NUM, code->substr(start, current - start));
+  addToken(TOKEN_NUM, code->substr(start, current - start));
 }
 
 void Scanner::id() {
@@ -104,7 +108,7 @@ void Scanner::id() {
   if (typeIter != keywords.end()) {
     addToken(typeIter->second);
   } else {
-    addToken(TokenType::ID);
+    addToken(TOKEN_ID);
   }
 }
 
@@ -112,56 +116,56 @@ void Scanner::scanToken() {
   char c = nextChar();
   switch (c) {
     case '(':
-      addToken(TokenType::LPAREN);
+      addToken(TOKEN_LPAREN);
       break;
     case ')':
-      addToken(TokenType::RPAREN);
+      addToken(TOKEN_RPAREN);
       break;
     case '{':
-      addToken(TokenType::LBRACE);
+      addToken(TOKEN_LBRACE);
       break;
     case '}':
-      addToken(TokenType::RBRACE);
+      addToken(TOKEN_RBRACE);
       break;
     case '[':
-      addToken(TokenType::LBRACK);
+      addToken(TOKEN_LBRACK);
       break;
     case ']':
-      addToken(TokenType::RBRACK);
+      addToken(TOKEN_RBRACK);
       break;
     case '=':
-      addToken(TokenType::BECOMES);
+      addToken(TOKEN_BECOMES);
       break;
     case '.':
-      addToken(TokenType::DOT);
+      addToken(TOKEN_DOT);
       break;
     case '-':
-      addToken(TokenType::MINUS);
+      addToken(TOKEN_MINUS);
       break;
     case '+':
-      addToken(TokenType::PLUS);
+      addToken(TOKEN_PLUS);
       break;
     case ',':
-      addToken(TokenType::COMMA);
+      addToken(TOKEN_COMMA);
       break;
     case '*':
-      addToken(TokenType::STAR);
+      addToken(TOKEN_STAR);
       break;
     case ';':
-      addToken(TokenType::SEMI);
+      addToken(TOKEN_SEMI);
       break;
     case '<':
       if (match('=')) {
-        addToken(TokenType::LE);
+        addToken(TOKEN_LE);
       } else {
-        addToken(TokenType::LT);
+        addToken(TOKEN_LT);
       }
       break;
     case '>':
       if (match('=')) {
-        addToken(TokenType::GE);
+        addToken(TOKEN_GE);
       } else {
-        addToken(TokenType::GT);
+        addToken(TOKEN_GT);
       }
       break;
     case '/':
@@ -171,7 +175,7 @@ void Scanner::scanToken() {
           nextChar();
         }
       } else {
-        addToken(TokenType::SLASH);
+        addToken(TOKEN_SLASH);
       }
       break;
     // useless characters filters:
@@ -213,6 +217,9 @@ void Scanner::tokenize() {
     start = current;
     scanToken();
   }
+#ifdef DEBUG
+  printTokens(tokens);
+#endif
 }
 
 void Scanner::reset(const std::string& code) {
@@ -221,6 +228,7 @@ void Scanner::reset(const std::string& code) {
   curToken = 0;
   line = 1;
   errorOccured = false;
+  panicMode = false;
   this->code = &code;
   tokens.clear();
 }

@@ -1,4 +1,6 @@
 #pragma once
+#include <functional>
+
 #include "chunk.h"
 #include "scanner.h"
 
@@ -9,10 +11,45 @@ struct Parser {
   std::shared_ptr<Token> prev;
 };
 
+enum Precedence {
+  PREC_NONE,
+  PREC_ASSIGNMENT,
+  PREC_OR,
+  PREC_AND,
+  PREC_EQUALITY,
+  PREC_COMPARISON,
+  PREC_TERM,
+  PREC_FACTOR,
+  PREC_UNARY,
+  PREC_CALL,
+  PREC_PRIMARY,
+};
+
+class Compiler;
+
+using ParseFunction = std::function<void()>;
+
+struct ParseRule {
+  ParseFunction prefix;
+  ParseFunction infix;
+  Precedence precedence;
+};
+
 class Compiler {
   Parser parser;
   Scanner scanner;
   std::unique_ptr<Chunk> currentChunk;
+  std::unordered_map<TokenType, ParseRule> ruleMap = {
+      {TOKEN_LPAREN,
+       {std::bind(&Compiler::grouping, this), nullptr, PREC_NONE}},
+      {TOKEN_RPAREN, {nullptr, nullptr, PREC_NONE}},
+      {TOKEN_MINUS,
+       {std::bind(&Compiler::unary, this), std::bind(&Compiler::binary, this),
+        PREC_TERM}},
+      {TOKEN_PLUS, {nullptr, std::bind(&Compiler::binary, this), PREC_TERM}},
+      {TOKEN_STAR, {nullptr, std::bind(&Compiler::binary, this), PREC_FACTOR}},
+      {TOKEN_SLASH, {nullptr, std::bind(&Compiler::binary, this), PREC_FACTOR}},
+      {TOKEN_NUM, {std::bind(&Compiler::number, this), nullptr, PREC_NONE}}};
 
   void expression();
 
@@ -25,11 +62,17 @@ class Compiler {
   // add given byte to the current chunk
   void emitByte(uint8_t byte);
 
-  // for NUM token type:
+  // for NUM token type and expressions:
   void number();
   uint8_t makeConstant(double number);
-
   void grouping();
+
+  void unary();
+  void binary();
+
+  void parsePrecendence(Precedence precedence);
+
+  ParseRule* getRule(TokenType type);
 
  public:
   Compiler();

@@ -5,7 +5,7 @@
 #include "chunk.h"
 
 #ifdef DEBUG
-#include <iostream>
+#include "debug.h"
 #endif
 
 void VM::binaryOperation(char operation) {
@@ -15,19 +15,19 @@ void VM::binaryOperation(char operation) {
   memory.pop();
   switch (operation) {
     case '+': {
-      memory.push(a + b);
+      memory.push(b + a);
       break;
     }
     case '-': {
-      memory.push(a - b);
+      memory.push(b - a);
       break;
     }
     case '*': {
-      memory.push(a * b);
+      memory.push(b * a);
       break;
     }
     case '/': {
-      memory.push(a / b);
+      memory.push(b / a);
       break;
     }
   }
@@ -71,14 +71,7 @@ InterpretResult VM::run() {
       }
       case OP_RETURN: {
 #ifdef DEBUG
-        std::cout << "Stack size: " << memory.size() << std::endl;
-        int counter = 0;
-        while (memory.size() != 0) {
-          std::cout << "Element " << counter << ": " << memory.top()
-                    << std::endl;
-          memory.pop();
-          ++counter;
-        }
+        printStack(memory);
 #endif
         return INTERPRET_OK;
       }
