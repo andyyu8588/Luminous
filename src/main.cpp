@@ -1,18 +1,69 @@
+#include <fstream>
 #include <iostream>
 
 #include "chunk.h"
+#include "compiler.h"
 #include "debug.h"
 #include "vm.h"
 
-int main(int argc, char *argv[]) {
-  (void)argc;
-  (void)argv;
+static void run(Compiler& compiler, VM& vm, const std::string& code) {
+  try {
+    compiler.compile(code);
+  } catch (const std::exception& e) {
+    return;
+  }
+  InterpretResult interpretResult = vm.interpret(compiler.getCurrentChunk());
+  (void)interpretResult;
+}
+
+static void repl(Compiler& compiler, VM& vm) {
+  std::string input;
+
+  while (true) {
+    std::cout << "> ";
+
+    if (!std::getline(std::cin, input)) {
+      std::cout << std::endl;
+      break;
+    }
+    if (!input.empty()) {
+      run(compiler, vm, input);
+    }
+  }
+}
+
+static void runFile(Compiler& compiler, VM& vm, char* path) {
+  std::ifstream sourceFile(path);
+  std::string code((std::istreambuf_iterator<char>(sourceFile)),
+                   std::istreambuf_iterator<char>());
+  if (!code.empty()) {
+    run(compiler, vm, code);
+  }
+}
+
+int main(int argc, char* argv[]) {
+  int argcWithoutFlags = 0;
+  char* path;
+  for (int i = 0; i < argc; i++) {
+    if (argv[i][0] != '-') {
+      if (argcWithoutFlags == 1) {
+        path = argv[i];
+      }
+      argcWithoutFlags++;
+    }
+  }
+
+  Compiler compiler;
   VM vm;
-  Chunk chunk;
-  size_t index = chunk.addConstant(1.2);
-  chunk.addBytecode(OP_CONSTANT, 123);
-  chunk.addBytecode(index, 123);
-  chunk.addBytecode(OP_RETURN, 123);
-  disassembleChunk(chunk, "test chunk");
+
+  // interpret depending on num args
+  if (argcWithoutFlags == 1) {
+    repl(compiler, vm);
+  } else if (argcWithoutFlags == 2) {
+    runFile(compiler, vm, path);
+  } else {
+    std::cerr << "Usage ./luminous [path]" << std::endl;
+    return 1;
+  }
   return 0;
 }

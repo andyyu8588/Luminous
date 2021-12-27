@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
-
-#include "chunk.h"
+#include <stack>
 
 class Chunk;
 
@@ -14,8 +13,11 @@ enum InterpretResult {
 class VM {
  private:
   std::unique_ptr<Chunk> chunk;
+  std::stack<double> memory;
+
+  void binaryOperation(char operation);
+  InterpretResult run();
 
  public:
-  InterpretResult interpret(Chunk& chunk);
-  // VM(std::unique_ptr<Chunk> chunk) : chunk{std::move(chunk)} {}
+  InterpretResult interpret(std::unique_ptr<Chunk> chunk);
 };
