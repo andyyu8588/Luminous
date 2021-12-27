@@ -29,6 +29,7 @@ void Compiler::compile(const std::string& code) {
   // advance by 1 to get current and then parse
   advance();
   expression();
+  consume(TOKEN_EOF, "Expect EOF. Found none.");
   emitByte(OP_RETURN);
   if (errorOccured) {
     throw std::exception();
@@ -36,22 +37,16 @@ void Compiler::compile(const std::string& code) {
 }
 
 void Compiler::consume(TokenType type, const std::string& message) {
-  if (parser.current != nullptr && parser.current->type == type) {
+  if (parser.current->type == type) {
     advance();
-  } else if (!panicMode) {
-    if (parser.current != nullptr) {
-      error(parser.current->line, message);
-    } else {
-      error(parser.prev->line, message);
-    }
+    return;
   }
+
+  error(parser.current->line, message);
 }
 
 void Compiler::advance() {
   std::shared_ptr<Token> nextToken = scanner.getNextToken();
-  if (parser.current == nullptr && nextToken == nullptr) {
-    error(parser.prev->line, "Expect expression. Found none.");
-  }
   parser.prev = parser.current;
   parser.current = nextToken;
 }
@@ -71,13 +66,12 @@ void Compiler::parsePrecendence(Precedence precedence) {
   advance();
   ParseFunction prefixRule = getRule(parser.prev->type)->prefix;
   if (prefixRule == nullptr) {
-    std::cerr << "DEV: Expect expression. Found none in ruleMap." << std::endl;
+    error(parser.prev->line, "Expect expression. Found none.");
     return;
   }
   prefixRule();
 
-  while (parser.current != nullptr &&
-         precedence <= getRule(parser.current->type)->precedence) {
+  while (precedence <= getRule(parser.current->type)->precedence) {
     advance();
     ParseFunction infixRule = getRule(parser.prev->type)->infix;
     infixRule();

@@ -237,6 +237,6 @@ std::shared_ptr<Token> Scanner::getNextToken() {
   try {
     return tokens.at(curToken++);
   } catch (std::out_of_range) {
-    return nullptr;
+    return std::make_shared<Token>(TOKEN_EOF, "", line);
   }
 }

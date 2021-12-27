@@ -49,7 +49,8 @@ class Compiler {
       {TOKEN_PLUS, {nullptr, std::bind(&Compiler::binary, this), PREC_TERM}},
       {TOKEN_STAR, {nullptr, std::bind(&Compiler::binary, this), PREC_FACTOR}},
       {TOKEN_SLASH, {nullptr, std::bind(&Compiler::binary, this), PREC_FACTOR}},
-      {TOKEN_NUM, {std::bind(&Compiler::number, this), nullptr, PREC_NONE}}};
+      {TOKEN_NUM, {std::bind(&Compiler::number, this), nullptr, PREC_NONE}},
+      {TOKEN_EOF, {nullptr, nullptr, PREC_NONE}}};
 
   void expression();
 
