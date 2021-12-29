@@ -63,6 +63,7 @@ class Compiler {
       {TOKEN_TRUE, {std::bind(&Compiler::literal, this), nullptr, PREC_NONE}},
       {TOKEN_FALSE, {std::bind(&Compiler::literal, this), nullptr, PREC_NONE}},
       {TOKEN_NULL, {std::bind(&Compiler::literal, this), nullptr, PREC_NONE}},
+      {TOKEN_STRING, {std::bind(&Compiler::string, this), nullptr, PREC_NONE}},
       {TOKEN_EOF, {nullptr, nullptr, PREC_NONE}}};
 
   void expression();
@@ -86,6 +87,8 @@ class Compiler {
 
   void literal();
 
+  void string();
+
   void parsePrecendence(Precedence precedence);
 
   ParseRule* getRule(TokenType type);
@@ -93,7 +96,7 @@ class Compiler {
  public:
   Compiler();
 
-  std::unique_ptr<Chunk> getCurrentChunk();
+  std::unique_ptr<Chunk> getCurrentChunk();  // std::move currentChunk
 
   void compile(const std::string& code);
 };

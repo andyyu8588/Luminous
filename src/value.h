@@ -3,27 +3,37 @@
 #include <variant>
 
 // actual -> Value
-#define BOOL_VAL(value) ((Value){VAL_BOOL, value})
-#define NULL_VAL ((Value){VAL_NULL, (double)0})
-#define NUM_VAL(value) ((Value){VAL_NUM, value})
+#define BOOL_VAL(value) (Value(VAL_BOOL, value))
+#define NULL_VAL (Value(VAL_NULL, (double)0))
+#define NUM_VAL(value) (Value(VAL_NUM, value))
+#define OBJECT_VAL(value) (Value(VAL_OBJECT, value))
 
 // Value -> actual (no need for null)
-#define AS_BOOL(value) (std::get<bool>((value).as))
-#define AS_NUM(value) (std::get<double>((value).as))
+#define AS_BOOL(value) (std::get<bool>((value).getAs()))
+#define AS_NUM(value) (std::get<double>((value).getAs()))
+#define AS_OBJECT(value) (std::get<Object*>((value).getAs()))
 
 // Type checks
-#define IS_BOOL(value) ((value).type == VAL_BOOL)
-#define IS_NULL(value) ((value).type == VAL_NULL)
-#define IS_NUM(value) ((value).type == VAL_NUM)
+#define IS_BOOL(value) ((value).getType() == VAL_BOOL)
+#define IS_NULL(value) ((value).getType() == VAL_NULL)
+#define IS_NUM(value) ((value).getType() == VAL_NUM)
+#define IS_OBJECT(value) ((value).getType() == VAL_OBJECT)
 
-enum ValueType { VAL_BOOL, VAL_NULL, VAL_NUM };
+class Object;
 
-struct Value {
-  ValueType type;
-  std::variant<bool, double> as;
+enum ValueType { VAL_BOOL, VAL_NULL, VAL_NUM, VAL_OBJECT };
+
+class Value {
+ private:
+  const ValueType type;
+  const std::variant<bool, double, Object*> as;
+
+ public:
+  ValueType getType() const;
+  std::variant<bool, double, Object*> getAs() const;
+  bool operator==(const Value& compared) const;
+  void print() const;
+
+  Value(ValueType type, std::variant<bool, double, Object*> as)
+      : type{type}, as{as} {}
 };
-
-namespace ValueTools {
-bool valuesEqual(Value a, Value b);
-void printValue(Value value);
-}  // namespace ValueTools

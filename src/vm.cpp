@@ -96,7 +96,7 @@ InterpretResult VM::run() {
         memory.pop();
         Value b = memory.top();
         memory.pop();
-        memory.push(BOOL_VAL(ValueTools::valuesEqual(a, b)));
+        memory.push(BOOL_VAL(a == b));
         break;
       }
       case OP_GREATER: {
@@ -156,7 +156,7 @@ InterpretResult VM::run() {
   return INTERPRET_OK;
 }
 
-bool VM::isFalsey(Value value) {
+bool VM::isFalsey(Value value) const {
   return IS_NULL(value) || (IS_BOOL(value) && !AS_BOOL(value)) ||
          (IS_NUM(value) && !AS_NUM(value));
 }
