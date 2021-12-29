@@ -1,5 +1,8 @@
 #include "vm.h"
 
+#include <cstdarg>
+#include <cstdio>
+#include <iostream>
 #include <string>
 
 #include "chunk.h"
@@ -8,29 +11,58 @@
 #include "debug.h"
 #endif
 
-void VM::binaryOperation(char operation) {
-  double a = AS_NUM(memory.top());
+InterpretResult VM::binaryOperation(char operation) {
+  Value a = memory.top();
   memory.pop();
-  double b = AS_NUM(memory.top());
+  Value b = memory.top();
   memory.pop();
-  switch (operation) {
-    case '+': {
-      memory.push(NUM_VAL(b + a));
-      break;
-    }
-    case '-': {
-      memory.push(NUM_VAL(b - a));
-      break;
-    }
-    case '*': {
-      memory.push(NUM_VAL(b * a));
-      break;
-    }
-    case '/': {
-      memory.push(NUM_VAL(b / a));
-      break;
-    }
+
+  if (!IS_NUM(a) || !IS_NUM(b)) {
+    runtimeError("Operands must be numbers.");
+    return INTERPRET_RUNTIME_ERROR;
   }
+
+  double c = AS_NUM(a);
+  double d = AS_NUM(b);
+
+  switch (operation) {
+    case '+':
+      memory.push(NUM_VAL(d + c));
+      break;
+    case '-':
+      memory.push(NUM_VAL(d - c));
+      break;
+    case '*':
+      memory.push(NUM_VAL(d * c));
+      break;
+    case '/':
+      memory.push(NUM_VAL(d / c));
+      break;
+    case '>':
+      memory.push(BOOL_VAL(d > c));
+      break;
+    case '<':
+      memory.push(BOOL_VAL(d < c));
+      break;
+    default:
+      return INTERPRET_RUNTIME_ERROR;  // unreachable
+  }
+  return INTERPRET_OK;
+}
+
+void VM::resetMemory() { memory = std::stack<Value>(); }
+
+void VM::runtimeError(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  vfprintf(stderr, format, args);
+  va_end(args);
+  fputs("\n", stderr);
+
+  unsigned int line = chunk->getPrevBytecode().line;
+  std::cerr << "[line " << line << "] in code.\n" << std::endl;
+
+  resetMemory();
 }
 
 InterpretResult VM::interpret(std::unique_ptr<Chunk> chunk) {
@@ -47,25 +79,65 @@ InterpretResult VM::run() {
         memory.push(constant);
         break;
       }
+      case OP_NULL: {
+        memory.push(NULL_VAL);
+        break;
+      }
+      case OP_TRUE: {
+        memory.push(BOOL_VAL(true));
+        break;
+      }
+      case OP_FALSE: {
+        memory.push(BOOL_VAL(false));
+        break;
+      }
+      case OP_EQUAL: {
+        Value a = memory.top();
+        memory.pop();
+        Value b = memory.top();
+        memory.pop();
+        memory.push(BOOL_VAL(ValueTools::valuesEqual(a, b)));
+        break;
+      }
+      case OP_GREATER: {
+        if (binaryOperation('>') == INTERPRET_RUNTIME_ERROR)
+          return INTERPRET_RUNTIME_ERROR;
+        break;
+      }
+      case OP_LESS: {
+        if (binaryOperation('<') == INTERPRET_RUNTIME_ERROR)
+          return INTERPRET_RUNTIME_ERROR;
+        break;
+      }
       case OP_ADD: {
-        binaryOperation('+');
+        if (binaryOperation('+') == INTERPRET_RUNTIME_ERROR)
+          return INTERPRET_RUNTIME_ERROR;
         break;
       }
       case OP_SUBSTRACT: {
-        binaryOperation('-');
+        if (binaryOperation('-') == INTERPRET_RUNTIME_ERROR)
+          return INTERPRET_RUNTIME_ERROR;
         break;
       }
       case OP_MULTIPLY: {
-        binaryOperation('*');
+        if (binaryOperation('*') == INTERPRET_RUNTIME_ERROR)
+          return INTERPRET_RUNTIME_ERROR;
         break;
       }
       case OP_DIVIDE: {
-        binaryOperation('/');
+        if (binaryOperation('/') == INTERPRET_RUNTIME_ERROR)
+          return INTERPRET_RUNTIME_ERROR;
+        break;
+      }
+      case OP_NOT: {
+        Value a = memory.top();
+        memory.pop();
+        memory.push(BOOL_VAL(isFalsey(a)));
         break;
       }
       case OP_NEGATE: {
         if (!IS_NUM(memory.top())) {
-          // TODO: runtimeError printer
+          runtimeError("Operand must be a number.");
           return INTERPRET_RUNTIME_ERROR;
         }
         double a = AS_NUM(memory.top());
@@ -82,4 +154,9 @@ InterpretResult VM::run() {
     }
   }
   return INTERPRET_OK;
+}
+
+bool VM::isFalsey(Value value) {
+  return IS_NULL(value) || (IS_BOOL(value) && !AS_BOOL(value)) ||
+         (IS_NUM(value) && !AS_NUM(value));
 }

@@ -6,10 +6,17 @@
 
 enum OpCode {
   OP_CONSTANT,
+  OP_NULL,
+  OP_TRUE,
+  OP_FALSE,
+  OP_EQUAL,
+  OP_GREATER,
+  OP_LESS,
   OP_ADD,
   OP_SUBSTRACT,
   OP_MULTIPLY,
   OP_DIVIDE,
+  OP_NOT,
   OP_NEGATE,
   OP_RETURN
 };
@@ -42,4 +49,6 @@ class Chunk {
   size_t addConstant(Value value);  // returns the index in the vector
 
   ByteCode getBytecodeAtPC();
+
+  ByteCode getPrevBytecode();
 };

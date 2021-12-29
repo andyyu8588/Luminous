@@ -18,3 +18,5 @@ size_t Chunk::addConstant(Value value) {
 }
 
 ByteCode Chunk::getBytecodeAtPC() { return bytecode[PC++]; }
+
+ByteCode Chunk::getPrevBytecode() { return bytecode[PC - 1]; }

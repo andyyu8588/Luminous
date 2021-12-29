@@ -24,5 +24,6 @@ struct Value {
 };
 
 namespace ValueTools {
+bool valuesEqual(Value a, Value b);
 void printValue(Value value);
-}
+}  // namespace ValueTools

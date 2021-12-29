@@ -105,12 +105,14 @@ void Compiler::unary() {
   parsePrecendence(PREC_UNARY);
 
   switch (operatorType) {
-    case TOKEN_MINUS: {
+    case TOKEN_NOT:
+      emitByte(OP_NOT);
+      break;
+    case TOKEN_MINUS:
       emitByte(OP_NEGATE);
       break;
-    }
     default:
-      return;
+      return;  // unreachable
   }
 }
 
@@ -121,24 +123,58 @@ void Compiler::binary() {
   parsePrecendence((Precedence)(rule->precedence + 1));
 
   switch (operatorType) {
-    case TOKEN_PLUS: {
+    // comparison
+    case TOKEN_GT:
+      emitByte(OP_GREATER);
+      break;
+    case TOKEN_GE:
+      emitByte(OP_LESS);
+      emitByte(OP_NOT);
+      break;
+    case TOKEN_LT:
+      emitByte(OP_LESS);
+      break;
+    case TOKEN_LE:
+      emitByte(OP_GREATER);
+      emitByte(OP_NOT);
+      break;
+    case TOKEN_EQ:
+      emitByte(OP_EQUAL);
+      break;
+
+    // arithmetic
+    case TOKEN_PLUS:
       emitByte(OP_ADD);
       break;
-    }
-    case TOKEN_MINUS: {
+    case TOKEN_MINUS:
       emitByte(OP_SUBSTRACT);
       break;
-    }
-    case TOKEN_STAR: {
+    case TOKEN_STAR:
       emitByte(OP_MULTIPLY);
       break;
-    }
-    case TOKEN_SLASH: {
+    case TOKEN_SLASH:
       emitByte(OP_DIVIDE);
       break;
-    }
     default:
-      return;
+      return;  // unreachable
+  }
+}
+
+void Compiler::literal() {
+  TokenType operatorType = parser.prev->type;
+
+  switch (operatorType) {
+    case TOKEN_TRUE:
+      emitByte(OP_TRUE);
+      break;
+    case TOKEN_FALSE:
+      emitByte(OP_FALSE);
+      break;
+    case TOKEN_NULL:
+      emitByte(OP_NULL);
+      break;
+    default:
+      return;  // unreachable
   }
 }
 

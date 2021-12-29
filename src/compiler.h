@@ -49,7 +49,20 @@ class Compiler {
       {TOKEN_PLUS, {nullptr, std::bind(&Compiler::binary, this), PREC_TERM}},
       {TOKEN_STAR, {nullptr, std::bind(&Compiler::binary, this), PREC_FACTOR}},
       {TOKEN_SLASH, {nullptr, std::bind(&Compiler::binary, this), PREC_FACTOR}},
+      {TOKEN_LT,
+       {nullptr, std::bind(&Compiler::binary, this), PREC_COMPARISON}},
+      {TOKEN_GT,
+       {nullptr, std::bind(&Compiler::binary, this), PREC_COMPARISON}},
+      {TOKEN_LE,
+       {nullptr, std::bind(&Compiler::binary, this), PREC_COMPARISON}},
+      {TOKEN_GE,
+       {nullptr, std::bind(&Compiler::binary, this), PREC_COMPARISON}},
       {TOKEN_NUM, {std::bind(&Compiler::number, this), nullptr, PREC_NONE}},
+      {TOKEN_EQ, {nullptr, std::bind(&Compiler::binary, this), PREC_EQUALITY}},
+      {TOKEN_NOT, {std::bind(&Compiler::unary, this), nullptr, PREC_NONE}},
+      {TOKEN_TRUE, {std::bind(&Compiler::literal, this), nullptr, PREC_NONE}},
+      {TOKEN_FALSE, {std::bind(&Compiler::literal, this), nullptr, PREC_NONE}},
+      {TOKEN_NULL, {std::bind(&Compiler::literal, this), nullptr, PREC_NONE}},
       {TOKEN_EOF, {nullptr, nullptr, PREC_NONE}}};
 
   void expression();
@@ -70,6 +83,8 @@ class Compiler {
 
   void unary();
   void binary();
+
+  void literal();
 
   void parsePrecendence(Precedence precedence);
 
