@@ -12,38 +12,66 @@ size_t simpleInstruction(std::string name, size_t index) {
 }
 
 size_t constantInstruction(std::string name, Chunk& chunk, size_t index) {
-  uint8_t constantIndex = chunk.getBytecodeAt(index).code;
-  std::cout << name << " " << chunk.getConstantAt(constantIndex) << std::endl;
+  uint8_t constantIndex = chunk.getBytecodeAt(index + 1).code;
+  std::cout << name << " " << AS_NUM(chunk.getConstantAt(constantIndex))
+            << std::endl;
   return index + 2;
-}
-
-void printChunk(Chunk& chunk) {
-  std::cout << "== BYTECODE ==" << std::endl;
-  std::cout << std::endl;
-
-  (void)chunk;
-  // for (size_t index = 0; index < chunk.getBytecodeSize();) {
-  //   index = printInstruction(chunk, index);
-  // }
 }
 
 size_t printInstruction(Chunk& chunk, size_t index) {
   std::cout << std::setfill('0') << std::setw(5) << index << " ";
   std::cout << std::setfill(' ') << std::setw(5)
             << chunk.getBytecodeAt(index).line << " ";
-  uint8_t instruction = chunk.getBytecodeAt(index).code;
-  switch (instruction) {
-    case OP_CONSTANT:
-      return constantInstruction("CONSTANT", chunk, index);
+
+  uint8_t code = chunk.getBytecodeAt(index).code;
+  switch (code) {
     case OP_RETURN:
-      return simpleInstruction("RETURN", index);
-    default:
-      std::cout << "Unkown opcode " << instruction << std::endl;
+      return simpleInstruction("OP_RETURN", index);
+    case OP_CONSTANT:
+      return constantInstruction("OP_CONSTANT", chunk, index);
+    case OP_NEGATE:
+      return simpleInstruction("OP_NEGATE", index);
+    case OP_ADD:
+      return simpleInstruction("OP_ADD", index);
+    case OP_SUBSTRACT:
+      return simpleInstruction("OP_SUBTRACT", index);
+    case OP_MULTIPLY:
+      return simpleInstruction("OP_MULTIPLY", index);
+    case OP_DIVIDE:
+      return simpleInstruction("OP_DIVIDE", index);
+    case OP_NULL:
+      return simpleInstruction("OP_NULL", index);
+    case OP_TRUE:
+      return simpleInstruction("OP_TRUE", index);
+    case OP_FALSE:
+      return simpleInstruction("OP_FALSE", index);
+    case OP_NOT:
+      return simpleInstruction("OP_NOT", index);
+    case OP_EQUAL:
+      return simpleInstruction("OP_EQUAL", index);
+    case OP_GREATER:
+      return simpleInstruction("OP_GREATER", index);
+    case OP_LESS:
+      return simpleInstruction("OP_LESS", index);
+    default: {
+      std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
+    }
   }
 }
 
+void printChunk(Chunk& chunk) {
+  std::cout << "== CHUNK ==" << std::endl;
+
+  for (size_t i = 0; i < chunk.getBytecodeSize();) {
+    i = printInstruction(chunk, i);
+  }
+
+  std::cout << std::endl;
+}
+
 void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
+  std::cout << std::endl;
   std::cout << "== TOKENS ==" << std::endl;
   for (const auto& token : tokens) {
     TokenType type = token->type;
@@ -144,6 +172,15 @@ void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
       case TOKEN_AT:
         std::cout << "AT" << std::endl;
         break;
+      case TOKEN_TRUE:
+        std::cout << "TRUE" << std::endl;
+        break;
+      case TOKEN_FALSE:
+        std::cout << "FALSE" << std::endl;
+        break;
+      case TOKEN_NULL:
+        std::cout << "NULL" << std::endl;
+        break;
       case TOKEN_EOF:
         std::cout << "EOF" << std::endl;
         break;
@@ -152,12 +189,24 @@ void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
   std::cout << std::endl;
 }
 
-void printStack(std::stack<double>& memory) {
+void printStack(std::stack<Value>& memory) {
   std::cout << "== STACK ==" << std::endl;
   std::cout << "Stack size: " << memory.size() << std::endl;
   int counter = 0;
   while (memory.size() != 0) {
-    std::cout << "Element " << counter << ": " << memory.top() << std::endl;
+    std::cout << "Element " << counter << ": ";
+    Value top = memory.top();
+    if (IS_BOOL(top)) {
+      if (AS_BOOL(top))
+        std::cout << "true";
+      else
+        std::cout << "false";
+    } else if (IS_NULL(top)) {
+      std::cout << "null";
+    } else if (IS_NUM(top)) {
+      std::cout << AS_NUM(top);
+    }
+    std::cout << std::endl;
     memory.pop();
     ++counter;
   }

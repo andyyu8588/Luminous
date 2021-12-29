@@ -2,12 +2,21 @@
 #include <cstdint>
 #include <vector>
 
+#include "value.h"
+
 enum OpCode {
   OP_CONSTANT,
+  OP_NULL,
+  OP_TRUE,
+  OP_FALSE,
+  OP_EQUAL,
+  OP_GREATER,
+  OP_LESS,
   OP_ADD,
   OP_SUBSTRACT,
   OP_MULTIPLY,
   OP_DIVIDE,
+  OP_NOT,
   OP_NEGATE,
   OP_RETURN
 };
@@ -23,7 +32,7 @@ class ByteCode {
 class Chunk {
  private:
   std::vector<ByteCode> bytecode;
-  std::vector<double> constants;
+  std::vector<Value> constants;
   size_t PC = 0;
 
  public:
@@ -35,9 +44,11 @@ class Chunk {
   void addBytecode(uint8_t byte, unsigned int line);
 
   // constants vector getters and setters:
-  double getConstantAt(size_t index);
+  Value getConstantAt(size_t index);
 
-  size_t addConstant(double constant);  // returns the index in the vector
+  size_t addConstant(Value value);  // returns the index in the vector
 
   ByteCode getBytecodeAtPC();
+
+  ByteCode getPrevBytecode();
 };
