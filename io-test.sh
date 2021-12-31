@@ -17,5 +17,7 @@ for f in tests/*.in ; do
 	fi
 done
 
+exit 1
+
 rm file.tmp
 echo Tests Done
