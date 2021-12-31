@@ -33,6 +33,9 @@ debug:
 basic:
 	./$(BINDIR)/$(EXECUTABLE) ./$(TESTSDIR)/basic.lum
 
+test:
+	@bash ./io-test.sh
+
 clean:
 	rm -r $(BINDIR)
 
