@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "value.h"
@@ -9,8 +10,10 @@
 #define IS_STRING(value) \
   (IS_OBJECT(value) && OBJECT_TYPE(value) == OBJECT_STRING)
 
-#define AS_OBJECTSTRING(value) ((ObjectString*)AS_OBJECT(value))
-#define AS_STRING(value) (((ObjectString*)AS_OBJECT(value))->getString())
+#define AS_OBJECTSTRING(value) \
+  (std::static_pointer_cast<ObjectString>(AS_OBJECT(value)))
+#define AS_STRING(value) \
+  ((std::static_pointer_cast<ObjectString>(AS_OBJECT(value)))->getString())
 
 enum ObjectType {
   OBJECT_STRING,
@@ -23,6 +26,8 @@ class Object {
  public:
   Object(ObjectType type);
   ObjectType getType() const;
+
+  void printObject() const;
 };
 
 class ObjectString : public Object {
@@ -30,5 +35,5 @@ class ObjectString : public Object {
 
  public:
   ObjectString(std::string str);
-  std::string getString() const;
+  const std::string& getString() const;
 };

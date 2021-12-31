@@ -20,3 +20,5 @@ size_t Chunk::addConstant(Value value) {
 ByteCode Chunk::getBytecodeAtPC() { return bytecode[PC++]; }
 
 ByteCode Chunk::getPrevBytecode() const { return bytecode[PC - 1]; }
+
+size_t Chunk::getConstantsSize() const { return constants.size(); }

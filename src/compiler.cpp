@@ -183,5 +183,6 @@ ParseRule* Compiler::getRule(TokenType type) { return &ruleMap[type]; }
 
 void Compiler::string() {
   emitByte(OP_CONSTANT);
-  emitByte(makeConstant(OBJECT_VAL(new ObjectString(parser.prev->lexeme))));
+  emitByte(makeConstant(
+      OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme))));
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <variant>
 
 // actual -> Value
@@ -11,7 +12,7 @@
 // Value -> actual (no need for null)
 #define AS_BOOL(value) (std::get<bool>((value).getAs()))
 #define AS_NUM(value) (std::get<double>((value).getAs()))
-#define AS_OBJECT(value) (std::get<Object*>((value).getAs()))
+#define AS_OBJECT(value) (std::get<std::shared_ptr<Object>>((value).getAs()))
 
 // Type checks
 #define IS_BOOL(value) ((value).getType() == VAL_BOOL)
@@ -26,14 +27,14 @@ enum ValueType { VAL_BOOL, VAL_NULL, VAL_NUM, VAL_OBJECT };
 class Value {
  private:
   const ValueType type;
-  const std::variant<bool, double, Object*> as;
+  const std::variant<bool, double, std::shared_ptr<Object>> as;
 
  public:
   ValueType getType() const;
-  std::variant<bool, double, Object*> getAs() const;
+  std::variant<bool, double, std::shared_ptr<Object>> getAs() const;
   bool operator==(const Value& compared) const;
-  void print() const;
+  void printValue() const;
 
-  Value(ValueType type, std::variant<bool, double, Object*> as)
+  Value(ValueType type, std::variant<bool, double, std::shared_ptr<Object>> as)
       : type{type}, as{as} {}
 };

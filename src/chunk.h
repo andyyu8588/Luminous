@@ -43,6 +43,8 @@ class Chunk {
   void addBytecode(uint8_t byte, unsigned int line);
 
   // constants vector getters and setters:
+  size_t getConstantsSize() const;
+
   Value getConstantAt(size_t index) const;
 
   size_t addConstant(Value value);  // returns the index in the vector
