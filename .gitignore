@@ -30,3 +30,6 @@
 *.exe
 *.app
 /bin
+
+# Testing errors
+*.err
