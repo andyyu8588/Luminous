@@ -1,4 +1,5 @@
 #!/bin/bash
+tests_failed=false
 echo Running Tests...
 
 for f in tests/*.err ; do
@@ -10,6 +11,7 @@ for f in tests/*.in ; do
 	if diff "${f%.in}.out" file.tmp > /dev/null ; then
 		echo Test $(basename $f) passed.
 	else
+		tests_failed=true
 		cp file.tmp "${f%.in}.err"
 		echo Test $(basename $f) failed.
 		diff -c "${f%.in}.out" file.tmp
@@ -17,7 +19,11 @@ for f in tests/*.in ; do
 	fi
 done
 
-exit 1
-
 rm file.tmp
-echo Tests Done
+
+if "$tests_failed" = true ; then
+	echo Tests Failed
+	exit 1
+else
+	echo Tests Done
+fi
