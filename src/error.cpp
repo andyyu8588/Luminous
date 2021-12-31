@@ -13,5 +13,3 @@ void error(int line, std::string message) {
     panicMode = true;
   }
 }
-
-void disablePanicMode() { panicMode = false; }

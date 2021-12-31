@@ -6,6 +6,7 @@
 #include <string>
 
 #include "chunk.h"
+#include "object.h"
 
 #ifdef DEBUG
 #include "debug.h"
@@ -17,35 +18,50 @@ InterpretResult VM::binaryOperation(char operation) {
   Value b = memory.top();
   memory.pop();
 
-  if (!IS_NUM(a) || !IS_NUM(b)) {
-    runtimeError("Operands must be numbers.");
+  if (IS_NUM(a) && IS_NUM(b)) {
+    double c = AS_NUM(a);
+    double d = AS_NUM(b);
+
+    switch (operation) {
+      case '+':
+        memory.push(NUM_VAL(d + c));
+        break;
+      case '-':
+        memory.push(NUM_VAL(d - c));
+        break;
+      case '*':
+        memory.push(NUM_VAL(d * c));
+        break;
+      case '/':
+        memory.push(NUM_VAL(d / c));
+        break;
+      case '>':
+        memory.push(BOOL_VAL(d > c));
+        break;
+      case '<':
+        memory.push(BOOL_VAL(d < c));
+        break;
+      default:
+        return INTERPRET_RUNTIME_ERROR;  // unreachable
+    }
+  } else if (IS_STRING(a) && IS_STRING(b)) {
+    const std::string& c = AS_STRING(a);
+    const std::string& d = AS_STRING(b);
+
+    switch (operation) {
+      case '+':
+        concatenate(c, d);
+        break;
+      default:
+        std::string message = "Invalid operation '";
+        message.push_back(operation);
+        message += "' on strings.";
+        runtimeError(message.c_str());
+        return INTERPRET_RUNTIME_ERROR;
+    }
+  } else {
+    runtimeError("Operands must be numbers or strings.");
     return INTERPRET_RUNTIME_ERROR;
-  }
-
-  double c = AS_NUM(a);
-  double d = AS_NUM(b);
-
-  switch (operation) {
-    case '+':
-      memory.push(NUM_VAL(d + c));
-      break;
-    case '-':
-      memory.push(NUM_VAL(d - c));
-      break;
-    case '*':
-      memory.push(NUM_VAL(d * c));
-      break;
-    case '/':
-      memory.push(NUM_VAL(d / c));
-      break;
-    case '>':
-      memory.push(BOOL_VAL(d > c));
-      break;
-    case '<':
-      memory.push(BOOL_VAL(d < c));
-      break;
-    default:
-      return INTERPRET_RUNTIME_ERROR;  // unreachable
   }
   return INTERPRET_OK;
 }
@@ -96,7 +112,7 @@ InterpretResult VM::run() {
         memory.pop();
         Value b = memory.top();
         memory.pop();
-        memory.push(BOOL_VAL(ValueTools::valuesEqual(a, b)));
+        memory.push(BOOL_VAL(a == b));
         break;
       }
       case OP_GREATER: {
@@ -156,7 +172,11 @@ InterpretResult VM::run() {
   return INTERPRET_OK;
 }
 
-bool VM::isFalsey(Value value) {
+bool VM::isFalsey(Value value) const {
   return IS_NULL(value) || (IS_BOOL(value) && !AS_BOOL(value)) ||
          (IS_NUM(value) && !AS_NUM(value));
+}
+
+void VM::concatenate(const std::string& c, const std::string& d) {
+  memory.push(OBJECT_VAL(std::make_shared<ObjectString>(c + d)));
 }

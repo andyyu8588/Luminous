@@ -3,6 +3,7 @@
 #include <exception>
 
 #include "error.h"
+#include "object.h"
 
 #ifdef DEBUG
 #include "debug.h"
@@ -179,3 +180,9 @@ void Compiler::literal() {
 }
 
 ParseRule* Compiler::getRule(TokenType type) { return &ruleMap[type]; }
+
+void Compiler::string() {
+  emitByte(OP_CONSTANT);
+  emitByte(makeConstant(
+      OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme))));
+}

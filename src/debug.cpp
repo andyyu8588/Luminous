@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "chunk.h"
+#include "object.h"
 #include "token.h"
 
 size_t simpleInstruction(std::string name, size_t index) {
@@ -13,8 +14,9 @@ size_t simpleInstruction(std::string name, size_t index) {
 
 size_t constantInstruction(std::string name, Chunk& chunk, size_t index) {
   uint8_t constantIndex = chunk.getBytecodeAt(index + 1).code;
-  std::cout << name << " " << AS_NUM(chunk.getConstantAt(constantIndex))
-            << std::endl;
+  std::cout << name << " ";
+  chunk.getConstantAt(constantIndex).printValue();
+  std::cout << std::endl;
   return index + 2;
 }
 
@@ -61,10 +63,20 @@ size_t printInstruction(Chunk& chunk, size_t index) {
 }
 
 void printChunk(Chunk& chunk) {
-  std::cout << "== CHUNK ==" << std::endl;
+  std::cout << "== BYTECODE ==" << std::endl;
 
   for (size_t i = 0; i < chunk.getBytecodeSize();) {
     i = printInstruction(chunk, i);
+  }
+
+  std::cout << std::endl;
+
+  std::cout << "== CONSTANTS ==" << std::endl;
+
+  for (size_t i = 0; i < chunk.getConstantsSize(); ++i) {
+    std::cout << i << " ";
+    chunk.getConstantAt(i).printValue();
+    std::cout << std::endl;
   }
 
   std::cout << std::endl;
@@ -205,6 +217,8 @@ void printStack(std::stack<Value>& memory) {
       std::cout << "null";
     } else if (IS_NUM(top)) {
       std::cout << AS_NUM(top);
+    } else if (IS_OBJECT(top)) {
+      AS_OBJECT(top)->printObject();
     }
     std::cout << std::endl;
     memory.pop();

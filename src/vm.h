@@ -22,7 +22,8 @@ class VM {
   InterpretResult run();
   void runtimeError(const char* format, ...);
   void resetMemory();
-  bool isFalsey(Value value);
+  bool isFalsey(Value value) const;
+  void concatenate(const std::string& c, const std::string& d);
 
  public:
   InterpretResult interpret(std::unique_ptr<Chunk> chunk);

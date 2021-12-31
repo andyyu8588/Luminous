@@ -21,10 +21,9 @@ enum OpCode {
   OP_RETURN
 };
 
-class ByteCode {
- public:
-  uint8_t code;
-  unsigned int line;
+struct ByteCode {
+  const uint8_t code;
+  const unsigned int line;
 
   ByteCode(uint8_t code, unsigned int line);
 };
@@ -37,18 +36,20 @@ class Chunk {
 
  public:
   // bytecode vector getters and setters:
-  size_t getBytecodeSize();
+  size_t getBytecodeSize() const;
 
-  ByteCode getBytecodeAt(size_t index);
+  ByteCode getBytecodeAt(size_t index) const;
 
   void addBytecode(uint8_t byte, unsigned int line);
 
   // constants vector getters and setters:
-  Value getConstantAt(size_t index);
+  size_t getConstantsSize() const;
+
+  Value getConstantAt(size_t index) const;
 
   size_t addConstant(Value value);  // returns the index in the vector
 
-  ByteCode getBytecodeAtPC();
+  ByteCode getBytecodeAtPC();  // increments PC by 1
 
-  ByteCode getPrevBytecode();
+  ByteCode getPrevBytecode() const;
 };
