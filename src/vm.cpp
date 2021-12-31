@@ -107,6 +107,10 @@ InterpretResult VM::run() {
         memory.push(BOOL_VAL(false));
         break;
       }
+      case OP_POP: {
+        memory.pop();
+        break;
+      }
       case OP_EQUAL: {
         Value a = memory.top();
         memory.pop();
@@ -159,6 +163,13 @@ InterpretResult VM::run() {
         double a = AS_NUM(memory.top());
         memory.pop();
         memory.push(NUM_VAL(-a));
+        break;
+      }
+      case OP_PRINT: {
+        Value a = memory.top();
+        memory.pop();
+        a.printValue();
+        std::cout << std::endl;
         break;
       }
       case OP_RETURN: {

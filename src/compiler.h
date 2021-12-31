@@ -93,6 +93,17 @@ class Compiler {
 
   ParseRule* getRule(TokenType type);
 
+  void declaration();
+
+  void statement();
+
+  void printStatement();
+  void expressionStatement();
+
+  bool match(TokenType type);
+
+  void synchronize();
+
  public:
   Compiler();
 

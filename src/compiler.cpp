@@ -11,10 +11,7 @@
 
 Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {}
 
-void Compiler::expression() {
-  panicMode = false;
-  parsePrecendence(PREC_ASSIGNMENT);
-}
+void Compiler::expression() { parsePrecendence(PREC_ASSIGNMENT); }
 
 void Compiler::compile(const std::string& code) {
   // init new chunk
@@ -29,8 +26,11 @@ void Compiler::compile(const std::string& code) {
 
   // advance by 1 to get current and then parse
   advance();
-  expression();
-  consume(TOKEN_EOF, "Expect EOF. Found none.");
+  while (!match(TOKEN_EOF)) {
+    declaration();
+  }
+
+  // end compiling
   emitByte(OP_RETURN);
   if (errorOccured) {
     throw std::exception();
@@ -185,4 +185,59 @@ void Compiler::string() {
   emitByte(OP_CONSTANT);
   emitByte(makeConstant(
       OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme))));
+}
+
+void Compiler::declaration() {
+  statement();
+
+  if (panicMode) synchronize();
+}
+
+void Compiler::statement() {
+  if (match(TOKEN_PRINT)) {
+    printStatement();
+  } else {
+    expressionStatement();
+  }
+}
+
+void Compiler::printStatement() {
+  consume(TOKEN_LPAREN, "Expect '(' after print statement.");
+  grouping();
+  consume(TOKEN_SEMI, "Expect ';' after expression.");
+  emitByte(OP_PRINT);
+}
+
+void Compiler::expressionStatement() {
+  expression();
+  consume(TOKEN_SEMI, "Expect ';' after expression.");
+  emitByte(OP_POP);
+}
+
+bool Compiler::match(TokenType type) {
+  if (!(parser.current->type == type)) return false;
+  advance();
+  return true;
+}
+
+void Compiler::synchronize() {
+  panicMode = false;
+
+  while (parser.current->type != TOKEN_EOF) {
+    if (parser.prev->type == TOKEN_SEMI) return;
+
+    switch (parser.current->type) {
+      case TOKEN_IF:
+      case TOKEN_WHILE:
+      case TOKEN_PRINT:
+      case TOKEN_ADDR:
+      case TOKEN_AT:
+      case TOKEN_RETURN:
+      case TOKEN_ID:
+        return;
+      default:;
+    }
+
+    advance();
+  }
 }
