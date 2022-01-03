@@ -32,8 +32,19 @@ class Object {
 
 class ObjectString : public Object {
   std::string str;
+  size_t hash;
 
  public:
   ObjectString(std::string str);
   const std::string& getString() const;
+  size_t getHash() const;
+
+  struct Hash {
+    size_t operator()(const std::shared_ptr<ObjectString>&) const;
+  };
+
+  struct Comparator {
+    bool operator()(const std::shared_ptr<ObjectString>& a,
+                    const std::shared_ptr<ObjectString>& b) const;
+  };
 };

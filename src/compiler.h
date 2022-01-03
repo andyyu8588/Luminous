@@ -1,7 +1,9 @@
 #pragma once
 #include <functional>
+#include <unordered_set>
 
 #include "chunk.h"
+#include "object.h"
 #include "scanner.h"
 
 extern bool errorOccured;
@@ -64,9 +66,11 @@ class Compiler {
       {TOKEN_FALSE, {std::bind(&Compiler::literal, this), nullptr, PREC_NONE}},
       {TOKEN_NULL, {std::bind(&Compiler::literal, this), nullptr, PREC_NONE}},
       {TOKEN_STRING, {std::bind(&Compiler::string, this), nullptr, PREC_NONE}},
+      {TOKEN_ID, {std::bind(&Compiler::variable, this), nullptr, PREC_NONE}},
       {TOKEN_EOF, {nullptr, nullptr, PREC_NONE}}};
-
-  void expression();
+  std::unordered_set<std::shared_ptr<ObjectString>, ObjectString::Hash,
+                     ObjectString::Comparator>
+      existingStrings;
 
   // advance to the next token in the stream
   void advance();
@@ -78,15 +82,14 @@ class Compiler {
   void emitByte(uint8_t byte);
 
   // for NUM token type and expressions:
+  void expression();
   void number();
   uint8_t makeConstant(Value number);
   void grouping();
 
   void unary();
   void binary();
-
   void literal();
-
   void string();
 
   void parsePrecendence(Precedence precedence);
@@ -94,7 +97,6 @@ class Compiler {
   ParseRule* getRule(TokenType type);
 
   void declaration();
-
   void statement();
 
   void printStatement();
@@ -104,10 +106,19 @@ class Compiler {
 
   void synchronize();
 
- public:
-  Compiler();
+  void varDeclaration();
 
+  uint8_t parseVariable(std::string message);
+
+  uint8_t identifierConstant(std::shared_ptr<Token> var);
+
+  void variable();
+
+  void namedVariable(std::shared_ptr<Token> name);
+
+ public:
+  void compile(const std::string& code);
   std::unique_ptr<Chunk> getCurrentChunk();  // std::move currentChunk
 
-  void compile(const std::string& code);
+  Compiler();
 };

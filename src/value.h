@@ -35,6 +35,6 @@ class Value {
   bool operator==(const Value& compared) const;
   void printValue() const;
 
-  Value(ValueType type, std::variant<bool, double, std::shared_ptr<Object>> as)
-      : type{type}, as{as} {}
+  Value(ValueType type, std::variant<bool, double, std::shared_ptr<Object>> as);
+  Value(const Value& value);
 };

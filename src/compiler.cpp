@@ -3,7 +3,6 @@
 #include <exception>
 
 #include "error.h"
-#include "object.h"
 
 #ifdef DEBUG
 #include "debug.h"
@@ -188,7 +187,12 @@ void Compiler::string() {
 }
 
 void Compiler::declaration() {
-  statement();
+  // TODO: Migrate declaration to set only (delete OP_DEFINE_GLOBAL)
+  if (parser.current->type == TOKEN_ID) {
+    varDeclaration();
+  } else {
+    statement();
+  }
 
   if (panicMode) synchronize();
 }
@@ -240,4 +244,42 @@ void Compiler::synchronize() {
 
     advance();
   }
+}
+
+void Compiler::varDeclaration() {
+  uint8_t global = parseVariable("Expect variable name.");
+
+  if (match(TOKEN_BECOMES)) {
+    expression();
+  } else {
+    emitByte(OP_NULL);
+  }
+  consume(TOKEN_SEMI, "Expect ';' after expression.");
+
+  emitByte(OP_DEFINE_GLOBAL);
+  emitByte(global);
+}
+
+uint8_t Compiler::parseVariable(std::string message) {
+  consume(TOKEN_ID, message);
+  return identifierConstant(parser.prev);
+}
+
+uint8_t Compiler::identifierConstant(std::shared_ptr<Token> var) {
+  std::shared_ptr<ObjectString> ptr =
+      std::make_shared<ObjectString>(var->lexeme);
+  auto it = existingStrings.find(ptr);
+  if (it == existingStrings.end()) {
+    existingStrings.insert(ptr);
+    return makeConstant(OBJECT_VAL(ptr));
+  }
+  return makeConstant(OBJECT_VAL(*it));
+}
+
+void Compiler::variable() { namedVariable(parser.prev); }
+
+void Compiler::namedVariable(std::shared_ptr<Token> name) {
+  uint8_t arg = identifierConstant(name);
+  emitByte(OP_GET_GLOBAL);
+  emitByte(arg);
 }

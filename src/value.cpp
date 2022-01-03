@@ -4,6 +4,12 @@
 
 #include "object.h"
 
+Value::Value(ValueType type,
+             std::variant<bool, double, std::shared_ptr<Object>> as)
+    : type{type}, as{as} {}
+
+Value::Value(const Value& value) : type{value.type}, as{value.as} {}
+
 bool Value::operator==(const Value& compared) const {
   if (type != compared.type) return false;
 
