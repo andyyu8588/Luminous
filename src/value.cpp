@@ -46,7 +46,7 @@ void Value::printValue() const {
       std::cout << AS_NUM(*this);
       break;
     case VAL_BOOL:
-      std::cout << AS_BOOL(*this);
+      std::cout << std::boolalpha << AS_BOOL(*this);
       break;
     case VAL_NULL:
       std::cout << "null";
