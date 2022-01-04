@@ -14,6 +14,7 @@ for f in tests/*.in ; do
 		tests_failed=true
 		cp file.tmp "${f%.in}.errval"
 		echo Test $(basename $f) failed.
+		cat "${f%.in}.errval"
 		echo ============================
 	fi
 done
