@@ -12,7 +12,7 @@ jobs:
         run: make main
 
       - name: Run Tests
-        run: make test
+        run: make io
 
       - name: Cleanup
         run: make clean
