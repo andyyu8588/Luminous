@@ -107,6 +107,29 @@ InterpretResult VM::run() {
         memory.push(BOOL_VAL(false));
         break;
       }
+      case OP_POP: {
+        memory.pop();
+        break;
+      }
+      case OP_GET_GLOBAL: {
+        Value constantName =
+            chunk->getConstantAt(chunk->getBytecodeAtPC().code);
+        std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(constantName);
+        auto it = globals.find(name);
+        if (it == globals.end()) {
+          runtimeError("Undefined variable '%s'.", name->getString().c_str());
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        memory.push(it->second);
+        break;
+      }
+      case OP_SET_GLOBAL: {
+        Value constantName =
+            chunk->getConstantAt(chunk->getBytecodeAtPC().code);
+        std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(constantName);
+        globals.insert_or_assign(name, memory.top());
+        break;
+      }
       case OP_EQUAL: {
         Value a = memory.top();
         memory.pop();
@@ -161,6 +184,13 @@ InterpretResult VM::run() {
         memory.push(NUM_VAL(-a));
         break;
       }
+      case OP_PRINT: {
+        Value a = memory.top();
+        memory.pop();
+        a.printValue();
+        std::cout << std::endl;
+        break;
+      }
       case OP_RETURN: {
 #ifdef DEBUG
         printStack(memory);
@@ -178,5 +208,5 @@ bool VM::isFalsey(Value value) const {
 }
 
 void VM::concatenate(const std::string& c, const std::string& d) {
-  memory.push(OBJECT_VAL(std::make_shared<ObjectString>(c + d)));
+  memory.push(OBJECT_VAL(std::make_shared<ObjectString>(d + c)));
 }

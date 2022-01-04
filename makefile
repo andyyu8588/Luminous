@@ -1,33 +1,49 @@
 default: debug
 
-CC = clang++ -std=c++2a
-BINDIR = bin
-SRCDIR = src
+COMPILER = clang++ -std=c++2a
+
+BIN_DIR = bin
+SRC_DIR = src
+TESTS_DIR = tests
+
 TESTING_FLAGS = -g -DDEBUG
 WARNINGS_FLAGS = -Wall -Wextra
+
+SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
+
 EXECUTABLE = luminous
 
-SRC_FILES = $(wildcard $(SRCDIR)/*.cpp)
-
 FORMATTER = clang-format
-FORMATTER_STYLE = Google
-FORMATER_FILES = $(wildcard $(SRCDIR)/*.cpp $(SRCDIR)/*.h)
+FORMATTER_FLAGS = -i -style=Google
+FORMATER_FILES = $(wildcard $(SRC_DIR)/*.cpp $(SRC_DIR)/*.h)
+
+format:
+	$(FORMATTER) $(FORMATTER_FLAGS) $(FORMATER_FILES)
 
 setup:
-	$(FORMATTER) -i -style=$(FORMATTER_STYLE) $(FORMATER_FILES)
-	mkdir -p $(BINDIR)
+	$(MAKE) format
+	mkdir -p $(BIN_DIR)
 
 main:
 	$(MAKE) setup
-	$(CC) -o $(BINDIR)/$(EXECUTABLE) $(SRC_FILES) $(WARNINGS_FLAGS) 
+	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) $(SRC_FILES) $(WARNINGS_FLAGS) 
 
 debug:
 	$(MAKE) setup	
-	$(CC) -o $(BINDIR)/$(EXECUTABLE) $(SRC_FILES) $(WARNINGS_FLAGS) $(TESTING_FLAGS)
-	gdb ./$(BINDIR)/$(EXECUTABLE)
+	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) $(SRC_FILES) $(WARNINGS_FLAGS) $(TESTING_FLAGS)
+	gdb ./$(BIN_DIR)/$(EXECUTABLE)
+
+basic:
+	./$(BIN_DIR)/$(EXECUTABLE) ./$(TESTS_DIR)/basic.in
+
+io:
+	@bash ./io-test.sh
+
+memory:
+	@bash ./memory-test.sh
 
 clean:
-	rm -r $(BINDIR)
+	rm -r $(BIN_DIR)
 
-run:
-	./$(BINDIR)/$(EXECUTABLE) 
+repl:
+	./$(BIN_DIR)/$(EXECUTABLE) 

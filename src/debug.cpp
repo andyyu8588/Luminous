@@ -55,6 +55,14 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return simpleInstruction("OP_GREATER", index);
     case OP_LESS:
       return simpleInstruction("OP_LESS", index);
+    case OP_PRINT:
+      return simpleInstruction("OP_PRINT", index);
+    case OP_POP:
+      return simpleInstruction("OP_POP", index);
+    case OP_SET_GLOBAL:
+      return constantInstruction("OP_SET_GLOBAL", chunk, index);
+    case OP_GET_GLOBAL:
+      return constantInstruction("OP_GET_GLOBAL", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
@@ -74,7 +82,7 @@ void printChunk(Chunk& chunk) {
   std::cout << "== CONSTANTS ==" << std::endl;
 
   for (size_t i = 0; i < chunk.getConstantsSize(); ++i) {
-    std::cout << i << " ";
+    std::cout << "Index " << i << ": ";
     chunk.getConstantAt(i).printValue();
     std::cout << std::endl;
   }
@@ -195,6 +203,9 @@ void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
         break;
       case TOKEN_EOF:
         std::cout << "EOF" << std::endl;
+        break;
+      case TOKEN_FOR:
+        std::cout << "FOR" << std::endl;
         break;
     }
   }

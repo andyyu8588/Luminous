@@ -1,0 +1,25 @@
+Types
+
+numbers
+booleans
+null
+strings
+
+Functionality
+
+number unary negation (- not)
+number binary arithmetic (+ - * /)
+number binary comparison (<= >= < > equals)
+
+boolean operators (not)
+
+string operations (+ equals)
+
+expression grouping (parentheses)
+expression comparison (equals)
+
+output (print)
+
+reading variables and assignment (=)
+
+runtime errors

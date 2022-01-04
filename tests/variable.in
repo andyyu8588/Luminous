@@ -1,0 +1,12 @@
+benbiensur = "POG";
+print(benbiensur);
+benbiensur = benbiensur + " ANDY";
+print(benbiensur);
+benbiensur = 3.1415926;
+print(benbiensur);
+benbiensur = false;
+print(benbiensur);
+benbiensur = 1 < 2;
+print(benbiensur);
+benbiensur2 = 3.14 * 99.123;
+print(benbiensur2);

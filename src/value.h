@@ -26,15 +26,16 @@ enum ValueType { VAL_BOOL, VAL_NULL, VAL_NUM, VAL_OBJECT };
 
 class Value {
  private:
-  const ValueType type;
-  const std::variant<bool, double, std::shared_ptr<Object>> as;
+  ValueType type;
+  std::variant<bool, double, std::shared_ptr<Object>> as;
 
  public:
   ValueType getType() const;
   std::variant<bool, double, std::shared_ptr<Object>> getAs() const;
   bool operator==(const Value& compared) const;
+  Value& operator=(Value other);
   void printValue() const;
 
-  Value(ValueType type, std::variant<bool, double, std::shared_ptr<Object>> as)
-      : type{type}, as{as} {}
+  Value(ValueType type, std::variant<bool, double, std::shared_ptr<Object>> as);
+  Value(const Value& value);
 };

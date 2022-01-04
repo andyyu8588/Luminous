@@ -1,0 +1,21 @@
+name: Run memory tests
+
+on: [push]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Valgrind
+        run: sudo apt-get install -y valgrind
+
+      - name: Create Build
+        run: make main
+
+      - name: Run Tests
+        run: make memory
+
+      - name: Cleanup
+        run: make clean

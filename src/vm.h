@@ -2,10 +2,12 @@
 #include <memory>
 #include <stack>
 #include <string>
+#include <unordered_map>
 
 #include "value.h"
 
 class Chunk;
+class ObjectString;
 
 enum InterpretResult {
   INTERPRET_OK,
@@ -17,6 +19,7 @@ class VM {
  private:
   std::unique_ptr<Chunk> chunk;
   std::stack<Value> memory;
+  std::unordered_map<std::shared_ptr<ObjectString>, Value> globals;
 
   InterpretResult binaryOperation(char operation);
   InterpretResult run();

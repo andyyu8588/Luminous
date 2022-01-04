@@ -4,6 +4,12 @@
 
 #include "object.h"
 
+Value::Value(ValueType type,
+             std::variant<bool, double, std::shared_ptr<Object>> as)
+    : type{type}, as{as} {}
+
+Value::Value(const Value& value) : type{value.type}, as{value.as} {}
+
 bool Value::operator==(const Value& compared) const {
   if (type != compared.type) return false;
 
@@ -28,13 +34,19 @@ bool Value::operator==(const Value& compared) const {
   }
 }
 
+Value& Value::operator=(Value other) {
+  type = other.type;
+  as = other.as;
+  return *this;
+}
+
 void Value::printValue() const {
   switch (type) {
     case VAL_NUM:
       std::cout << AS_NUM(*this);
       break;
     case VAL_BOOL:
-      std::cout << AS_BOOL(*this);
+      std::cout << std::boolalpha << AS_BOOL(*this);
       break;
     case VAL_NULL:
       std::cout << "null";
