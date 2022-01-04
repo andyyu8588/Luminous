@@ -33,3 +33,4 @@
 
 # Testing errors
 *.err
+*.errval
