@@ -8,7 +8,89 @@
 #include "debug.h"
 #endif
 
-Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {}
+Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
+  for (int tokenNum = TOKEN_LPAREN; tokenNum <= TOKEN_EOF; ++tokenNum) {
+    TokenType curToken = (TokenType)tokenNum;
+    switch (curToken) {
+      case TOKEN_LPAREN:
+        ruleMap[TOKEN_LPAREN] = {std::bind(&Compiler::grouping, this, _1),
+                                 nullptr, PREC_NONE};
+        break;
+      case TOKEN_MINUS:
+        ruleMap[TOKEN_MINUS] = {std::bind(&Compiler::unary, this, _1),
+                                std::bind(&Compiler::binary, this, _1),
+                                PREC_TERM};
+        break;
+      case TOKEN_PLUS:
+        ruleMap[TOKEN_PLUS] = {nullptr, std::bind(&Compiler::binary, this, _1),
+                               PREC_TERM};
+        break;
+      case TOKEN_SLASH:
+        ruleMap[TOKEN_SLASH] = {nullptr, std::bind(&Compiler::binary, this, _1),
+                                PREC_FACTOR};
+        break;
+      case TOKEN_STAR:
+        ruleMap[TOKEN_STAR] = {nullptr, std::bind(&Compiler::binary, this, _1),
+                               PREC_FACTOR};
+        break;
+      case TOKEN_LT:
+        ruleMap[TOKEN_LT] = {nullptr, std::bind(&Compiler::binary, this, _1),
+                             PREC_COMPARISON};
+        break;
+      case TOKEN_GT:
+        ruleMap[TOKEN_GT] = {nullptr, std::bind(&Compiler::binary, this, _1),
+                             PREC_COMPARISON};
+        break;
+      case TOKEN_LE:
+        ruleMap[TOKEN_LE] = {nullptr, std::bind(&Compiler::binary, this, _1),
+                             PREC_COMPARISON};
+        break;
+      case TOKEN_GE:
+        ruleMap[TOKEN_GE] = {nullptr, std::bind(&Compiler::binary, this, _1),
+                             PREC_COMPARISON};
+        break;
+
+      case TOKEN_NUM:
+        ruleMap[TOKEN_NUM] = {std::bind(&Compiler::number, this, _1), nullptr,
+                              PREC_NONE};
+        break;
+
+      case TOKEN_EQ:
+        ruleMap[TOKEN_EQ] = {nullptr, std::bind(&Compiler::binary, this, _1),
+                             PREC_EQUALITY};
+        break;
+
+      case TOKEN_NOT:
+        ruleMap[TOKEN_NOT] = {std::bind(&Compiler::unary, this, _1), nullptr,
+                              PREC_NONE};
+        break;
+
+      case TOKEN_TRUE:
+        ruleMap[TOKEN_TRUE] = {std::bind(&Compiler::literal, this, _1), nullptr,
+                               PREC_NONE};
+        break;
+      case TOKEN_FALSE:
+        ruleMap[TOKEN_FALSE] = {std::bind(&Compiler::literal, this, _1),
+                                nullptr, PREC_NONE};
+        break;
+      case TOKEN_NULL:
+        ruleMap[TOKEN_NULL] = {std::bind(&Compiler::literal, this, _1), nullptr,
+                               PREC_NONE};
+        break;
+      case TOKEN_STRING:
+        ruleMap[TOKEN_STRING] = {std::bind(&Compiler::string, this, _1),
+                                 nullptr, PREC_NONE};
+        break;
+
+      case TOKEN_ID:
+        ruleMap[TOKEN_ID] = {std::bind(&Compiler::variable, this, _1), nullptr,
+                             PREC_NONE};
+        break;
+      default:
+        ruleMap[curToken] = {nullptr, nullptr, PREC_NONE};
+    }
+  }
+}
 
 void Compiler::expression() { parsePrecendence(PREC_ASSIGNMENT); }
 
