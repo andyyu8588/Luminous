@@ -100,13 +100,21 @@ class Compiler {
   // advance with type checking
   void consume(TokenType type, const std::string& message);
 
+  // returns true if the current token matches the given type and advances
+  bool match(TokenType type);
+
   // add given byte to the current chunk
   void emitByte(uint8_t byte);
 
-  // for NUM token type and expressions:
+  // expression parsing functions:
   void expression();
+  
+  void parsePrecendence(Precedence precedence);
+
+  // making a constant opcode and pushes it to the Chunk
   uint8_t makeConstant(Value number);
 
+  // parsing functions:
   void binary(bool canAssign);
   void grouping(bool canAssign);
   void literal(bool canAssign);
@@ -115,7 +123,6 @@ class Compiler {
   void unary(bool canAssign);
   void variable(bool canAssign);
 
-  void parsePrecendence(Precedence precedence);
   ParseRule* getRule(TokenType type);
 
   void declaration();
@@ -124,17 +131,16 @@ class Compiler {
   void printStatement();
   void expressionStatement();
 
-  bool match(TokenType type);
+  // for variable assignment and retrieval
+  uint8_t identifierConstant(std::shared_ptr<Token> var);
+  void namedVariable(std::shared_ptr<Token> name, bool canAssign);
 
+  // for error synchronization:
   void synchronize();
 
+  // previously used functions for global variable declaration (OP_DEFINE_GLOBAL)
   // void varDeclaration();
-
   // uint8_t parseVariable(std::string message);
-
-  uint8_t identifierConstant(std::shared_ptr<Token> var);
-
-  void namedVariable(std::shared_ptr<Token> name, bool canAssign);
 
  public:
   void compile(const std::string& code);
