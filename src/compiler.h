@@ -108,7 +108,7 @@ class Compiler {
 
   // expression parsing functions:
   void expression();
-  
+
   void parsePrecendence(Precedence precedence);
 
   // making a constant opcode and pushes it to the Chunk
@@ -138,9 +138,9 @@ class Compiler {
   // for error synchronization:
   void synchronize();
 
-  // previously used functions for global variable declaration (OP_DEFINE_GLOBAL)
-  // void varDeclaration();
-  // uint8_t parseVariable(std::string message);
+  // previously used functions for global variable declaration
+  // (OP_DEFINE_GLOBAL) void varDeclaration(); uint8_t parseVariable(std::string
+  // message);
 
  public:
   void compile(const std::string& code);
