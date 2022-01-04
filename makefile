@@ -33,15 +33,14 @@ debug:
 	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) $(SRC_FILES) $(WARNINGS_FLAGS) $(TESTING_FLAGS)
 	gdb ./$(BIN_DIR)/$(EXECUTABLE)
 
-valgrind:
-	$(MAKE) setup
-	valgrind ./$(BIN_DIR)/$(EXECUTABLE)
-
 basic:
 	./$(BIN_DIR)/$(EXECUTABLE) ./$(TESTS_DIR)/basic.in
 
-test:
+io:
 	@bash ./io-test.sh
+
+memory:
+	@bash ./memory-test.sh
 
 clean:
 	rm -r $(BIN_DIR)

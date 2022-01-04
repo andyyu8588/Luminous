@@ -1,20 +1,19 @@
 #!/bin/bash
 tests_failed=false
-echo Running IO Tests...
+echo Running Valgrind Tests...
 
-for f in tests/*.err ; do
+for f in tests/*.errval ; do
 	rm -f $f
 done
 
 for f in tests/*.in ; do
-	bin/luminous "$f" > file.tmp
-	if diff "${f%.in}.out" file.tmp > /dev/null ; then
+	valgrind --log-file="file.tmp" bin/luminous "$f" > /dev/null 
+	if grep -Rq "All heap blocks were freed -- no leaks are possible" file.tmp ; then
 		echo Test $(basename $f) passed.
 	else
 		tests_failed=true
-		cp file.tmp "${f%.in}.err"
+		cp file.tmp "${f%.in}.errval"
 		echo Test $(basename $f) failed.
-		diff -c "${f%.in}.out" file.tmp
 		echo ============================
 	fi
 done
