@@ -69,12 +69,18 @@ void Compiler::parsePrecendence(Precedence precedence) {
     error(parser.prev->line, "Expect expression. Found none.");
     return;
   }
-  prefixRule();
+
+  bool canAssign = (precedence <= PREC_ASSIGNMENT);
+  prefixRule(canAssign);
 
   while (precedence <= getRule(parser.current->type)->precedence) {
     advance();
     ParseFunction infixRule = getRule(parser.prev->type)->infix;
-    infixRule();
+    infixRule(canAssign);
+  }
+
+  if (canAssign && match(TOKEN_BECOMES)) {
+    error(parser.current->line, "Invalid assignment target.");
   }
 }
 
@@ -88,18 +94,21 @@ uint8_t Compiler::makeConstant(Value value) {
   return (uint8_t)constant;
 }
 
-void Compiler::number() {
+void Compiler::number(bool canAssign) {
+  (void)canAssign;
   double number = std::stod(parser.prev->lexeme);
   emitByte(OP_CONSTANT);
   emitByte(makeConstant(NUM_VAL(number)));
 }
 
-void Compiler::grouping() {
+void Compiler::grouping(bool canAssign) {
+  (void)canAssign;
   expression();
   consume(TOKEN_RPAREN, "Expect ')' after expression.");
 }
 
-void Compiler::unary() {
+void Compiler::unary(bool canAssign) {
+  (void)canAssign;
   TokenType operatorType = parser.prev->type;
 
   parsePrecendence(PREC_UNARY);
@@ -116,7 +125,9 @@ void Compiler::unary() {
   }
 }
 
-void Compiler::binary() {
+void Compiler::binary(bool canAssign) {
+  // TODO canAssign
+  (void)canAssign;
   TokenType operatorType = parser.prev->type;
 
   ParseRule* rule = getRule(operatorType);
@@ -160,7 +171,8 @@ void Compiler::binary() {
   }
 }
 
-void Compiler::literal() {
+void Compiler::literal(bool canAssign) {
+  (void)canAssign;
   TokenType operatorType = parser.prev->type;
 
   switch (operatorType) {
@@ -180,19 +192,21 @@ void Compiler::literal() {
 
 ParseRule* Compiler::getRule(TokenType type) { return &ruleMap[type]; }
 
-void Compiler::string() {
+void Compiler::string(bool canAssign) {
+  (void)canAssign;
   emitByte(OP_CONSTANT);
   emitByte(makeConstant(
       OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme))));
 }
 
 void Compiler::declaration() {
-  // TODO: Migrate declaration to set only (delete OP_DEFINE_GLOBAL)
-  if (parser.current->type == TOKEN_ID) {
-    varDeclaration();
-  } else {
-    statement();
-  }
+  // if (parser.current->type == TOKEN_ID) {
+  //   varDeclaration();
+  // } else {
+  //   statement();
+  // }
+
+  statement();
 
   if (panicMode) synchronize();
 }
@@ -207,7 +221,7 @@ void Compiler::statement() {
 
 void Compiler::printStatement() {
   consume(TOKEN_LPAREN, "Expect '(' after print statement.");
-  grouping();
+  grouping(false);
   consume(TOKEN_SEMI, "Expect ';' after expression.");
   emitByte(OP_PRINT);
 }
@@ -246,24 +260,24 @@ void Compiler::synchronize() {
   }
 }
 
-void Compiler::varDeclaration() {
-  uint8_t global = parseVariable("Expect variable name.");
+// void Compiler::varDeclaration() {
+//   uint8_t global = parseVariable("Expect variable name.");
 
-  if (match(TOKEN_BECOMES)) {
-    expression();
-  } else {
-    emitByte(OP_NULL);
-  }
-  consume(TOKEN_SEMI, "Expect ';' after expression.");
+//   if (match(TOKEN_BECOMES)) {
+//     expression();
+//   } else {
+//     emitByte(OP_NULL);
+//   }
+//   consume(TOKEN_SEMI, "Expect ';' after expression.");
 
-  emitByte(OP_DEFINE_GLOBAL);
-  emitByte(global);
-}
+//   emitByte(OP_DEFINE_GLOBAL);
+//   emitByte(global);
+// }
 
-uint8_t Compiler::parseVariable(std::string message) {
-  consume(TOKEN_ID, message);
-  return identifierConstant(parser.prev);
-}
+// uint8_t Compiler::parseVariable(std::string message) {
+//   consume(TOKEN_ID, message);
+//   return identifierConstant(parser.prev);
+// }
 
 uint8_t Compiler::identifierConstant(std::shared_ptr<Token> var) {
   std::shared_ptr<ObjectString> ptr =
@@ -276,10 +290,17 @@ uint8_t Compiler::identifierConstant(std::shared_ptr<Token> var) {
   return makeConstant(OBJECT_VAL(*it));
 }
 
-void Compiler::variable() { namedVariable(parser.prev); }
+void Compiler::variable(bool canAssign) {
+  namedVariable(parser.prev, canAssign);
+}
 
-void Compiler::namedVariable(std::shared_ptr<Token> name) {
+void Compiler::namedVariable(std::shared_ptr<Token> name, bool canAssign) {
   uint8_t arg = identifierConstant(name);
-  emitByte(OP_GET_GLOBAL);
+  if (canAssign && match(TOKEN_BECOMES)) {
+    expression();
+    emitByte(OP_SET_GLOBAL);
+  } else {
+    emitByte(OP_GET_GLOBAL);
+  }
   emitByte(arg);
 }

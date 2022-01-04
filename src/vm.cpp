@@ -123,13 +123,11 @@ InterpretResult VM::run() {
         memory.push(it->second);
         break;
       }
-      case OP_DEFINE_GLOBAL: {
+      case OP_SET_GLOBAL: {
         Value constantName =
             chunk->getConstantAt(chunk->getBytecodeAtPC().code);
         std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(constantName);
-        globals.insert(std::pair<std::shared_ptr<ObjectString>, Value>(
-            name, memory.top()));
-        memory.pop();
+        globals.insert_or_assign(name, memory.top());
         break;
       }
       case OP_EQUAL: {

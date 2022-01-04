@@ -34,6 +34,12 @@ bool Value::operator==(const Value& compared) const {
   }
 }
 
+Value& Value::operator=(Value other) {
+  type = other.type;
+  as = other.as;
+  return *this;
+}
+
 void Value::printValue() const {
   switch (type) {
     case VAL_NUM:

@@ -8,6 +8,8 @@
 
 extern bool errorOccured;
 
+using namespace std::placeholders;
+
 struct Parser {
   std::shared_ptr<Token> current;
   std::shared_ptr<Token> prev;
@@ -29,7 +31,7 @@ enum Precedence {
 
 class Compiler;
 
-using ParseFunction = std::function<void()>;
+using ParseFunction = std::function<void(bool)>;
 
 struct ParseRule {
   ParseFunction prefix;
@@ -43,30 +45,50 @@ class Compiler {
   std::unique_ptr<Chunk> currentChunk;
   std::unordered_map<TokenType, ParseRule> ruleMap = {
       {TOKEN_LPAREN,
-       {std::bind(&Compiler::grouping, this), nullptr, PREC_NONE}},
+       {std::bind(&Compiler::grouping, this, _1), nullptr, PREC_NONE}},
       {TOKEN_RPAREN, {nullptr, nullptr, PREC_NONE}},
+      {TOKEN_LBRACE, {nullptr, nullptr, PREC_NONE}},
+      {TOKEN_RBRACE, {nullptr, nullptr, PREC_NONE}},
+      {TOKEN_COMMA, {nullptr, nullptr, PREC_NONE}},
+      {TOKEN_DOT, {nullptr, nullptr, PREC_NONE}},
       {TOKEN_MINUS,
-       {std::bind(&Compiler::unary, this), std::bind(&Compiler::binary, this),
-        PREC_TERM}},
-      {TOKEN_PLUS, {nullptr, std::bind(&Compiler::binary, this), PREC_TERM}},
-      {TOKEN_STAR, {nullptr, std::bind(&Compiler::binary, this), PREC_FACTOR}},
-      {TOKEN_SLASH, {nullptr, std::bind(&Compiler::binary, this), PREC_FACTOR}},
+       {std::bind(&Compiler::unary, this, _1),
+        std::bind(&Compiler::binary, this, _1), PREC_TERM}},
+      {TOKEN_PLUS,
+       {nullptr, std::bind(&Compiler::binary, this, _1), PREC_TERM}},
+      {TOKEN_SEMI, {nullptr, nullptr, PREC_NONE}},
+      {TOKEN_SLASH,
+       {nullptr, std::bind(&Compiler::binary, this, _1), PREC_FACTOR}},
+      {TOKEN_STAR,
+       {nullptr, std::bind(&Compiler::binary, this, _1), PREC_FACTOR}},
       {TOKEN_LT,
-       {nullptr, std::bind(&Compiler::binary, this), PREC_COMPARISON}},
+       {nullptr, std::bind(&Compiler::binary, this, _1), PREC_COMPARISON}},
       {TOKEN_GT,
-       {nullptr, std::bind(&Compiler::binary, this), PREC_COMPARISON}},
+       {nullptr, std::bind(&Compiler::binary, this, _1), PREC_COMPARISON}},
       {TOKEN_LE,
-       {nullptr, std::bind(&Compiler::binary, this), PREC_COMPARISON}},
+       {nullptr, std::bind(&Compiler::binary, this, _1), PREC_COMPARISON}},
       {TOKEN_GE,
-       {nullptr, std::bind(&Compiler::binary, this), PREC_COMPARISON}},
-      {TOKEN_NUM, {std::bind(&Compiler::number, this), nullptr, PREC_NONE}},
-      {TOKEN_EQ, {nullptr, std::bind(&Compiler::binary, this), PREC_EQUALITY}},
-      {TOKEN_NOT, {std::bind(&Compiler::unary, this), nullptr, PREC_NONE}},
-      {TOKEN_TRUE, {std::bind(&Compiler::literal, this), nullptr, PREC_NONE}},
-      {TOKEN_FALSE, {std::bind(&Compiler::literal, this), nullptr, PREC_NONE}},
-      {TOKEN_NULL, {std::bind(&Compiler::literal, this), nullptr, PREC_NONE}},
-      {TOKEN_STRING, {std::bind(&Compiler::string, this), nullptr, PREC_NONE}},
-      {TOKEN_ID, {std::bind(&Compiler::variable, this), nullptr, PREC_NONE}},
+       {nullptr, std::bind(&Compiler::binary, this, _1), PREC_COMPARISON}},
+      {TOKEN_NUM, {std::bind(&Compiler::number, this, _1), nullptr, PREC_NONE}},
+      {TOKEN_EQ,
+       {nullptr, std::bind(&Compiler::binary, this, _1), PREC_EQUALITY}},
+      {TOKEN_NOT, {std::bind(&Compiler::unary, this, _1), nullptr, PREC_NONE}},
+      {TOKEN_TRUE,
+       {std::bind(&Compiler::literal, this, _1), nullptr, PREC_NONE}},
+      {TOKEN_FALSE,
+       {std::bind(&Compiler::literal, this, _1), nullptr, PREC_NONE}},
+      {TOKEN_NULL,
+       {std::bind(&Compiler::literal, this, _1), nullptr, PREC_NONE}},
+      {TOKEN_STRING,
+       {std::bind(&Compiler::string, this, _1), nullptr, PREC_NONE}},
+      {TOKEN_ID,
+       {std::bind(&Compiler::variable, this, _1), nullptr, PREC_NONE}},
+      {TOKEN_AND, {nullptr, nullptr, PREC_NONE}},
+      {TOKEN_ELSE, {nullptr, nullptr, PREC_NONE}},
+      {TOKEN_IF, {nullptr, nullptr, PREC_NONE}},
+      {TOKEN_WHILE, {nullptr, nullptr, PREC_NONE}},
+      {TOKEN_OR, {nullptr, nullptr, PREC_NONE}},
+      {TOKEN_BECOMES, {nullptr, nullptr, PREC_NONE}},
       {TOKEN_EOF, {nullptr, nullptr, PREC_NONE}}};
   std::unordered_set<std::shared_ptr<ObjectString>, ObjectString::Hash,
                      ObjectString::Comparator>
@@ -83,17 +105,17 @@ class Compiler {
 
   // for NUM token type and expressions:
   void expression();
-  void number();
   uint8_t makeConstant(Value number);
-  void grouping();
 
-  void unary();
-  void binary();
-  void literal();
-  void string();
+  void binary(bool canAssign);
+  void grouping(bool canAssign);
+  void literal(bool canAssign);
+  void number(bool canAssign);
+  void string(bool canAssign);
+  void unary(bool canAssign);
+  void variable(bool canAssign);
 
   void parsePrecendence(Precedence precedence);
-
   ParseRule* getRule(TokenType type);
 
   void declaration();
@@ -106,15 +128,13 @@ class Compiler {
 
   void synchronize();
 
-  void varDeclaration();
+  // void varDeclaration();
 
-  uint8_t parseVariable(std::string message);
+  // uint8_t parseVariable(std::string message);
 
   uint8_t identifierConstant(std::shared_ptr<Token> var);
 
-  void variable();
-
-  void namedVariable(std::shared_ptr<Token> name);
+  void namedVariable(std::shared_ptr<Token> name, bool canAssign);
 
  public:
   void compile(const std::string& code);
