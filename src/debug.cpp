@@ -204,6 +204,9 @@ void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
       case TOKEN_EOF:
         std::cout << "EOF" << std::endl;
         break;
+      case TOKEN_FOR:
+        std::cout << "FOR" << std::endl;
+        break;
     }
   }
   std::cout << std::endl;
