@@ -6,14 +6,12 @@
 #include "object.h"
 #include "scanner.h"
 
-extern bool errorOccured;
-
 using namespace std::placeholders;
+using ParseFunction = std::function<void(bool)>;
 
-struct Parser {
-  std::shared_ptr<Token> current;
-  std::shared_ptr<Token> prev;
-};
+class Compiler;
+
+extern bool errorOccured;
 
 enum Precedence {
   PREC_NONE,
@@ -29,14 +27,28 @@ enum Precedence {
   PREC_PRIMARY,
 };
 
-class Compiler;
-
-using ParseFunction = std::function<void(bool)>;
+struct Parser {
+  const Token* current;
+  const Token* prev;
+};
 
 struct ParseRule {
   ParseFunction prefix;
   ParseFunction infix;
   Precedence precedence;
+};
+
+struct Local {
+  const Token& name;
+  int depth;
+
+  struct Hash {
+    size_t operator()(const Local& local) const;
+  };
+
+  struct Comparator {
+    bool operator()(const Local& a, const Local& b) const;
+  };
 };
 
 class Compiler {
@@ -47,6 +59,8 @@ class Compiler {
   std::unordered_set<std::shared_ptr<ObjectString>, ObjectString::Hash,
                      ObjectString::Comparator>
       existingStrings;
+  std::unordered_set<Local, Local::Hash> localVars;
+  int scopeDepth = 0;
 
   // advance to the next token in the stream
   void advance();
@@ -86,8 +100,11 @@ class Compiler {
   void expressionStatement();
 
   // for variable assignment and retrieval
-  uint8_t identifierConstant(std::shared_ptr<Token> var);
-  void namedVariable(std::shared_ptr<Token> name, bool canAssign);
+  uint8_t identifierConstant(const Token* var);
+  void namedVariable(const Token* name, bool canAssign);
+
+  // for local variables:
+  void block();
 
   // for error synchronization:
   void synchronize();

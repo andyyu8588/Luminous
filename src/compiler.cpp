@@ -95,6 +95,9 @@ Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
 void Compiler::expression() { parsePrecendence(PREC_ASSIGNMENT); }
 
 void Compiler::compile(const std::string& code) {
+  // reset scope information:
+  scopeDepth = 0;
+
   // init new chunk
   currentChunk = std::make_unique<Chunk>();
 
@@ -128,9 +131,9 @@ void Compiler::consume(TokenType type, const std::string& message) {
 }
 
 void Compiler::advance() {
-  std::shared_ptr<Token> nextToken = scanner.getNextToken();
+  const Token& nextToken = scanner.getNextToken();
   parser.prev = parser.current;
-  parser.current = nextToken;
+  parser.current = &nextToken;
 }
 
 void Compiler::emitByte(uint8_t byte) {
@@ -296,9 +299,22 @@ void Compiler::declaration() {
 void Compiler::statement() {
   if (match(TOKEN_PRINT)) {
     printStatement();
+  } else if (match(TOKEN_LBRACE)) {
+    scopeDepth++;
+    block();
+    scopeDepth--;
   } else {
     expressionStatement();
   }
+}
+
+void Compiler::block() {
+  while (!(parser.current->type == TOKEN_RBRACE) &&
+         !(parser.current->type == TOKEN_EOF)) {
+    declaration();
+  }
+
+  consume(TOKEN_RBRACE, "Expect '}' after statement.");
 }
 
 void Compiler::printStatement() {
@@ -361,7 +377,7 @@ void Compiler::synchronize() {
 //   return identifierConstant(parser.prev);
 // }
 
-uint8_t Compiler::identifierConstant(std::shared_ptr<Token> var) {
+uint8_t Compiler::identifierConstant(const Token* var) {
   std::shared_ptr<ObjectString> ptr =
       std::make_shared<ObjectString>(var->lexeme);
   auto it = existingStrings.find(ptr);
@@ -376,7 +392,7 @@ void Compiler::variable(bool canAssign) {
   namedVariable(parser.prev, canAssign);
 }
 
-void Compiler::namedVariable(std::shared_ptr<Token> name, bool canAssign) {
+void Compiler::namedVariable(const Token* name, bool canAssign) {
   uint8_t arg = identifierConstant(name);
   if (canAssign && match(TOKEN_BECOMES)) {
     expression();
@@ -385,4 +401,12 @@ void Compiler::namedVariable(std::shared_ptr<Token> name, bool canAssign) {
     emitByte(OP_GET_GLOBAL);
   }
   emitByte(arg);
+}
+
+size_t Local::Hash::operator()(const Local& local) const {
+  return std::hash<std::string>{}(local.name.lexeme);
+}
+
+bool Local::Comparator::operator()(const Local& a, const Local& b) const {
+  return a.depth == b.depth;
 }

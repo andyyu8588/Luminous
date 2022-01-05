@@ -14,7 +14,7 @@ Created by Yun Ze Zhou and Andy Yu.
 
 class Scanner {
   const std::string* code;
-  std::vector<std::shared_ptr<Token>> tokens;
+  std::vector<Token> tokens;
   std::unordered_map<std::string, TokenType> keywords = {
       {"equals", TOKEN_EQ},   {"and", TOKEN_AND},       {"or", TOKEN_OR},
       {"not", TOKEN_NOT},     {"if", TOKEN_IF},         {"else", TOKEN_ELSE},
@@ -74,5 +74,5 @@ class Scanner {
   // reset the scanner:
   void reset(const std::string& code);
 
-  std::shared_ptr<Token> getNextToken();
+  const Token& getNextToken();
 };

@@ -51,8 +51,7 @@ enum TokenType {
   TOKEN_EOF
 };
 
-class Token {
- public:
+struct Token {
   const TokenType type;
   const std::string lexeme;
   const int line;
