@@ -6,14 +6,14 @@
 #include "object.h"
 #include "scanner.h"
 
+using namespace std::placeholders;
+using ParseFunction = std::function<void(bool)>;
+
+class Compiler;
+
 extern bool errorOccured;
 
-using namespace std::placeholders;
-
-struct Parser {
-  std::shared_ptr<Token> current;
-  std::shared_ptr<Token> prev;
-};
+class CompilerException {};
 
 enum Precedence {
   PREC_NONE,
@@ -29,14 +29,37 @@ enum Precedence {
   PREC_PRIMARY,
 };
 
-class Compiler;
-
-using ParseFunction = std::function<void(bool)>;
+struct Parser {
+  const Token* current;
+  const Token* prev;
+};
 
 struct ParseRule {
   ParseFunction prefix;
   ParseFunction infix;
   Precedence precedence;
+};
+
+struct Local {
+  const Token& name;
+  int depth;
+
+  Local(const Token& name, int depth);
+
+  struct Hash {
+    size_t operator()(const std::shared_ptr<Local>& local) const;
+  };
+
+  struct Comparator {
+    bool operator()(const std::shared_ptr<Local>& a,
+                    const std::shared_ptr<Local>& b) const;
+  };
+};
+
+struct LocalVariables {
+  std::vector<std::shared_ptr<Local>> list;
+  std::unordered_set<std::shared_ptr<Local>, Local::Hash, Local::Comparator>
+      hash;
 };
 
 class Compiler {
@@ -47,6 +70,8 @@ class Compiler {
   std::unordered_set<std::shared_ptr<ObjectString>, ObjectString::Hash,
                      ObjectString::Comparator>
       existingStrings;
+  LocalVariables localVars;
+  int scopeDepth = 0;
 
   // advance to the next token in the stream
   void advance();
@@ -86,8 +111,16 @@ class Compiler {
   void expressionStatement();
 
   // for variable assignment and retrieval
-  uint8_t identifierConstant(std::shared_ptr<Token> var);
-  void namedVariable(std::shared_ptr<Token> name, bool canAssign);
+  uint8_t identifierConstant(const Token* var);
+  void namedVariable(const Token* name, bool canAssign);
+
+  // for local variables:
+  void beginScope();
+  void endScope();
+  void block();
+  void declareLocal();
+  int resolveLocal(const Token* name);
+  void markInitialized();
 
   // for error synchronization:
   void synchronize();

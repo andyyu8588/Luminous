@@ -1,2 +1,4 @@
-xd = 1;
-print(xd);
+{
+  xd = 1;
+  print(xd);
+}

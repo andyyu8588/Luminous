@@ -27,11 +27,11 @@ char Scanner::nextChar() {
 
 void Scanner::addToken(TokenType type) {
   std::string lexeme = code->substr(start, current - start);
-  tokens.push_back(std::make_shared<Token>(type, lexeme, line));
+  tokens.emplace_back(type, lexeme, line);
 }
 
 void Scanner::addToken(TokenType type, std::string lexeme) {
-  tokens.push_back(std::make_shared<Token>(type, lexeme, line));
+  tokens.emplace_back(type, lexeme, line);
 }
 
 bool Scanner::match(char expected) {
@@ -233,10 +233,11 @@ void Scanner::reset(const std::string& code) {
   tokens.clear();
 }
 
-std::shared_ptr<Token> Scanner::getNextToken() {
+const Token& Scanner::getNextToken() {
   try {
     return tokens.at(curToken++);
-  } catch (std::out_of_range) {
-    return std::make_shared<Token>(TOKEN_EOF, "", line);
+  } catch (const std::out_of_range& e) {
+    tokens.emplace_back(TOKEN_EOF, "", line);
+    return tokens.at(curToken - 1);
   }
 }

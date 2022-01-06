@@ -1,0 +1,39 @@
+a = "string";
+b = "number";
+c = a + b + "null" + "boolean";
+d = not(not(1 * 0 - 22 * -1)) equals true;
+{
+  print(a equals b);
+  a = null;
+  print(a equals b);
+  print(a);
+  b = null;
+  print(a);
+  print(not b);
+  print(a equals b);
+  {
+    print(a equals b);
+    b = 4.13;
+    print(a equals b);
+    c = 4.13;
+    print(c > b);
+    {
+      d = c;
+      e = d;
+      print(e equals d);
+      f = "nice";
+      g = "ok";
+      h = "testtest123123";
+      {
+        f = g;
+        g = h;
+        h = f + g;
+        print(h);
+      }
+    }
+  }
+}
+print(a);
+print(b);
+print(c);
+print(d);

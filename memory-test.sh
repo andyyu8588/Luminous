@@ -1,6 +1,6 @@
 #!/bin/bash
 tests_failed=false
-echo Running Valgrind Tests...
+echo Running Memory Tests...
 
 for f in tests/*.errval ; do
 	rm -f $f

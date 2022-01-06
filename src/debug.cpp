@@ -63,6 +63,10 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return constantInstruction("OP_SET_GLOBAL", chunk, index);
     case OP_GET_GLOBAL:
       return constantInstruction("OP_GET_GLOBAL", chunk, index);
+    case OP_SET_LOCAL:
+      return constantInstruction("OP_SET_LOCAL", chunk, index);
+    case OP_GET_LOCAL:
+      return constantInstruction("OP_GET_LOCAL", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
@@ -90,11 +94,11 @@ void printChunk(Chunk& chunk) {
   std::cout << std::endl;
 }
 
-void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
+void printTokens(const std::vector<Token>& tokens) {
   std::cout << std::endl;
   std::cout << "== TOKENS ==" << std::endl;
   for (const auto& token : tokens) {
-    TokenType type = token->type;
+    TokenType type = token.type;
     switch (type) {
       case TOKEN_LPAREN:
         std::cout << "LPAREN" << std::endl;
@@ -151,13 +155,13 @@ void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
         std::cout << "GE" << std::endl;
         break;
       case TOKEN_ID:
-        std::cout << "ID: " + token->lexeme << std::endl;
+        std::cout << "ID: " + token.lexeme << std::endl;
         break;
       case TOKEN_NUM:
-        std::cout << "NUM: " + token->lexeme << std::endl;
+        std::cout << "NUM: " + token.lexeme << std::endl;
         break;
       case TOKEN_STRING:
-        std::cout << "STRING: " + token->lexeme << std::endl;
+        std::cout << "STRING: " + token.lexeme << std::endl;
         break;
       case TOKEN_EQ:
         std::cout << "EQ" << std::endl;

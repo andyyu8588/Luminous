@@ -9,11 +9,17 @@
 static void run(Compiler& compiler, VM& vm, const std::string& code) {
   try {
     compiler.compile(code);
-  } catch (const std::exception& e) {
+  } catch (const CompilerException& e) {
     return;
   }
   InterpretResult interpretResult = vm.interpret(compiler.getCurrentChunk());
-  (void)interpretResult;
+  switch (interpretResult) {
+    case INTERPRET_OK:
+    case INTERPRET_COMPILE_ERROR:
+    case INTERPRET_RUNTIME_ERROR:
+    default:
+      return;
+  }
 }
 
 static void repl(Compiler& compiler, VM& vm) {
