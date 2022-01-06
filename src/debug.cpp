@@ -63,6 +63,10 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return constantInstruction("OP_SET_GLOBAL", chunk, index);
     case OP_GET_GLOBAL:
       return constantInstruction("OP_GET_GLOBAL", chunk, index);
+    case OP_SET_LOCAL:
+      return constantInstruction("OP_SET_LOCAL", chunk, index);
+    case OP_GET_LOCAL:
+      return constantInstruction("OP_GET_LOCAL", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;

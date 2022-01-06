@@ -42,6 +42,10 @@ io:
 memory:
 	@bash ./memory-test.sh
 
+test:
+	$(MAKE) io
+	$(MAKE) memory
+
 clean:
 	rm -r $(BIN_DIR)
 

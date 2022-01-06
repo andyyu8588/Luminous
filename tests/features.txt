@@ -21,5 +21,6 @@ expression comparison (equals)
 output (print)
 
 reading variables and assignment (=)
+local variables and scopes ({})
 
 runtime errors

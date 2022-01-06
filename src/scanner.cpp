@@ -236,7 +236,7 @@ void Scanner::reset(const std::string& code) {
 const Token& Scanner::getNextToken() {
   try {
     return tokens.at(curToken++);
-  } catch (std::out_of_range) {
+  } catch (const std::out_of_range& e) {
     tokens.emplace_back(TOKEN_EOF, "", line);
     return tokens.at(curToken - 1);
   }

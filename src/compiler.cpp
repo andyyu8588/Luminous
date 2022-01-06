@@ -105,7 +105,7 @@ void Compiler::compile(const std::string& code) {
   scanner.reset(code);
   scanner.tokenize();
   if (errorOccured) {
-    throw std::exception();
+    throw CompilerException();
   }
 
   // advance by 1 to get current and then parse
@@ -115,10 +115,10 @@ void Compiler::compile(const std::string& code) {
   }
 
   // end compiling
-  emitByte(OP_RETURN);
   if (errorOccured) {
-    throw std::exception();
+    throw CompilerException();
   }
+  emitByte(OP_RETURN);
 }
 
 void Compiler::consume(TokenType type, const std::string& message) {
@@ -296,13 +296,26 @@ void Compiler::declaration() {
   if (panicMode) synchronize();
 }
 
+void Compiler::beginScope() { scopeDepth++; }
+
+void Compiler::endScope() {
+  scopeDepth--;
+
+  while (localVars.list.size() > 0 &&
+         localVars.list.back()->depth > scopeDepth) {
+    localVars.hash.erase(localVars.list.back());
+    localVars.list.pop_back();
+    emitByte(OP_POP);
+  }
+}
+
 void Compiler::statement() {
   if (match(TOKEN_PRINT)) {
     printStatement();
   } else if (match(TOKEN_LBRACE)) {
-    scopeDepth++;
+    beginScope();
     block();
-    scopeDepth--;
+    endScope();
   } else {
     expressionStatement();
   }
@@ -314,20 +327,32 @@ void Compiler::block() {
     declaration();
   }
 
-  consume(TOKEN_RBRACE, "Expect '}' after statement.");
+  consume(TOKEN_RBRACE, "Expect '}' after block.");
 }
 
 void Compiler::printStatement() {
-  consume(TOKEN_LPAREN, "Expect '(' after print statement.");
-  grouping(false);
-  consume(TOKEN_SEMI, "Expect ';' after expression.");
+  consume(TOKEN_LPAREN, "Expect '(' after 'print'.");
+  expression();
+  consume(TOKEN_RPAREN, "Expect ')' after expression.");
+  consume(TOKEN_SEMI, "Expect ';' after statement.");
   emitByte(OP_PRINT);
 }
 
 void Compiler::expressionStatement() {
+  bool pop = true;
+  if (scopeDepth != 0) {
+    pop = false;
+    std::shared_ptr<Local> toCheck =
+        std::make_shared<Local>(*(parser.current), scopeDepth);
+    if (localVars.hash.contains(toCheck)) {
+      pop = true;
+    }
+  }
   expression();
-  consume(TOKEN_SEMI, "Expect ';' after expression.");
-  emitByte(OP_POP);
+  consume(TOKEN_SEMI, "Expect ';' after statement.");
+  if (pop) {
+    emitByte(OP_POP);
+  }
 }
 
 bool Compiler::match(TokenType type) {
@@ -388,25 +413,75 @@ uint8_t Compiler::identifierConstant(const Token* var) {
   return makeConstant(OBJECT_VAL(*it));
 }
 
+void Compiler::markInitialized() { localVars.list.back()->depth = scopeDepth; }
+
+void Compiler::declareLocal() {
+  if (scopeDepth == 0) return;  // no need to add to localVars if global
+
+  std::shared_ptr<Local> local =
+      std::make_shared<Local>(*(parser.prev), scopeDepth);
+
+  if (localVars.hash.contains(local)) return;  // variable exists already
+
+  local->depth = -1;
+  localVars.hash.insert(local);
+  localVars.list.push_back(local);
+}
+
 void Compiler::variable(bool canAssign) {
+  if (scopeDepth > 0 && canAssign && parser.current->type == TOKEN_BECOMES) {
+    declareLocal();
+  }
   namedVariable(parser.prev, canAssign);
 }
 
+// find a local's index in localVars with a token
+int Compiler::resolveLocal(const Token* name) {
+  for (int i = (int)(localVars.list.size()) - 1; i >= 0; i--) {
+    std::shared_ptr<Local> curLocal = localVars.list.at(i);
+    if (curLocal->name.lexeme == name->lexeme) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
 void Compiler::namedVariable(const Token* name, bool canAssign) {
-  uint8_t arg = identifierConstant(name);
+  uint8_t getOp, setOp;
+  int arg = resolveLocal(name);
+
+  if (arg != -1) {
+    getOp = OP_GET_LOCAL;
+    setOp = OP_SET_LOCAL;
+  } else {
+    arg = identifierConstant(name);
+    getOp = OP_GET_GLOBAL;
+    setOp = OP_SET_GLOBAL;
+  }
+
   if (canAssign && match(TOKEN_BECOMES)) {
     expression();
-    emitByte(OP_SET_GLOBAL);
+    if (localVars.list.size() > 0 && localVars.list.back()->depth == -1) {
+      markInitialized();
+    }
+    emitByte(setOp);
   } else {
-    emitByte(OP_GET_GLOBAL);
+    if (getOp == OP_GET_LOCAL && localVars.list.at(arg)->depth == -1) {
+      error(name->line, "Can't read local variable in its own initializer.");
+    }
+    emitByte(getOp);
   }
-  emitByte(arg);
+  emitByte((uint8_t)arg);
 }
 
-size_t Local::Hash::operator()(const Local& local) const {
-  return std::hash<std::string>{}(local.name.lexeme);
+Local::Local(const Token& name, int depth) : name{name}, depth{depth} {}
+
+size_t Local::Hash::operator()(const std::shared_ptr<Local>& local) const {
+  return std::hash<std::string>{}(local->name.lexeme);
 }
 
-bool Local::Comparator::operator()(const Local& a, const Local& b) const {
-  return a.depth == b.depth;
+bool Local::Comparator::operator()(const std::shared_ptr<Local>& a,
+                                   const std::shared_ptr<Local>& b) const {
+  return a->depth == b->depth;
 }

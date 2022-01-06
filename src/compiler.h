@@ -13,6 +13,8 @@ class Compiler;
 
 extern bool errorOccured;
 
+class CompilerException {};
+
 enum Precedence {
   PREC_NONE,
   PREC_ASSIGNMENT,
@@ -42,13 +44,22 @@ struct Local {
   const Token& name;
   int depth;
 
+  Local(const Token& name, int depth);
+
   struct Hash {
-    size_t operator()(const Local& local) const;
+    size_t operator()(const std::shared_ptr<Local>& local) const;
   };
 
   struct Comparator {
-    bool operator()(const Local& a, const Local& b) const;
+    bool operator()(const std::shared_ptr<Local>& a,
+                    const std::shared_ptr<Local>& b) const;
   };
+};
+
+struct LocalVariables {
+  std::vector<std::shared_ptr<Local>> list;
+  std::unordered_set<std::shared_ptr<Local>, Local::Hash, Local::Comparator>
+      hash;
 };
 
 class Compiler {
@@ -59,7 +70,7 @@ class Compiler {
   std::unordered_set<std::shared_ptr<ObjectString>, ObjectString::Hash,
                      ObjectString::Comparator>
       existingStrings;
-  std::unordered_set<Local, Local::Hash> localVars;
+  LocalVariables localVars;
   int scopeDepth = 0;
 
   // advance to the next token in the stream
@@ -104,7 +115,12 @@ class Compiler {
   void namedVariable(const Token* name, bool canAssign);
 
   // for local variables:
+  void beginScope();
+  void endScope();
   void block();
+  void declareLocal();
+  int resolveLocal(const Token* name);
+  void markInitialized();
 
   // for error synchronization:
   void synchronize();

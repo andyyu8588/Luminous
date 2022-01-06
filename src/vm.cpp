@@ -12,6 +12,10 @@
 #include "debug.h"
 #endif
 
+Value MemoryStack::getValueAt(size_t index) const { return c[index]; }
+
+void MemoryStack::setValueAt(Value value, size_t index) { c[index] = value; }
+
 InterpretResult VM::binaryOperation(char operation) {
   Value a = memory.top();
   memory.pop();
@@ -53,10 +57,8 @@ InterpretResult VM::binaryOperation(char operation) {
         concatenate(c, d);
         break;
       default:
-        std::string message = "Invalid operation '";
-        message.push_back(operation);
-        message += "' on strings.";
-        runtimeError(message.c_str());
+        std::string symbol(1, operation);
+        runtimeError("Invalid operation '%s' on strings.", symbol.c_str());
         return INTERPRET_RUNTIME_ERROR;
     }
   } else {
@@ -66,7 +68,7 @@ InterpretResult VM::binaryOperation(char operation) {
   return INTERPRET_OK;
 }
 
-void VM::resetMemory() { memory = std::stack<Value>(); }
+void VM::resetMemory() { memory = MemoryStack(); }
 
 void VM::runtimeError(const char* format, ...) {
   va_list args;
@@ -109,6 +111,16 @@ InterpretResult VM::run() {
       }
       case OP_POP: {
         memory.pop();
+        break;
+      }
+      case OP_GET_LOCAL: {
+        uint8_t slot = chunk->getBytecodeAtPC().code;
+        memory.push(memory.getValueAt(slot));
+        break;
+      }
+      case OP_SET_LOCAL: {
+        uint8_t slot = chunk->getBytecodeAtPC().code;
+        memory.setValueAt(memory.top(), slot);
         break;
       }
       case OP_GET_GLOBAL: {

@@ -15,10 +15,16 @@ enum InterpretResult {
   INTERPRET_RUNTIME_ERROR
 };
 
+class MemoryStack : public std::stack<Value> {
+ public:
+  Value getValueAt(size_t index) const;
+  void setValueAt(Value value, size_t index);
+};
+
 class VM {
  private:
   std::unique_ptr<Chunk> chunk;
-  std::stack<Value> memory;
+  MemoryStack memory;
   std::unordered_map<std::shared_ptr<ObjectString>, Value> globals;
 
   InterpretResult binaryOperation(char operation);
