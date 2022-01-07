@@ -203,6 +203,19 @@ InterpretResult VM::run() {
         std::cout << std::endl;
         break;
       }
+      case OP_JUMP: {
+        chunk->addToPC(readShort());
+        break;
+      }
+      case OP_JUMP_IF_FALSE: {
+        uint16_t offset = readShort();
+        if (isFalsey(memory.top())) chunk->addToPC(offset);
+        break;
+      }
+      case OP_LOOP: {
+        chunk->substractFromPC(readShort());
+        break;
+      }
       case OP_RETURN: {
 #ifdef DEBUG
         printStack(memory);
@@ -221,4 +234,10 @@ bool VM::isFalsey(Value value) const {
 
 void VM::concatenate(const std::string& c, const std::string& d) {
   memory.push(OBJECT_VAL(std::make_shared<ObjectString>(d + c)));
+}
+
+uint16_t VM::readShort() {
+  uint8_t high = chunk->getBytecodeAtPC().code;
+  uint8_t lo = chunk->getBytecodeAtPC().code;
+  return (uint16_t)((high << 8) | lo);
 }

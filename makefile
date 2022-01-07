@@ -15,7 +15,7 @@ EXECUTABLE = luminous
 
 FORMATTER = clang-format
 FORMATTER_FLAGS = -i -style=Google
-FORMATER_FILES = $(wildcard $(SRC_DIR)/*.cpp $(SRC_DIR)/*.h)
+FORMATER_FILES = $(wildcard $(SRC_DIR)/*.cpp $(SRC_DIR)/*.h $(TESTS_DIR)/*.in)
 
 format:
 	$(FORMATTER) $(FORMATTER_FLAGS) $(FORMATER_FILES)
@@ -43,11 +43,15 @@ memory:
 	@bash ./memory-test.sh
 
 test:
+	$(MAKE) main
 	$(MAKE) io
 	$(MAKE) memory
 
 clean:
 	rm -r $(BIN_DIR)
+
+gdb:
+	gdb ./$(BIN_DIR)/$(EXECUTABLE)
 
 repl:
 	./$(BIN_DIR)/$(EXECUTABLE) 

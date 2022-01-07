@@ -86,13 +86,21 @@ Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
         ruleMap[TOKEN_ID] = {std::bind(&Compiler::variable, this, _1), nullptr,
                              PREC_NONE};
         break;
+      case TOKEN_AND:
+        ruleMap[TOKEN_AND] = {
+            nullptr, std::bind(&Compiler::andOperation, this, _1), PREC_AND};
+        break;
+      case TOKEN_OR:
+        ruleMap[TOKEN_OR] = {
+            nullptr, std::bind(&Compiler::orOperation, this, _1), PREC_OR};
+        break;
       default:
         ruleMap[curToken] = {nullptr, nullptr, PREC_NONE};
     }
   }
 }
 
-void Compiler::expression() { parsePrecendence(PREC_ASSIGNMENT); }
+void Compiler::expression() { parsePrecedence(PREC_ASSIGNMENT); }
 
 void Compiler::compile(const std::string& code) {
   // reset scope information:
@@ -147,7 +155,7 @@ std::unique_ptr<Chunk> Compiler::getCurrentChunk() {
   return std::move(currentChunk);
 }
 
-void Compiler::parsePrecendence(Precedence precedence) {
+void Compiler::parsePrecedence(Precedence precedence) {
   advance();
   ParseFunction prefixRule = getRule(parser.prev->type)->prefix;
   if (prefixRule == nullptr) {
@@ -196,7 +204,7 @@ void Compiler::unary(bool canAssign) {
   (void)canAssign;
   TokenType operatorType = parser.prev->type;
 
-  parsePrecendence(PREC_UNARY);
+  parsePrecedence(PREC_UNARY);
 
   switch (operatorType) {
     case TOKEN_NOT:
@@ -216,7 +224,7 @@ void Compiler::binary(bool canAssign) {
   TokenType operatorType = parser.prev->type;
 
   ParseRule* rule = getRule(operatorType);
-  parsePrecendence((Precedence)(rule->precedence + 1));
+  parsePrecedence((Precedence)(rule->precedence + 1));
 
   switch (operatorType) {
     // comparison
@@ -316,6 +324,10 @@ void Compiler::statement() {
     beginScope();
     block();
     endScope();
+  } else if (match(TOKEN_IF)) {
+    ifStatement();
+  } else if (match(TOKEN_WHILE)) {
+    whileStatement();
   } else {
     expressionStatement();
   }
@@ -339,11 +351,13 @@ void Compiler::printStatement() {
 }
 
 void Compiler::expressionStatement() {
-  bool pop = true;
+  bool pop = true; // should always pop for global, since global variables never live on the stack
   if (scopeDepth != 0) {
-    pop = false;
+    pop = false; // start with false, since we don't pop on local initialization
     std::shared_ptr<Local> toCheck =
         std::make_shared<Local>(*(parser.current), scopeDepth);
+
+    // if already exists, it means it's already on the stack, so we don't pop
     if (localVars.hash.contains(toCheck)) {
       pop = true;
     }
@@ -353,6 +367,91 @@ void Compiler::expressionStatement() {
   if (pop) {
     emitByte(OP_POP);
   }
+}
+
+void Compiler::ifStatement() {
+  consume(TOKEN_LPAREN, "Expect '(' after 'if' keyword.");
+  expression();
+  consume(TOKEN_RPAREN, "Expect ')' to close condition statement.");
+
+  int thenJump = emitJump(OP_JUMP_IF_FALSE);
+  emitByte(OP_POP);
+  statement();
+
+  int elseJump = emitJump(OP_JUMP);
+
+  patchJump(thenJump);
+  emitByte(OP_POP);
+  if (match(TOKEN_ELSE)) statement();
+  patchJump(elseJump);
+}
+
+int Compiler::emitJump(uint8_t inst) {
+  emitByte(inst);
+  emitByte(0xff);
+  emitByte(0xff);
+  return currentChunk->getBytecodeSize() - 2;
+}
+
+void Compiler::whileStatement() {
+  int loopStart = currentChunk->getBytecodeSize();
+  consume(TOKEN_LPAREN, "Expect '(' after 'while' keyword.");
+  expression();
+  consume(TOKEN_RPAREN, "Expect ')' to close condition statement.");
+
+  int exitJump = emitJump(OP_JUMP_IF_FALSE);
+
+  emitByte(OP_POP);
+  statement();
+
+  emitLoop(loopStart);
+
+  patchJump(exitJump);
+  emitByte(OP_POP);
+}
+
+void Compiler::emitLoop(int loopStart) {
+  emitByte(OP_LOOP);
+
+  int index = currentChunk->getBytecodeSize() - loopStart + 2;
+  if (index > UINT16_MAX) error(parser.prev->line, "Loop body too large.");
+
+  emitByte((index >> 8) & 0xff);
+  emitByte(index & 0xff);
+}
+
+void Compiler::patchJump(int index) {
+  int jump = currentChunk->getBytecodeSize() - index - 2;
+
+  if (jump > UINT16_MAX) {
+    error(parser.prev->line, "Too much code to jump over.");
+  }
+  uint8_t code1 = (jump >> 8) & 0xff;
+  uint8_t code2 = jump & 0xff;
+  currentChunk->modifyCodeAt(code1, index);
+  currentChunk->modifyCodeAt(code2, index + 1);
+}
+
+void Compiler::andOperation(bool canAssign) {
+  (void)canAssign;
+  int endJump = emitJump(OP_JUMP_IF_FALSE);
+
+  emitByte(OP_POP);
+  parsePrecedence(PREC_AND);
+
+  patchJump(endJump);
+}
+
+void Compiler::orOperation(bool canAssign) {
+  (void)canAssign;
+  int elseJump = emitJump(OP_JUMP_IF_FALSE);
+  int endJump = emitJump(OP_JUMP);
+
+  patchJump(elseJump);
+  emitByte(OP_POP);
+
+  parsePrecedence(PREC_OR);
+  patchJump(endJump);
 }
 
 bool Compiler::match(TokenType type) {
@@ -421,7 +520,9 @@ void Compiler::declareLocal() {
   std::shared_ptr<Local> local =
       std::make_shared<Local>(*(parser.prev), scopeDepth);
 
-  if (localVars.hash.contains(local)) return;  // variable exists already
+  // variable exists already:
+  if (globalVars.contains(&(parser.prev->lexeme))) return;
+  if (localVars.hash.contains(local)) return;
 
   local->depth = -1;
   localVars.hash.insert(local);
@@ -451,6 +552,7 @@ void Compiler::namedVariable(const Token* name, bool canAssign) {
   uint8_t getOp, setOp;
   int arg = resolveLocal(name);
 
+  // if found in localVars set:
   if (arg != -1) {
     getOp = OP_GET_LOCAL;
     setOp = OP_SET_LOCAL;
@@ -462,11 +564,17 @@ void Compiler::namedVariable(const Token* name, bool canAssign) {
 
   if (canAssign && match(TOKEN_BECOMES)) {
     expression();
+    // initialize new local var
     if (localVars.list.size() > 0 && localVars.list.back()->depth == -1) {
       markInitialized();
     }
+    // add global var in global name set
+    if (setOp == OP_SET_GLOBAL) {
+      globalVars.insert(&(name->lexeme));
+    }
     emitByte(setOp);
   } else {
+    // if local var and not initialized (self-use initialization):
     if (getOp == OP_GET_LOCAL && localVars.list.at(arg)->depth == -1) {
       error(name->line, "Can't read local variable in its own initializer.");
     }
@@ -483,5 +591,14 @@ size_t Local::Hash::operator()(const std::shared_ptr<Local>& local) const {
 
 bool Local::Comparator::operator()(const std::shared_ptr<Local>& a,
                                    const std::shared_ptr<Local>& b) const {
-  return a->depth == b->depth;
+  return a->name.lexeme == b->name.lexeme;
+}
+
+size_t StringPtr::Hash::operator()(const std::string* str) const {
+  return std::hash<std::string>{}(*str);
+}
+
+bool StringPtr::Comparator::operator()(const std::string* a,
+                                       const std::string* b) const {
+  return *a == *b;
 }

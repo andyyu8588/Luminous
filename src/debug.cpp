@@ -20,6 +20,14 @@ size_t constantInstruction(std::string name, Chunk& chunk, size_t index) {
   return index + 2;
 }
 
+size_t jumpInstruction(std::string name, int sign, Chunk& chunk, size_t index) {
+  uint8_t high = chunk.getBytecodeAt(index + 1).code;
+  uint8_t lo = chunk.getBytecodeAt(index + 2).code;
+  uint16_t jump = (uint16_t)((high << 8) | lo);
+  std::cout << name << " " << index + 3 + sign * jump << std::endl;
+  return index + 3;
+}
+
 size_t printInstruction(Chunk& chunk, size_t index) {
   std::cout << std::setfill('0') << std::setw(5) << index << " ";
   std::cout << std::setfill(' ') << std::setw(5)
@@ -67,6 +75,12 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return constantInstruction("OP_SET_LOCAL", chunk, index);
     case OP_GET_LOCAL:
       return constantInstruction("OP_GET_LOCAL", chunk, index);
+    case OP_JUMP:
+      return jumpInstruction("OP_JUMP", 1, chunk, index);
+    case OP_JUMP_IF_FALSE:
+      return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, index);
+    case OP_LOOP:
+      return jumpInstruction("OP_LOOP", -1, chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;

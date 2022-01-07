@@ -22,3 +22,11 @@ ByteCode Chunk::getBytecodeAtPC() { return bytecode[PC++]; }
 ByteCode Chunk::getPrevBytecode() const { return bytecode[PC - 1]; }
 
 size_t Chunk::getConstantsSize() const { return constants.size(); }
+
+void Chunk::addToPC(size_t count) { PC += count; }
+
+void Chunk::modifyCodeAt(uint8_t newCode, int index) {
+  bytecode[index].code = newCode;
+}
+
+void Chunk::substractFromPC(size_t count) { PC -= count; }

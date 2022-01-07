@@ -62,6 +62,15 @@ struct LocalVariables {
       hash;
 };
 
+struct StringPtr {
+  struct Hash {
+    size_t operator()(const std::string* str) const;
+  };
+  struct Comparator {
+    bool operator()(const std::string* a, const std::string* b) const;
+  };
+};
+
 class Compiler {
   Parser parser;
   Scanner scanner;
@@ -71,6 +80,8 @@ class Compiler {
                      ObjectString::Comparator>
       existingStrings;
   LocalVariables localVars;
+  std::unordered_set<const std::string*, StringPtr::Hash, StringPtr::Comparator>
+      globalVars;
   int scopeDepth = 0;
 
   // advance to the next token in the stream
@@ -88,7 +99,7 @@ class Compiler {
   // expression parsing functions:
   void expression();
 
-  void parsePrecendence(Precedence precedence);
+  void parsePrecedence(Precedence precedence);
 
   // making a constant opcode and pushes it to the Chunk
   uint8_t makeConstant(Value number);
@@ -101,6 +112,8 @@ class Compiler {
   void string(bool canAssign);
   void unary(bool canAssign);
   void variable(bool canAssign);
+  void andOperation(bool canAssign);
+  void orOperation(bool canAssign);
 
   ParseRule* getRule(TokenType type);
 
@@ -122,6 +135,12 @@ class Compiler {
   int resolveLocal(const Token* name);
   void markInitialized();
 
+  // control flows:
+  void ifStatement();
+  int emitJump(uint8_t);
+  void patchJump(int index);
+  void whileStatement();
+  void emitLoop(int);
   // for error synchronization:
   void synchronize();
 

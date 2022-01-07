@@ -11,7 +11,7 @@ number unary negation (- not)
 number binary arithmetic (+ - * /)
 number binary comparison (<= >= < > equals)
 
-boolean operators (not)
+boolean operators (not and or)
 
 string operations (+ equals)
 
@@ -22,5 +22,7 @@ output (print)
 
 reading variables and assignment (=)
 local variables and scopes ({})
+
+control flow (if else)
 
 runtime errors
