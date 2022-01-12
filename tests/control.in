@@ -1,0 +1,51 @@
+{
+    a = true;
+    b = false;
+    c = false;
+    d = 3;
+    if(a and b or c) {
+        print("THIS SHOULD NOT PRINT");
+    }
+    else if(not(a or b) or c) {
+        print("THIS SHOULD NOT PRINT");
+    }
+    else {
+        e = -2;
+        while(d > e) {
+            print("ANDY IS POG");
+            e = e + 1;
+            d = d - 1;
+        }
+    }
+}
+
+a = 1.4;
+{
+    b = 6.8;
+    c = a;
+    for(a from a to b by 0.9) {
+        print(a);
+    }
+    for(a from a to c by -0.9) {
+        print(a);
+    }
+
+    d = 1;
+    e = 2;
+    for(d from d - 0.1 to e + 0.5 by 0.5) {
+        print("IT WORKS!!!");
+    }
+
+    // a = 1.4
+    // d = 2.9
+    // e = 2
+    
+    {
+        g = 0;
+        for (f from a / 0.7 to (d - 1.6) * (e + 0.3) by 0.33) {
+            print(f);
+            g = f;
+        }
+        print(g);
+    }
+}
