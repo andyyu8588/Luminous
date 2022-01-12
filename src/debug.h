@@ -13,4 +13,3 @@ void printChunk(Chunk& chunk);
 size_t printInstruction(Chunk& chunk, size_t index);
 void printTokens(const std::vector<Token>& tokens);
 void printStack(std::stack<Value>& memory);
-void disassembleChunk(Chunk& chunk);

@@ -62,15 +62,6 @@ struct LocalVariables {
       hash;
 };
 
-struct StringPtr {
-  struct Hash {
-    size_t operator()(const std::string* str) const;
-  };
-  struct Comparator {
-    bool operator()(const std::string* a, const std::string* b) const;
-  };
-};
-
 class Compiler {
   Parser parser;
   Scanner scanner;
@@ -80,8 +71,6 @@ class Compiler {
                      ObjectString::Comparator>
       existingStrings;
   LocalVariables localVars;
-  std::unordered_set<const std::string*, StringPtr::Hash, StringPtr::Comparator>
-      globalVars;
   int scopeDepth = 0;
 
   // advance to the next token in the stream
@@ -134,6 +123,7 @@ class Compiler {
   void declareLocal();
   int resolveLocal(const Token* name);
   void markInitialized();
+  bool inLocalVars(const Token&);
 
   // control flows:
   void ifStatement();
@@ -141,6 +131,8 @@ class Compiler {
   void patchJump(int index);
   void whileStatement();
   void emitLoop(int);
+  void forStatement();
+
   // for error synchronization:
   void synchronize();
 

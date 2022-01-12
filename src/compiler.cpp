@@ -328,6 +328,8 @@ void Compiler::statement() {
     ifStatement();
   } else if (match(TOKEN_WHILE)) {
     whileStatement();
+  } else if (match(TOKEN_FOR)) {
+    forStatement();
   } else {
     expressionStatement();
   }
@@ -351,17 +353,7 @@ void Compiler::printStatement() {
 }
 
 void Compiler::expressionStatement() {
-  bool pop = true; // should always pop for global, since global variables never live on the stack
-  if (scopeDepth != 0) {
-    pop = false; // start with false, since we don't pop on local initialization
-    std::shared_ptr<Local> toCheck =
-        std::make_shared<Local>(*(parser.current), scopeDepth);
-
-    // if already exists, it means it's already on the stack, so we don't pop
-    if (localVars.hash.contains(toCheck)) {
-      pop = true;
-    }
-  }
+  bool pop = inLocalVars(*(parser.current));
   expression();
   consume(TOKEN_SEMI, "Expect ';' after statement.");
   if (pop) {
@@ -408,6 +400,137 @@ void Compiler::whileStatement() {
 
   patchJump(exitJump);
   emitByte(OP_POP);
+}
+
+void Compiler::forStatement() {
+  // each for loop is a new scope
+  beginScope();
+
+  consume(TOKEN_LPAREN, "Expect '(' after 'for' keyword.");
+  consume(TOKEN_ID, "Expect a variable for loop initializer.");
+
+  /* initializer clause */
+
+  const Token* varName = parser.prev;
+  bool inLocal = inLocalVars(*(varName));
+  bool inGlobal =
+      existingStrings.contains(std::make_shared<ObjectString>(varName->lexeme));
+
+  // if it's a new variable, then we need to add it in localVars
+  if (!inLocal && !inGlobal) {
+    std::shared_ptr<Local> local = std::make_shared<Local>(*(varName), -1);
+    localVars.hash.insert(local);
+    localVars.list.push_back(local);
+  }
+
+  consume(TOKEN_FROM, "Expect 'from' delimiter in for loop declaration.");
+
+  // variable is in localVars for sure now, so get the index and push expression
+  // on stack
+  int index = 0;
+  if (!inGlobal) {
+    index = resolveLocal(varName);
+  } else {
+    index = identifierConstant(varName);
+  }
+  expression();
+
+  // mark initialized since we got the RHS from expression() already
+  if (!inLocal && !inGlobal) {
+    markInitialized();
+  }
+
+  // set the value on the stack, we already have the index
+  if (!inGlobal) {
+    emitByte(OP_SET_LOCAL);
+  } else {
+    emitByte(OP_SET_GLOBAL);
+  }
+  emitByte((uint8_t)index);
+
+  // pop from the stack if it was already declared before
+  if (inLocal || inGlobal) {
+    emitByte(OP_POP);
+  }
+
+  /* condition expression */
+
+  int loopStart = currentChunk->getBytecodeSize();
+
+  consume(TOKEN_TO, "Expect 'to' delimiter in for loop declaration.");
+
+  // get the value of variable and the expression it's being compared to
+  if (!inGlobal) {
+    emitByte(OP_GET_LOCAL);
+  } else {
+    emitByte(OP_GET_GLOBAL);
+  }
+  emitByte((uint8_t)index);
+  expression();
+
+  consume(TOKEN_BY,
+          "Expect 'by' to define the incrementor in for loop declaration.");
+
+  // check if the incrementer is negative
+  bool negativeInc = match(TOKEN_MINUS);
+
+  consume(TOKEN_NUM, "Expect a numerical incrementor in for loop declaration.");
+  const Token* inc = parser.prev;
+  double numInc = std::stod(inc->lexeme);
+
+  // emit based on negative or not
+  if (negativeInc) {
+    emitByte(OP_GREATER);
+  } else {
+    emitByte(OP_LESS);
+  }
+
+  // Jump out of the loop if condition becomes false
+  int exitJump = emitJump(OP_JUMP_IF_FALSE);
+  // And pop the condition from the stack because we don't need it anymore
+  emitByte(OP_POP);
+
+  int bodyJump = emitJump(OP_JUMP);
+
+  /* increment expression */
+
+  int incrementStart = currentChunk->getBytecodeSize();
+
+  if (!inGlobal) {
+    emitByte(OP_GET_LOCAL);
+  } else {
+    emitByte(OP_GET_GLOBAL);
+  }
+  emitByte((uint8_t)index);
+  emitByte(OP_CONSTANT);
+  emitByte(makeConstant(NUM_VAL(numInc)));
+  if (negativeInc) {
+    emitByte(OP_NEGATE);
+  }
+  emitByte(OP_ADD);
+  if (!inGlobal) {
+    emitByte(OP_SET_LOCAL);
+  } else {
+    emitByte(OP_SET_GLOBAL);
+  }
+  emitByte((uint8_t)index);
+
+  // don't need the expression after it is incremented anymore
+  emitByte(OP_POP);
+  consume(TOKEN_RPAREN, "Expect ')' after for clauses.");
+
+  emitLoop(loopStart);
+  loopStart = incrementStart;
+  patchJump(bodyJump);
+
+  // Loop body:
+  statement();
+  emitLoop(loopStart);
+
+  patchJump(exitJump);
+  emitByte(OP_POP);
+
+  endScope();
 }
 
 void Compiler::emitLoop(int loopStart) {
@@ -521,7 +644,9 @@ void Compiler::declareLocal() {
       std::make_shared<Local>(*(parser.prev), scopeDepth);
 
   // variable exists already:
-  if (globalVars.contains(&(parser.prev->lexeme))) return;
+  if (existingStrings.contains(
+          std::make_shared<ObjectString>(parser.prev->lexeme)))
+    return;
   if (localVars.hash.contains(local)) return;
 
   local->depth = -1;
@@ -568,10 +693,6 @@ void Compiler::namedVariable(const Token* name, bool canAssign) {
     if (localVars.list.size() > 0 && localVars.list.back()->depth == -1) {
       markInitialized();
     }
-    // add global var in global name set
-    if (setOp == OP_SET_GLOBAL) {
-      globalVars.insert(&(name->lexeme));
-    }
     emitByte(setOp);
   } else {
     // if local var and not initialized (self-use initialization):
@@ -594,11 +715,10 @@ bool Local::Comparator::operator()(const std::shared_ptr<Local>& a,
   return a->name.lexeme == b->name.lexeme;
 }
 
-size_t StringPtr::Hash::operator()(const std::string* str) const {
-  return std::hash<std::string>{}(*str);
-}
+bool Compiler::inLocalVars(const Token& token) {
+  if (scopeDepth == 0) return false;
 
-bool StringPtr::Comparator::operator()(const std::string* a,
-                                       const std::string* b) const {
-  return *a == *b;
+  std::shared_ptr<Local> toCheck = std::make_shared<Local>(token, scopeDepth);
+
+  return localVars.hash.contains(toCheck);
 }

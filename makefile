@@ -7,7 +7,7 @@ SRC_DIR = src
 TESTS_DIR = tests
 
 TESTING_FLAGS = -g -DDEBUG
-WARNINGS_FLAGS = -Wall -Wextra
+WARNINGS_FLAGS = -Wall -Wextra -Wstrict-prototypes
 
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 
@@ -15,7 +15,7 @@ EXECUTABLE = luminous
 
 FORMATTER = clang-format
 FORMATTER_FLAGS = -i -style=Google
-FORMATER_FILES = $(wildcard $(SRC_DIR)/*.cpp $(SRC_DIR)/*.h $(TESTS_DIR)/*.in)
+FORMATER_FILES = $(wildcard $(SRC_DIR)/*.cpp $(SRC_DIR)/*.h)
 
 format:
 	$(FORMATTER) $(FORMATTER_FLAGS) $(FORMATER_FILES)

@@ -20,7 +20,8 @@ class Scanner {
       {"not", TOKEN_NOT},     {"if", TOKEN_IF},         {"else", TOKEN_ELSE},
       {"while", TOKEN_WHILE}, {"return", TOKEN_RETURN}, {"print", TOKEN_PRINT},
       {"addr", TOKEN_ADDR},   {"at", TOKEN_AT},         {"true", TOKEN_TRUE},
-      {"false", TOKEN_FALSE}, {"null", TOKEN_NULL}};
+      {"false", TOKEN_FALSE}, {"null", TOKEN_NULL},     {"for", TOKEN_FOR},
+      {"from", TOKEN_FROM},   {"to", TOKEN_TO},         {"by", TOKEN_BY}};
   int start = 0;
   int current = 0;
   int line = 1;

@@ -23,6 +23,6 @@ output (print)
 reading variables and assignment (=)
 local variables and scopes ({})
 
-control flow (if else)
+control flow (if else while for)
 
 runtime errors

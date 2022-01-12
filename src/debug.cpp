@@ -225,6 +225,15 @@ void printTokens(const std::vector<Token>& tokens) {
       case TOKEN_FOR:
         std::cout << "FOR" << std::endl;
         break;
+      case TOKEN_FROM:
+        std::cout << "FROM" << std::endl;
+        break;
+      case TOKEN_TO:
+        std::cout << "TO" << std::endl;
+        break;
+      case TOKEN_BY:
+        std::cout << "BY" << std::endl;
+        break;
     }
   }
   std::cout << std::endl;
