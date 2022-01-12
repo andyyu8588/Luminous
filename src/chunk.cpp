@@ -10,6 +10,12 @@ void Chunk::addBytecode(uint8_t byte, unsigned int line) {
   bytecode.emplace_back(byte, line);
 }
 
+void Chunk::modifyCodeAt(uint8_t newCode, int index) {
+  bytecode[index].code = newCode;
+}
+
+size_t Chunk::getConstantsSize() const { return constants.size(); }
+
 Value Chunk::getConstantAt(size_t index) const { return constants[index]; }
 
 size_t Chunk::addConstant(Value value) {
@@ -21,12 +27,6 @@ ByteCode Chunk::getBytecodeAtPC() { return bytecode[PC++]; }
 
 ByteCode Chunk::getPrevBytecode() const { return bytecode[PC - 1]; }
 
-size_t Chunk::getConstantsSize() const { return constants.size(); }
-
 void Chunk::addToPC(size_t count) { PC += count; }
-
-void Chunk::modifyCodeAt(uint8_t newCode, int index) {
-  bytecode[index].code = newCode;
-}
 
 void Chunk::substractFromPC(size_t count) { PC -= count; }

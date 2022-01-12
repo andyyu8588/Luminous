@@ -9,9 +9,9 @@
 using namespace std::placeholders;
 using ParseFunction = std::function<void(bool)>;
 
-class Compiler;
-
 extern bool errorOccured;
+
+class Compiler;
 
 class CompilerException {};
 
