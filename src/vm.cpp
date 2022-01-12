@@ -218,8 +218,15 @@ InterpretResult VM::run() {
       }
       case OP_RETURN: {
 #ifdef DEBUG
+        if (memory.size() != 0) {
+          std::cout << "PANIC: STACK IS NOT EMPTY!" << std::endl << std::endl;
+        }
         printStack(memory);
 #endif
+        if (memory.size() != 0) {
+          runtimeError("Stack is not empty.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
         return INTERPRET_OK;
       }
     }

@@ -353,7 +353,9 @@ void Compiler::printStatement() {
 }
 
 void Compiler::expressionStatement() {
-  bool pop = inLocalVars(*(parser.current));
+  bool pop = scopeDepth == 0 || inLocalVars(*(parser.current)) ||
+             existingStrings.contains(
+                 std::make_shared<ObjectString>(parser.current->lexeme));
   expression();
   consume(TOKEN_SEMI, "Expect ';' after statement.");
   if (pop) {
