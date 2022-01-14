@@ -293,12 +293,6 @@ void Compiler::string(bool canAssign) {
 }
 
 void Compiler::declaration() {
-  // if (parser.current->type == TOKEN_ID) {
-  //   varDeclaration();
-  // } else {
-  //   statement();
-  // }
-
   statement();
 
   if (panicMode) synchronize();
@@ -606,25 +600,6 @@ void Compiler::synchronize() {
     advance();
   }
 }
-
-// void Compiler::varDeclaration() {
-//   uint8_t global = parseVariable("Expect variable name.");
-
-//   if (match(TOKEN_BECOMES)) {
-//     expression();
-//   } else {
-//     emitByte(OP_NULL);
-//   }
-//   consume(TOKEN_SEMI, "Expect ';' after expression.");
-
-//   emitByte(OP_DEFINE_GLOBAL);
-//   emitByte(global);
-// }
-
-// uint8_t Compiler::parseVariable(std::string message) {
-//   consume(TOKEN_ID, message);
-//   return identifierConstant(parser.prev);
-// }
 
 uint8_t Compiler::identifierConstant(const Token* var) {
   std::shared_ptr<ObjectString> ptr =

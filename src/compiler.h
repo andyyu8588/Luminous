@@ -136,10 +136,6 @@ class Compiler {
   // for error synchronization:
   void synchronize();
 
-  // previously used functions for global variable declaration
-  // (OP_DEFINE_GLOBAL) void varDeclaration(); uint8_t parseVariable(std::string
-  // message);
-
  public:
   void compile(const std::string& code);
   std::unique_ptr<Chunk> getCurrentChunk();  // std::move currentChunk
