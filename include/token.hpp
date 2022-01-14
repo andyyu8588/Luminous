@@ -46,6 +46,9 @@ enum TokenType {
   TOKEN_TRUE,
   TOKEN_FALSE,
   TOKEN_NULL,
+  TOKEN_FROM,
+  TOKEN_TO,
+  TOKEN_BY,
 
   // Misc:
   TOKEN_EOF

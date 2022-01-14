@@ -1,0 +1,17 @@
+k = 1;
+for (a from k to 10 by 2) {
+  print(a);
+}
+
+{
+    j = 15;
+    for(a from k to j by 5) {
+        print(a);
+    }
+    {
+        i = -3;
+        for(a from j to i by -2) {
+            print(a);
+        }
+    }
+}

@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "value.h"
+#include "value.hpp"
 
 class Chunk;
 class ObjectString;
@@ -33,6 +33,7 @@ class VM {
   void resetMemory();
   bool isFalsey(Value value) const;
   void concatenate(const std::string& c, const std::string& d);
+  uint16_t readShort();
 
  public:
   InterpretResult interpret(std::unique_ptr<Chunk> chunk);

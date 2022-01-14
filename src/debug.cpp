@@ -1,11 +1,11 @@
-#include "debug.h"
+#include "debug.hpp"
 
 #include <iomanip>
 #include <iostream>
 
-#include "chunk.h"
-#include "object.h"
-#include "token.h"
+#include "chunk.hpp"
+#include "object.hpp"
+#include "token.hpp"
 
 size_t simpleInstruction(std::string name, size_t index) {
   std::cout << name << std::endl;
@@ -18,6 +18,14 @@ size_t constantInstruction(std::string name, Chunk& chunk, size_t index) {
   chunk.getConstantAt(constantIndex).printValue();
   std::cout << std::endl;
   return index + 2;
+}
+
+size_t jumpInstruction(std::string name, int sign, Chunk& chunk, size_t index) {
+  uint8_t high = chunk.getBytecodeAt(index + 1).code;
+  uint8_t lo = chunk.getBytecodeAt(index + 2).code;
+  uint16_t jump = (uint16_t)((high << 8) | lo);
+  std::cout << name << " " << index + 3 + sign * jump << std::endl;
+  return index + 3;
 }
 
 size_t printInstruction(Chunk& chunk, size_t index) {
@@ -67,6 +75,12 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return constantInstruction("OP_SET_LOCAL", chunk, index);
     case OP_GET_LOCAL:
       return constantInstruction("OP_GET_LOCAL", chunk, index);
+    case OP_JUMP:
+      return jumpInstruction("OP_JUMP", 1, chunk, index);
+    case OP_JUMP_IF_FALSE:
+      return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, index);
+    case OP_LOOP:
+      return jumpInstruction("OP_LOOP", -1, chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
@@ -210,6 +224,15 @@ void printTokens(const std::vector<Token>& tokens) {
         break;
       case TOKEN_FOR:
         std::cout << "FOR" << std::endl;
+        break;
+      case TOKEN_FROM:
+        std::cout << "FROM" << std::endl;
+        break;
+      case TOKEN_TO:
+        std::cout << "TO" << std::endl;
+        break;
+      case TOKEN_BY:
+        std::cout << "BY" << std::endl;
         break;
     }
   }

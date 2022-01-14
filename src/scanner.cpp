@@ -1,13 +1,13 @@
-#include "scanner.h"
+#include "scanner.hpp"
 
 #include <exception>
 #include <iostream>
 #include <map>
 
-#include "error.h"
+#include "error.hpp"
 
 #ifdef DEBUG
-#include "debug.h"
+#include "debug.hpp"
 #endif
 
 Scanner::Scanner() {}

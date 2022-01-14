@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include "value.h"
+#include "value.hpp"
 
 #define OBJECT_TYPE(value) (AS_OBJECT(value)->getType())
 

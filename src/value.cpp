@@ -1,8 +1,8 @@
-#include "value.h"
+#include "value.hpp"
 
 #include <iostream>
 
-#include "object.h"
+#include "object.hpp"
 
 Value::Value(ValueType type,
              std::variant<bool, double, std::shared_ptr<Object>> as)

@@ -1,15 +1,15 @@
-#include "vm.h"
+#include "vm.hpp"
 
 #include <cstdarg>
 #include <cstdio>
 #include <iostream>
 #include <string>
 
-#include "chunk.h"
-#include "object.h"
+#include "chunk.hpp"
+#include "object.hpp"
 
 #ifdef DEBUG
-#include "debug.h"
+#include "debug.hpp"
 #endif
 
 Value MemoryStack::getValueAt(size_t index) const { return c[index]; }
@@ -203,10 +203,30 @@ InterpretResult VM::run() {
         std::cout << std::endl;
         break;
       }
+      case OP_JUMP: {
+        chunk->addToPC(readShort());
+        break;
+      }
+      case OP_JUMP_IF_FALSE: {
+        uint16_t offset = readShort();
+        if (isFalsey(memory.top())) chunk->addToPC(offset);
+        break;
+      }
+      case OP_LOOP: {
+        chunk->substractFromPC(readShort());
+        break;
+      }
       case OP_RETURN: {
 #ifdef DEBUG
+        if (memory.size() != 0) {
+          std::cout << "PANIC: STACK IS NOT EMPTY!" << std::endl << std::endl;
+        }
         printStack(memory);
 #endif
+        if (memory.size() != 0) {
+          runtimeError("Stack is not empty.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
         return INTERPRET_OK;
       }
     }
@@ -221,4 +241,10 @@ bool VM::isFalsey(Value value) const {
 
 void VM::concatenate(const std::string& c, const std::string& d) {
   memory.push(OBJECT_VAL(std::make_shared<ObjectString>(d + c)));
+}
+
+uint16_t VM::readShort() {
+  uint8_t high = chunk->getBytecodeAtPC().code;
+  uint8_t lo = chunk->getBytecodeAtPC().code;
+  return (uint16_t)((high << 8) | lo);
 }

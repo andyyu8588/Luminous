@@ -2,16 +2,16 @@
 #include <functional>
 #include <unordered_set>
 
-#include "chunk.h"
-#include "object.h"
-#include "scanner.h"
+#include "chunk.hpp"
+#include "object.hpp"
+#include "scanner.hpp"
 
 using namespace std::placeholders;
 using ParseFunction = std::function<void(bool)>;
 
-class Compiler;
-
 extern bool errorOccured;
+
+class Compiler;
 
 class CompilerException {};
 
@@ -88,7 +88,7 @@ class Compiler {
   // expression parsing functions:
   void expression();
 
-  void parsePrecendence(Precedence precedence);
+  void parsePrecedence(Precedence precedence);
 
   // making a constant opcode and pushes it to the Chunk
   uint8_t makeConstant(Value number);
@@ -101,6 +101,8 @@ class Compiler {
   void string(bool canAssign);
   void unary(bool canAssign);
   void variable(bool canAssign);
+  void andOperation(bool canAssign);
+  void orOperation(bool canAssign);
 
   ParseRule* getRule(TokenType type);
 
@@ -121,13 +123,18 @@ class Compiler {
   void declareLocal();
   int resolveLocal(const Token* name);
   void markInitialized();
+  bool inLocalVars(const Token&);
+
+  // control flows:
+  void ifStatement();
+  int emitJump(uint8_t);
+  void patchJump(int index);
+  void whileStatement();
+  void emitLoop(int);
+  void forStatement();
 
   // for error synchronization:
   void synchronize();
-
-  // previously used functions for global variable declaration
-  // (OP_DEFINE_GLOBAL) void varDeclaration(); uint8_t parseVariable(std::string
-  // message);
 
  public:
   void compile(const std::string& code);

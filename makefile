@@ -3,11 +3,12 @@ default: debug
 COMPILER = clang++ -std=c++2a
 
 BIN_DIR = bin
+INCLUDE_DIR = include
 SRC_DIR = src
 TESTS_DIR = tests
 
 TESTING_FLAGS = -g -DDEBUG
-WARNINGS_FLAGS = -Wall -Wextra
+WARNINGS_FLAGS = -Wall -Wextra -Wstrict-prototypes -Wreorder
 
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 
@@ -26,11 +27,11 @@ setup:
 
 main:
 	$(MAKE) setup
-	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) $(SRC_FILES) $(WARNINGS_FLAGS) 
+	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) -I ./$(INCLUDE_DIR) $(SRC_FILES) $(WARNINGS_FLAGS) 
 
 debug:
 	$(MAKE) setup	
-	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) $(SRC_FILES) $(WARNINGS_FLAGS) $(TESTING_FLAGS)
+	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) -I ./$(INCLUDE_DIR) $(SRC_FILES) $(WARNINGS_FLAGS) $(TESTING_FLAGS)
 	gdb ./$(BIN_DIR)/$(EXECUTABLE)
 
 basic:
@@ -43,11 +44,15 @@ memory:
 	@bash ./memory-test.sh
 
 test:
+	$(MAKE) main
 	$(MAKE) io
 	$(MAKE) memory
 
 clean:
 	rm -r $(BIN_DIR)
+
+gdb:
+	gdb ./$(BIN_DIR)/$(EXECUTABLE)
 
 repl:
 	./$(BIN_DIR)/$(EXECUTABLE) 

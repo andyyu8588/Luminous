@@ -1,0 +1,19 @@
+{
+  a = 13;
+  while (not(a equals 1)) {
+    print(a);
+    a = a - 2;
+  }
+}
+
+{
+  b = true;
+  a = 1;
+  c = 3;
+  while (b) {
+    print("YEET");
+    b = a <= c;
+    a = a + 1;
+    c = c - 1;
+  }
+}

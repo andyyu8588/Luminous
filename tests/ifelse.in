@@ -1,0 +1,21 @@
+if (true) {
+  xd = "XD";
+  if (not(false)) {
+    xd1 = xd + "XD1";
+    print(xd + xd1);
+  }
+} else {
+  print("THIS SHOULD NOT PRINT!");
+}
+
+if (false) {
+  if (1 equals 1) {
+    print("THIS SHOULD NOT PRINT!");
+  }
+  if (1 equals 2) {
+    print("THIS SHOULD NOT PRINT!");
+  }
+} else {
+  xd2 = "XD2";
+  print(xd2);
+}
