@@ -1,10 +1,10 @@
 #include <fstream>
 #include <iostream>
 
-#include "chunk.h"
-#include "compiler.h"
-#include "debug.h"
-#include "vm.h"
+#include "chunk.hpp"
+#include "compiler.hpp"
+#include "debug.hpp"
+#include "vm.hpp"
 
 static void run(Compiler& compiler, VM& vm, const std::string& code) {
   try {

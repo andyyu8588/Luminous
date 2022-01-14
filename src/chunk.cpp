@@ -1,4 +1,4 @@
-#include "chunk.h"
+#include "chunk.hpp"
 
 ByteCode::ByteCode(uint8_t code, unsigned int line) : code{code}, line{line} {}
 

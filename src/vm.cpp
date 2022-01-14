@@ -1,15 +1,15 @@
-#include "vm.h"
+#include "vm.hpp"
 
 #include <cstdarg>
 #include <cstdio>
 #include <iostream>
 #include <string>
 
-#include "chunk.h"
-#include "object.h"
+#include "chunk.hpp"
+#include "object.hpp"
 
 #ifdef DEBUG
-#include "debug.h"
+#include "debug.hpp"
 #endif
 
 Value MemoryStack::getValueAt(size_t index) const { return c[index]; }

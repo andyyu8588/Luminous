@@ -1,11 +1,11 @@
-#include "debug.h"
+#include "debug.hpp"
 
 #include <iomanip>
 #include <iostream>
 
-#include "chunk.h"
-#include "object.h"
-#include "token.h"
+#include "chunk.hpp"
+#include "object.hpp"
+#include "token.hpp"
 
 size_t simpleInstruction(std::string name, size_t index) {
   std::cout << name << std::endl;

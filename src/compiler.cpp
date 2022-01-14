@@ -1,11 +1,11 @@
-#include "compiler.h"
+#include "compiler.hpp"
 
 #include <exception>
 
-#include "error.h"
+#include "error.hpp"
 
 #ifdef DEBUG
-#include "debug.h"
+#include "debug.hpp"
 #endif
 
 Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {

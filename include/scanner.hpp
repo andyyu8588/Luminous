@@ -10,7 +10,7 @@ Created by Yun Ze Zhou and Andy Yu.
 #include <unordered_map>
 #include <vector>
 
-#include "token.h"
+#include "token.hpp"
 
 class Scanner {
   const std::string* code;

@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "value.h"
+#include "value.hpp"
 
 class Chunk;
 class ObjectString;

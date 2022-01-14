@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "value.h"
+#include "value.hpp"
 
 class Chunk;
 struct Token;

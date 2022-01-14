@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "value.h"
+#include "value.hpp"
 
 enum OpCode {
   OP_CONSTANT,
