@@ -27,7 +27,7 @@ setup:
 
 main:
 	$(MAKE) setup
-	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) -I ./$(INCLUDE_DIR) $(SRC_FILES) $(WARNINGS_FLAGS) 
+	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) -I ./$(INCLUDE_DIR) $(SRC_FILES) $(WARNINGS_FLAGS)
 
 debug:
 	$(MAKE) setup	
@@ -46,7 +46,6 @@ memory:
 test:
 	$(MAKE) main
 	$(MAKE) io
-	$(MAKE) memory
 
 clean:
 	rm -r $(BIN_DIR)

@@ -88,8 +88,8 @@ size_t printInstruction(Chunk& chunk, size_t index) {
   }
 }
 
-void printChunk(Chunk& chunk) {
-  std::cout << "== BYTECODE ==" << std::endl;
+void printChunk(Chunk& chunk, const std::string& name) {
+  std::cout << "== BYTECODE FOR " << name << " ==" << std::endl;
 
   for (size_t i = 0; i < chunk.getBytecodeSize();) {
     i = printInstruction(chunk, i);

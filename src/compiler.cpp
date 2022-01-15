@@ -100,14 +100,21 @@ Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
   }
 }
 
+Chunk& Compiler::currentChunk() { return function->getChunk(); }
+
 void Compiler::expression() { parsePrecedence(PREC_ASSIGNMENT); }
 
 void Compiler::compile(const std::string& code) {
   // reset scope information:
   scopeDepth = 0;
+  function = std::make_shared<ObjectFunction>(0, nullptr);
+  funcType = TYPE_SCRIPT;
 
-  // init new chunk
-  currentChunk = std::make_unique<Chunk>();
+  // use first slot on stack
+  std::shared_ptr<Local> specialLocal =
+      std::make_shared<Local>(Token(TOKEN_ID, "", 0), 0);
+  localVars.hash.insert(specialLocal);
+  localVars.list.push_back(specialLocal);
 
   // init scanner and tokenize
   scanner.reset(code);
@@ -145,15 +152,16 @@ void Compiler::advance() {
 }
 
 void Compiler::emitByte(uint8_t byte) {
-  currentChunk->addBytecode(byte, parser.prev->line);
+  currentChunk().addBytecode(byte, parser.prev->line);
 #ifdef DEBUG
-  if (byte == OP_RETURN) printChunk(*currentChunk);
+  if (byte == OP_RETURN)
+    printChunk(currentChunk(), function->getName() == nullptr
+                                   ? "<script>"
+                                   : function->getName()->getString());
 #endif
 }
 
-std::unique_ptr<Chunk> Compiler::getCurrentChunk() {
-  return std::move(currentChunk);
-}
+std::shared_ptr<ObjectFunction> Compiler::getScript() { return function; }
 
 void Compiler::parsePrecedence(Precedence precedence) {
   advance();
@@ -178,7 +186,7 @@ void Compiler::parsePrecedence(Precedence precedence) {
 }
 
 uint8_t Compiler::makeConstant(Value value) {
-  size_t constant = currentChunk->addConstant(value);
+  size_t constant = currentChunk().addConstant(value);
   if (constant > UINT8_MAX) {
     std::cerr << "Too many constants in one chunk!" << std::endl;
     return 0;
@@ -378,11 +386,11 @@ int Compiler::emitJump(uint8_t inst) {
   emitByte(inst);
   emitByte(0xff);
   emitByte(0xff);
-  return currentChunk->getBytecodeSize() - 2;
+  return currentChunk().getBytecodeSize() - 2;
 }
 
 void Compiler::whileStatement() {
-  int loopStart = currentChunk->getBytecodeSize();
+  int loopStart = currentChunk().getBytecodeSize();
   consume(TOKEN_LPAREN, "Expect '(' after 'while' keyword.");
   expression();
   consume(TOKEN_RPAREN, "Expect ')' to close condition statement.");
@@ -451,7 +459,7 @@ void Compiler::forStatement() {
 
   /* condition expression */
 
-  int loopStart = currentChunk->getBytecodeSize();
+  int loopStart = currentChunk().getBytecodeSize();
 
   consume(TOKEN_TO, "Expect 'to' delimiter in for loop declaration.");
 
@@ -490,7 +498,7 @@ void Compiler::forStatement() {
 
   /* increment expression */
 
-  int incrementStart = currentChunk->getBytecodeSize();
+  int incrementStart = currentChunk().getBytecodeSize();
 
   if (!inGlobal) {
     emitByte(OP_GET_LOCAL);
@@ -532,7 +540,7 @@ void Compiler::forStatement() {
 void Compiler::emitLoop(int loopStart) {
   emitByte(OP_LOOP);
 
-  int index = currentChunk->getBytecodeSize() - loopStart + 2;
+  int index = currentChunk().getBytecodeSize() - loopStart + 2;
   if (index > UINT16_MAX) error(parser.prev->line, "Loop body too large.");
 
   emitByte((index >> 8) & 0xff);
@@ -540,15 +548,15 @@ void Compiler::emitLoop(int loopStart) {
 }
 
 void Compiler::patchJump(int index) {
-  int jump = currentChunk->getBytecodeSize() - index - 2;
+  int jump = currentChunk().getBytecodeSize() - index - 2;
 
   if (jump > UINT16_MAX) {
     error(parser.prev->line, "Too much code to jump over.");
   }
   uint8_t code1 = (jump >> 8) & 0xff;
   uint8_t code2 = jump & 0xff;
-  currentChunk->modifyCodeAt(code1, index);
-  currentChunk->modifyCodeAt(code2, index + 1);
+  currentChunk().modifyCodeAt(code1, index);
+  currentChunk().modifyCodeAt(code2, index + 1);
 }
 
 void Compiler::andOperation(bool canAssign) {

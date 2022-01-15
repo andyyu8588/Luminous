@@ -16,6 +16,14 @@ size_t ObjectString::getHash() const { return hash; }
 
 void Object::printObject() const {
   switch (type) {
+    case OBJECT_FUNCTION: {
+      if (((ObjectFunction*)this)->getName() == nullptr) {
+        std::cout << "<script>" << std::endl;
+      } else {
+        std::cout << ((ObjectFunction*)this)->getName()->getString();
+      }
+      break;
+    }
     case OBJECT_STRING: {
       std::cout << ((ObjectString*)this)->getString();
       break;
@@ -33,3 +41,13 @@ bool ObjectString::Comparator::operator()(
     const std::shared_ptr<ObjectString>& b) const {
   return a->getString() == b->getString();
 }
+
+ObjectFunction::ObjectFunction(int arity, std::shared_ptr<ObjectString> name)
+    : Object(OBJECT_FUNCTION), arity{arity}, name{name} {}
+
+const std::shared_ptr<ObjectString> ObjectFunction::getName() const {
+  (void)arity;
+  return name;
+}
+
+Chunk& ObjectFunction::getChunk() { return chunk; }

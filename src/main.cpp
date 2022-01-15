@@ -12,7 +12,7 @@ static void run(Compiler& compiler, VM& vm, const std::string& code) {
   } catch (const CompilerException& e) {
     return;
   }
-  InterpretResult interpretResult = vm.interpret(compiler.getCurrentChunk());
+  InterpretResult interpretResult = vm.interpret(compiler.getScript());
   switch (interpretResult) {
     case INTERPRET_OK:
     case INTERPRET_COMPILE_ERROR:

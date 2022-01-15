@@ -77,23 +77,25 @@ void VM::runtimeError(const char* format, ...) {
   va_end(args);
   fputs("\n", stderr);
 
-  unsigned int line = chunk->getPrevBytecode().line;
+  unsigned int line = frames.top().function.getChunk().getPrevBytecode().line;
   std::cerr << "[line " << line << "] in code.\n" << std::endl;
 
   resetMemory();
 }
 
-InterpretResult VM::interpret(std::unique_ptr<Chunk> chunk) {
-  this->chunk = std::move(chunk);
+InterpretResult VM::interpret(std::shared_ptr<ObjectFunction> function) {
+  memory.push(OBJECT_VAL(function));
+  CallFrame toPush = {*function, 0};
+  frames.push(toPush);
   return run();
 }
 
 InterpretResult VM::run() {
+  CallFrame& frame = frames.top();
   while (true) {
-    ByteCode bytecode = chunk->getBytecodeAtPC();
-    switch (bytecode.code) {
+    switch (readByte()) {
       case OP_CONSTANT: {
-        Value constant = chunk->getConstantAt(chunk->getBytecodeAtPC().code);
+        Value constant = getTopChunk().getConstantAt(readByte());
         memory.push(constant);
         break;
       }
@@ -114,18 +116,17 @@ InterpretResult VM::run() {
         break;
       }
       case OP_GET_LOCAL: {
-        uint8_t slot = chunk->getBytecodeAtPC().code;
-        memory.push(memory.getValueAt(slot));
+        uint8_t slot = readByte();
+        memory.push(memory.getValueAt(slot + frame.stackPos));
         break;
       }
       case OP_SET_LOCAL: {
-        uint8_t slot = chunk->getBytecodeAtPC().code;
-        memory.setValueAt(memory.top(), slot);
+        uint8_t slot = readByte();
+        memory.setValueAt(memory.top(), slot + frame.stackPos);
         break;
       }
       case OP_GET_GLOBAL: {
-        Value constantName =
-            chunk->getConstantAt(chunk->getBytecodeAtPC().code);
+        Value constantName = readConstant();
         std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(constantName);
         auto it = globals.find(name);
         if (it == globals.end()) {
@@ -136,8 +137,7 @@ InterpretResult VM::run() {
         break;
       }
       case OP_SET_GLOBAL: {
-        Value constantName =
-            chunk->getConstantAt(chunk->getBytecodeAtPC().code);
+        Value constantName = readConstant();
         std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(constantName);
         globals.insert_or_assign(name, memory.top());
         break;
@@ -204,19 +204,21 @@ InterpretResult VM::run() {
         break;
       }
       case OP_JUMP: {
-        chunk->addToPC(readShort());
+        getTopChunk().addToPC(readShort());
         break;
       }
       case OP_JUMP_IF_FALSE: {
         uint16_t offset = readShort();
-        if (isFalsey(memory.top())) chunk->addToPC(offset);
+        if (isFalsey(memory.top())) getTopChunk().addToPC(offset);
         break;
       }
       case OP_LOOP: {
-        chunk->substractFromPC(readShort());
+        getTopChunk().substractFromPC(readShort());
         break;
       }
       case OP_RETURN: {
+        // pop function at slot 0
+        memory.pop();
 #ifdef DEBUG
         if (memory.size() != 0) {
           std::cout << "PANIC: STACK IS NOT EMPTY!" << std::endl << std::endl;
@@ -243,8 +245,14 @@ void VM::concatenate(const std::string& c, const std::string& d) {
   memory.push(OBJECT_VAL(std::make_shared<ObjectString>(d + c)));
 }
 
+Chunk& VM::getTopChunk() { return frames.top().function.getChunk(); }
+
+uint8_t VM::readByte() { return getTopChunk().getBytecodeAtPC().code; }
+
+Value VM::readConstant() { return getTopChunk().getConstantAt(readByte()); }
+
 uint16_t VM::readShort() {
-  uint8_t high = chunk->getBytecodeAtPC().code;
-  uint8_t lo = chunk->getBytecodeAtPC().code;
+  uint8_t high = readByte();
+  uint8_t lo = readByte();
   return (uint16_t)((high << 8) | lo);
 }

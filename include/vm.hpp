@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "value.hpp"
+#include "object.hpp"
 
 class Chunk;
 class ObjectString;
@@ -21,10 +21,15 @@ class MemoryStack : public std::stack<Value> {
   void setValueAt(Value value, size_t index);
 };
 
+struct CallFrame {
+  ObjectFunction& function;
+  const size_t stackPos;
+};
+
 class VM {
  private:
-  std::unique_ptr<Chunk> chunk;
   MemoryStack memory;
+  std::stack<CallFrame> frames;
   std::unordered_map<std::shared_ptr<ObjectString>, Value> globals;
 
   InterpretResult binaryOperation(char operation);
@@ -33,8 +38,13 @@ class VM {
   void resetMemory();
   bool isFalsey(Value value) const;
   void concatenate(const std::string& c, const std::string& d);
+  Chunk& getTopChunk();
+
+  // read the next bytecode depending on situation:
+  uint8_t readByte();
+  Value readConstant();
   uint16_t readShort();
 
  public:
-  InterpretResult interpret(std::unique_ptr<Chunk> chunk);
+  InterpretResult interpret(std::shared_ptr<ObjectFunction> function);
 };

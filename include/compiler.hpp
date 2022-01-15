@@ -62,16 +62,29 @@ struct LocalVariables {
       hash;
 };
 
+enum FunctionType {
+  TYPE_FUNCTION,
+  TYPE_SCRIPT
+};
+
 class Compiler {
   Parser parser;
   Scanner scanner;
-  std::unique_ptr<Chunk> currentChunk;
   std::unordered_map<TokenType, ParseRule> ruleMap;
+
+  // for variables:
   std::unordered_set<std::shared_ptr<ObjectString>, ObjectString::Hash,
                      ObjectString::Comparator>
       existingStrings;
   LocalVariables localVars;
   int scopeDepth = 0;
+
+  // for functions:
+  std::shared_ptr<ObjectFunction> function;
+  FunctionType funcType;
+
+  // returns the current chunk:
+  Chunk& currentChunk();
 
   // advance to the next token in the stream
   void advance();
@@ -138,7 +151,7 @@ class Compiler {
 
  public:
   void compile(const std::string& code);
-  std::unique_ptr<Chunk> getCurrentChunk();  // std::move currentChunk
+  std::shared_ptr<ObjectFunction> getScript();
 
   Compiler();
 };
