@@ -16,7 +16,7 @@ EXECUTABLE = luminous
 
 FORMATTER = clang-format
 FORMATTER_FLAGS = -i -style=Google
-FORMATER_FILES = $(wildcard $(SRC_DIR)/*.cpp $(SRC_DIR)/*.h)
+FORMATER_FILES = $(wildcard $(SRC_DIR)/*.cpp $(INCLUDE_DIR)/*.hpp)
 
 format:
 	$(FORMATTER) $(FORMATTER_FLAGS) $(FORMATER_FILES)

@@ -16,12 +16,25 @@ class Scanner {
   const std::string* code;
   std::vector<Token> tokens;
   std::unordered_map<std::string, TokenType> keywords = {
-      {"equals", TOKEN_EQ},   {"and", TOKEN_AND},       {"or", TOKEN_OR},
-      {"not", TOKEN_NOT},     {"if", TOKEN_IF},         {"else", TOKEN_ELSE},
-      {"while", TOKEN_WHILE}, {"return", TOKEN_RETURN}, {"print", TOKEN_PRINT},
-      {"addr", TOKEN_ADDR},   {"at", TOKEN_AT},         {"true", TOKEN_TRUE},
-      {"false", TOKEN_FALSE}, {"null", TOKEN_NULL},     {"for", TOKEN_FOR},
-      {"from", TOKEN_FROM},   {"to", TOKEN_TO},         {"by", TOKEN_BY}};
+      {"equals", TOKEN_EQ},
+      {"and", TOKEN_AND},
+      {"or", TOKEN_OR},
+      {"not", TOKEN_NOT},
+      {"if", TOKEN_IF},
+      {"else", TOKEN_ELSE},
+      {"while", TOKEN_WHILE},
+      {"return", TOKEN_RETURN},
+      {"print", TOKEN_PRINT},
+      {"addr", TOKEN_ADDR},
+      {"at", TOKEN_AT},
+      {"true", TOKEN_TRUE},
+      {"false", TOKEN_FALSE},
+      {"null", TOKEN_NULL},
+      {"for", TOKEN_FOR},
+      {"from", TOKEN_FROM},
+      {"to", TOKEN_TO},
+      {"by", TOKEN_BY},
+      {"function", TOKEN_FUNCTION}};
   int start = 0;
   int current = 0;
   int line = 1;

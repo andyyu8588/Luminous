@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <stack>
 #include <unordered_set>
 
 #include "chunk.hpp"
@@ -56,16 +57,36 @@ struct Local {
   };
 };
 
-struct LocalVariables {
+struct GlobalVariables {
+  std::unordered_set<std::shared_ptr<ObjectString>, ObjectString::Hash,
+                     ObjectString::Comparator>
+      existingStrings;
+  std::unordered_set<std::shared_ptr<ObjectString>, ObjectString::Hash,
+                     ObjectString::Comparator>
+      tempStrings;
+
+  bool contains(const std::string&) const;
+  std::shared_ptr<ObjectString> find(std::shared_ptr<ObjectString>);
+  void migrate();
+  void tempClear();
+};
+
+class LocalVariables {
   std::vector<std::shared_ptr<Local>> list;
   std::unordered_set<std::shared_ptr<Local>, Local::Hash, Local::Comparator>
       hash;
+
+ public:
+  std::shared_ptr<Local> at(size_t index);
+  std::shared_ptr<Local> back();
+  void clear();
+  bool contains(const std::shared_ptr<Local>) const;
+  void insert(const std::shared_ptr<Local>);
+  void pop_back();
+  size_t size() const;
 };
 
-enum FunctionType {
-  TYPE_FUNCTION,
-  TYPE_SCRIPT
-};
+enum FunctionType { TYPE_FUNCTION, TYPE_SCRIPT };
 
 class Compiler {
   Parser parser;
@@ -73,15 +94,13 @@ class Compiler {
   std::unordered_map<TokenType, ParseRule> ruleMap;
 
   // for variables:
-  std::unordered_set<std::shared_ptr<ObjectString>, ObjectString::Hash,
-                     ObjectString::Comparator>
-      existingStrings;
+  GlobalVariables globalVars;
   LocalVariables localVars;
   int scopeDepth = 0;
 
   // for functions:
-  std::shared_ptr<ObjectFunction> function;
-  FunctionType funcType;
+  std::stack<std::shared_ptr<ObjectFunction>> functions;
+  std::stack<FunctionType> funcTypes;
 
   // returns the current chunk:
   Chunk& currentChunk();
@@ -146,12 +165,19 @@ class Compiler {
   void emitLoop(int);
   void forStatement();
 
+  // functions:
+  void functionDeclaration();
+  void function(FunctionType type);
+  void call(bool canAssign);
+  uint8_t argumentList();
+  void returnStatement();
+
   // for error synchronization:
   void synchronize();
 
  public:
   void compile(const std::string& code);
-  std::shared_ptr<ObjectFunction> getScript();
+  std::shared_ptr<ObjectFunction> getFunction();
 
   Compiler();
 };

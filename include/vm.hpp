@@ -6,6 +6,8 @@
 
 #include "object.hpp"
 
+#define FRAMES_MAX 256
+
 class Chunk;
 class ObjectString;
 
@@ -23,14 +25,17 @@ class MemoryStack : public std::stack<Value> {
 
 struct CallFrame {
   ObjectFunction& function;
-  const size_t stackPos;
+  size_t stackPos;
+  size_t PC;
 };
 
 class VM {
  private:
   MemoryStack memory;
   std::stack<CallFrame> frames;
-  std::unordered_map<std::shared_ptr<ObjectString>, Value> globals;
+  std::unordered_map<std::shared_ptr<ObjectString>, Value, ObjectString::Hash,
+                     ObjectString::Comparator>
+      globals;
 
   InterpretResult binaryOperation(char operation);
   InterpretResult run();
@@ -45,6 +50,15 @@ class VM {
   Value readConstant();
   uint16_t readShort();
 
+  // for calling functions:
+  bool callValue(Value callee, int argCount);
+  bool call(std::shared_ptr<ObjectFunction> function, int argCount);
+
+  // for native functions:
+  void defineNative(std::string name, NativeFn function);
+  static Value clockNative(int argCount, size_t start);
+
  public:
   InterpretResult interpret(std::shared_ptr<ObjectFunction> function);
+  VM();
 };

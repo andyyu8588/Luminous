@@ -154,6 +154,9 @@ void Scanner::scanToken() {
     case ';':
       addToken(TOKEN_SEMI);
       break;
+    case '%':
+      addToken(TOKEN_PERC);
+      break;
     case '<':
       if (match('=')) {
         addToken(TOKEN_LE);

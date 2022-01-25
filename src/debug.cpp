@@ -7,6 +7,34 @@
 #include "object.hpp"
 #include "token.hpp"
 
+void printValueType(Value value) {
+  switch (value.getType()) {
+    case VAL_BOOL:
+      std::cout << "VAL_BOOL";
+      break;
+    case VAL_NULL:
+      std::cout << "VAL_NULL";
+      break;
+    case VAL_NUM:
+      std::cout << "VAL_NUM";
+      break;
+    case VAL_OBJECT:
+      switch (OBJECT_TYPE(value)) {
+        case OBJECT_FUNCTION:
+          std::cout << "OBJECT_FUNCTION";
+          break;
+        case OBJECT_NATIVE:
+          std::cout << "OBJECT_FUNCTION";
+          break;
+        case OBJECT_STRING:
+          std::cout << "OBJECT_STRING";
+          break;
+      }
+      break;
+  }
+  std::cout << std::endl;
+}
+
 size_t simpleInstruction(std::string name, size_t index) {
   std::cout << name << std::endl;
   return index + 1;
@@ -14,9 +42,15 @@ size_t simpleInstruction(std::string name, size_t index) {
 
 size_t constantInstruction(std::string name, Chunk& chunk, size_t index) {
   uint8_t constantIndex = chunk.getBytecodeAt(index + 1).code;
+  if (constantIndex >= chunk.getConstantsSize()) {
+    std::cout << "Constant out of range" << std::endl;
+    return index + 2;
+  }
+  const Value& constant = chunk.getConstantAt(constantIndex);
   std::cout << name << " ";
-  chunk.getConstantAt(constantIndex).printValue();
-  std::cout << std::endl;
+  constant.printValue();
+  std::cout << " ";
+  printValueType(constant);
   return index + 2;
 }
 
@@ -81,6 +115,8 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, index);
     case OP_LOOP:
       return jumpInstruction("OP_LOOP", -1, chunk, index);
+    case OP_CALL:
+      return constantInstruction("OP_CALL", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
@@ -97,15 +133,24 @@ void printChunk(Chunk& chunk, const std::string& name) {
 
   std::cout << std::endl;
 
-  std::cout << "== CONSTANTS ==" << std::endl;
+  std::cout << "== CONSTANTS FOR " << name << " ==" << std::endl;
 
   for (size_t i = 0; i < chunk.getConstantsSize(); ++i) {
     std::cout << "Index " << i << ": ";
     chunk.getConstantAt(i).printValue();
-    std::cout << std::endl;
+    std::cout << " ";
+    printValueType(chunk.getConstantAt(i));
   }
 
   std::cout << std::endl;
+
+  // for (size_t i = 0; i < chunk.getConstantsSize(); ++i) {
+  //   const Value& value = chunk.getConstantAt(i);
+  //   if (IS_FUNCTION(value)) {
+  //     std::shared_ptr<ObjectFunction> function = AS_FUNCTION(value);
+  //     printChunk(function->getChunk(), function->getName()->getString());
+  //   }
+  // }
 }
 
 void printTokens(const std::vector<Token>& tokens) {
@@ -233,6 +278,12 @@ void printTokens(const std::vector<Token>& tokens) {
         break;
       case TOKEN_BY:
         std::cout << "BY" << std::endl;
+        break;
+      case TOKEN_FUNCTION:
+        std::cout << "FUNCTION" << std::endl;
+        break;
+      case TOKEN_PERC:
+        std::cout << "PERC" << std::endl;
         break;
     }
   }

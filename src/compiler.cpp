@@ -14,7 +14,8 @@ Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
     switch (curToken) {
       case TOKEN_LPAREN:
         ruleMap[TOKEN_LPAREN] = {std::bind(&Compiler::grouping, this, _1),
-                                 nullptr, PREC_NONE};
+                                 std::bind(&Compiler::call, this, _1),
+                                 PREC_CALL};
         break;
       case TOKEN_MINUS:
         ruleMap[TOKEN_MINUS] = {std::bind(&Compiler::unary, this, _1),
@@ -94,27 +95,23 @@ Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
         ruleMap[TOKEN_OR] = {
             nullptr, std::bind(&Compiler::orOperation, this, _1), PREC_OR};
         break;
+      case TOKEN_PERC:
+        ruleMap[TOKEN_PERC] = {nullptr, std::bind(&Compiler::binary, this, _1),
+                               PREC_TERM};
+        break;
       default:
         ruleMap[curToken] = {nullptr, nullptr, PREC_NONE};
     }
   }
 }
 
-Chunk& Compiler::currentChunk() { return function->getChunk(); }
+Chunk& Compiler::currentChunk() { return functions.top()->getChunk(); }
 
 void Compiler::expression() { parsePrecedence(PREC_ASSIGNMENT); }
 
 void Compiler::compile(const std::string& code) {
   // reset scope information:
   scopeDepth = 0;
-  function = std::make_shared<ObjectFunction>(0, nullptr);
-  funcType = TYPE_SCRIPT;
-
-  // use first slot on stack
-  std::shared_ptr<Local> specialLocal =
-      std::make_shared<Local>(Token(TOKEN_ID, "", 0), 0);
-  localVars.hash.insert(specialLocal);
-  localVars.list.push_back(specialLocal);
 
   // init scanner and tokenize
   scanner.reset(code);
@@ -122,6 +119,14 @@ void Compiler::compile(const std::string& code) {
   if (errorOccured) {
     throw CompilerException();
   }
+
+  // emulate stack that will have script has bottom element and first frame
+  functions.push(std::make_shared<ObjectFunction>(nullptr));
+  funcTypes.push(TYPE_SCRIPT);
+
+  std::shared_ptr<Local> script =
+      std::make_shared<Local>(Token(TOKEN_ID, "", 0), 0);
+  localVars.insert(script);
 
   // advance by 1 to get current and then parse
   advance();
@@ -131,9 +136,14 @@ void Compiler::compile(const std::string& code) {
 
   // end compiling
   if (errorOccured) {
+    globalVars.tempClear();
+    localVars.clear();
+    while (!functions.empty()) functions.pop();
+    while (!funcTypes.empty()) funcTypes.pop();
     throw CompilerException();
   }
-  emitByte(OP_RETURN);
+
+  globalVars.migrate();
 }
 
 void Compiler::consume(TokenType type, const std::string& message) {
@@ -155,13 +165,24 @@ void Compiler::emitByte(uint8_t byte) {
   currentChunk().addBytecode(byte, parser.prev->line);
 #ifdef DEBUG
   if (byte == OP_RETURN)
-    printChunk(currentChunk(), function->getName() == nullptr
+    printChunk(currentChunk(), functions.top()->getName() == nullptr
                                    ? "<script>"
-                                   : function->getName()->getString());
+                                   : functions.top()->getName()->getString());
 #endif
 }
 
-std::shared_ptr<ObjectFunction> Compiler::getScript() { return function; }
+std::shared_ptr<ObjectFunction> Compiler::getFunction() {
+  std::shared_ptr<ObjectFunction> topFunc = functions.top();
+  Chunk& topFuncChunk = topFunc->getChunk();
+  if (topFuncChunk.getBytecodeAt(topFuncChunk.getBytecodeSize() - 1).code !=
+      OP_RETURN) {
+    emitByte(OP_NULL);
+    emitByte(OP_RETURN);
+  }
+  functions.pop();
+  funcTypes.pop();
+  return topFunc;
+}
 
 void Compiler::parsePrecedence(Precedence precedence) {
   advance();
@@ -193,6 +214,26 @@ uint8_t Compiler::makeConstant(Value value) {
   }
 
   return (uint8_t)constant;
+}
+
+uint8_t Compiler::argumentList() {
+  uint8_t argCount = 0;
+  if (!(parser.current->type == TOKEN_RPAREN)) {
+    do {
+      expression();
+      argCount++;
+    } while (match(TOKEN_COMMA));
+  }
+
+  consume(TOKEN_RPAREN, "Expect ')' after function argument definitions.");
+  return argCount;
+}
+
+void Compiler::call(bool canAssign) {
+  (void)canAssign;
+  uint8_t argCount = argumentList();
+  emitByte(OP_CALL);
+  emitByte(argCount);
 }
 
 void Compiler::number(bool canAssign) {
@@ -267,6 +308,9 @@ void Compiler::binary(bool canAssign) {
     case TOKEN_SLASH:
       emitByte(OP_DIVIDE);
       break;
+    case TOKEN_PERC:
+      emitByte(OP_MODULO);
+      break;
     default:
       return;  // unreachable
   }
@@ -300,8 +344,76 @@ void Compiler::string(bool canAssign) {
       OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme))));
 }
 
+void Compiler::functionDeclaration() {
+  if (scopeDepth != 0)
+    error(parser.current->line, "No local functions allowed.");
+
+  consume(TOKEN_ID,
+          "Expect function name after 'function' declaration keyword.");
+
+  if (globalVars.contains(parser.prev->lexeme)) {
+    error(parser.prev->line, "Illegal function name '" + parser.prev->lexeme +
+                                 "'. Variable already exists.");
+  }
+
+  uint8_t global = identifierConstant(parser.prev);
+  markInitialized();
+  function(TYPE_FUNCTION);
+  emitByte(OP_SET_GLOBAL);
+  emitByte(global);
+  emitByte(OP_POP);
+}
+
+void Compiler::function(FunctionType type) {
+  beginScope();
+
+  // push new function on stack:
+  functions.push(std::make_shared<ObjectFunction>(
+      std::make_shared<ObjectString>(parser.prev->lexeme)));
+  funcTypes.push(type);
+
+  // parameters:
+  consume(TOKEN_LPAREN, "Expect '(' after function name.");
+  if (parser.current->type != TOKEN_RPAREN) {
+    do {
+      functions.top()->increaseArity();
+
+      consume(TOKEN_ID, "Expect function parameter name.");
+      if (globalVars.contains(parser.prev->lexeme)) {
+        error(parser.prev->line, "Illegal function parameter name '" +
+                                     parser.prev->lexeme +
+                                     "'. Variable already exists.");
+      }
+      std::shared_ptr<Local> param =
+          std::make_shared<Local>(*(parser.prev), scopeDepth);
+      localVars.insert(param);
+    } while (match(TOKEN_COMMA));
+  }
+  consume(TOKEN_RPAREN, "Expect ')' after parameters.");
+
+  // function body:
+  consume(TOKEN_LBRACE, "Expect '{' to open function body.");
+  block();
+
+  // Create function object:
+  std::shared_ptr<ObjectFunction> newFunction = getFunction();
+  emitByte(OP_CONSTANT);
+  emitByte(makeConstant(OBJECT_VAL(newFunction)));
+
+  // endScope without emit OP_POP
+  scopeDepth--;
+
+  while (localVars.size() > 0 && localVars.back()->depth > scopeDepth) {
+    localVars.pop_back();
+  }
+}
+
 void Compiler::declaration() {
-  statement();
+  if (match(TOKEN_FUNCTION)) {
+    functionDeclaration();
+  } else {
+    statement();
+  }
 
   if (panicMode) synchronize();
 }
@@ -311,10 +423,8 @@ void Compiler::beginScope() { scopeDepth++; }
 void Compiler::endScope() {
   scopeDepth--;
 
-  while (localVars.list.size() > 0 &&
-         localVars.list.back()->depth > scopeDepth) {
-    localVars.hash.erase(localVars.list.back());
-    localVars.list.pop_back();
+  while (localVars.size() > 0 && localVars.back()->depth > scopeDepth) {
+    localVars.pop_back();
     emitByte(OP_POP);
   }
 }
@@ -328,6 +438,8 @@ void Compiler::statement() {
     endScope();
   } else if (match(TOKEN_IF)) {
     ifStatement();
+  } else if (match(TOKEN_RETURN)) {
+    returnStatement();
   } else if (match(TOKEN_WHILE)) {
     whileStatement();
   } else if (match(TOKEN_FOR)) {
@@ -356,8 +468,7 @@ void Compiler::printStatement() {
 
 void Compiler::expressionStatement() {
   bool pop = scopeDepth == 0 || inLocalVars(*(parser.current)) ||
-             existingStrings.contains(
-                 std::make_shared<ObjectString>(parser.current->lexeme));
+             globalVars.contains(parser.current->lexeme);
   expression();
   consume(TOKEN_SEMI, "Expect ';' after statement.");
   if (pop) {
@@ -417,14 +528,12 @@ void Compiler::forStatement() {
 
   const Token* varName = parser.prev;
   bool inLocal = inLocalVars(*(varName));
-  bool inGlobal =
-      existingStrings.contains(std::make_shared<ObjectString>(varName->lexeme));
+  bool inGlobal = globalVars.contains(varName->lexeme);
 
   // if it's a new variable, then we need to add it in localVars
   if (!inLocal && !inGlobal) {
     std::shared_ptr<Local> local = std::make_shared<Local>(*(varName), -1);
-    localVars.hash.insert(local);
-    localVars.list.push_back(local);
+    localVars.insert(local);
   }
 
   consume(TOKEN_FROM, "Expect 'from' delimiter in for loop declaration.");
@@ -537,6 +646,21 @@ void Compiler::forStatement() {
   endScope();
 }
 
+void Compiler::returnStatement() {
+  if (funcTypes.top() == TYPE_SCRIPT) {
+    error(parser.current->line, "Can't return from top-level code.");
+  }
+
+  if (match(TOKEN_SEMI)) {
+    emitByte(OP_NULL);
+    emitByte(OP_RETURN);
+  } else {
+    expression();
+    consume(TOKEN_SEMI, "Expect ';' after return statement.");
+    emitByte(OP_RETURN);
+  }
+}
+
 void Compiler::emitLoop(int loopStart) {
   emitByte(OP_LOOP);
 
@@ -612,15 +736,17 @@ void Compiler::synchronize() {
 uint8_t Compiler::identifierConstant(const Token* var) {
   std::shared_ptr<ObjectString> ptr =
       std::make_shared<ObjectString>(var->lexeme);
-  auto it = existingStrings.find(ptr);
-  if (it == existingStrings.end()) {
-    existingStrings.insert(ptr);
+  if (!globalVars.contains(var->lexeme)) {
+    globalVars.tempStrings.insert(ptr);
     return makeConstant(OBJECT_VAL(ptr));
   }
-  return makeConstant(OBJECT_VAL(*it));
+  return makeConstant(OBJECT_VAL(globalVars.find(ptr)));
 }
 
-void Compiler::markInitialized() { localVars.list.back()->depth = scopeDepth; }
+void Compiler::markInitialized() {
+  if (scopeDepth == 0) return;
+  localVars.back()->depth = scopeDepth;
+}
 
 void Compiler::declareLocal() {
   if (scopeDepth == 0) return;  // no need to add to localVars if global
@@ -629,14 +755,11 @@ void Compiler::declareLocal() {
       std::make_shared<Local>(*(parser.prev), scopeDepth);
 
   // variable exists already:
-  if (existingStrings.contains(
-          std::make_shared<ObjectString>(parser.prev->lexeme)))
-    return;
-  if (localVars.hash.contains(local)) return;
+  if (globalVars.contains(parser.prev->lexeme)) return;
+  if (localVars.contains(local)) return;
 
   local->depth = -1;
-  localVars.hash.insert(local);
-  localVars.list.push_back(local);
+  localVars.insert(local);
 }
 
 void Compiler::variable(bool canAssign) {
@@ -648,8 +771,8 @@ void Compiler::variable(bool canAssign) {
 
 // find a local's index in localVars with a token
 int Compiler::resolveLocal(const Token* name) {
-  for (int i = (int)(localVars.list.size()) - 1; i >= 0; i--) {
-    std::shared_ptr<Local> curLocal = localVars.list.at(i);
+  for (int i = (int)(localVars.size()) - 1; i >= 0; i--) {
+    std::shared_ptr<Local> curLocal = localVars.at(i);
     if (curLocal->name.lexeme == name->lexeme) {
       return i;
     }
@@ -675,13 +798,13 @@ void Compiler::namedVariable(const Token* name, bool canAssign) {
   if (canAssign && match(TOKEN_BECOMES)) {
     expression();
     // initialize new local var
-    if (localVars.list.size() > 0 && localVars.list.back()->depth == -1) {
+    if (localVars.size() > 0 && localVars.back()->depth == -1) {
       markInitialized();
     }
     emitByte(setOp);
   } else {
     // if local var and not initialized (self-use initialization):
-    if (getOp == OP_GET_LOCAL && localVars.list.at(arg)->depth == -1) {
+    if (getOp == OP_GET_LOCAL && localVars.at(arg)->depth == -1) {
       error(name->line, "Can't read local variable in its own initializer.");
     }
     emitByte(getOp);
@@ -705,5 +828,52 @@ bool Compiler::inLocalVars(const Token& token) {
 
   std::shared_ptr<Local> toCheck = std::make_shared<Local>(token, scopeDepth);
 
-  return localVars.hash.contains(toCheck);
+  return localVars.contains(toCheck);
 }
+
+bool GlobalVariables::contains(const std::string& name) const {
+  std::shared_ptr<ObjectString> target = std::make_shared<ObjectString>(name);
+  return existingStrings.contains(target) || tempStrings.contains(target);
+}
+
+std::shared_ptr<ObjectString> GlobalVariables::find(
+    std::shared_ptr<ObjectString> target) {
+  auto it = existingStrings.find(target);
+  auto it2 = tempStrings.find(target);
+  return it == existingStrings.end() ? *(it2) : *(it);
+}
+
+void GlobalVariables::migrate() {
+  existingStrings.insert(tempStrings.begin(), tempStrings.end());
+  tempStrings.clear();
+}
+
+void GlobalVariables::tempClear() { tempStrings.clear(); }
+
+std::shared_ptr<Local> LocalVariables::at(size_t index) {
+  return list.at(index);
+}
+
+std::shared_ptr<Local> LocalVariables::back() { return list.back(); }
+
+void LocalVariables::clear() {
+  hash.clear();
+  list.clear();
+}
+
+bool LocalVariables::contains(const std::shared_ptr<Local> local) const {
+  return hash.contains(local);
+}
+
+void LocalVariables::insert(const std::shared_ptr<Local> local) {
+  hash.insert(local);
+  list.push_back(local);
+}
+
+void LocalVariables::pop_back() {
+  std::shared_ptr<Local> back = list.back();
+  list.pop_back();
+  hash.erase(back);
+}
+
+size_t LocalVariables::size() const { return hash.size(); }

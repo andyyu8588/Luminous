@@ -6,7 +6,8 @@ Object::Object(ObjectType type) : type{type} {}
 
 ObjectType Object::getType() const { return type; }
 
-ObjectString::ObjectString(std::string str) : Object(OBJECT_STRING), str{str} {
+ObjectString::ObjectString(const std::string& str)
+    : Object(OBJECT_STRING), str{str} {
   hash = std::hash<std::string>{}(str);
 }
 
@@ -18,7 +19,7 @@ void Object::printObject() const {
   switch (type) {
     case OBJECT_FUNCTION: {
       if (((ObjectFunction*)this)->getName() == nullptr) {
-        std::cout << "<script>" << std::endl;
+        std::cout << "<script>";
       } else {
         std::cout << ((ObjectFunction*)this)->getName()->getString();
       }
@@ -26,6 +27,10 @@ void Object::printObject() const {
     }
     case OBJECT_STRING: {
       std::cout << ((ObjectString*)this)->getString();
+      break;
+    }
+    case OBJECT_NATIVE: {
+      std::cout << ((ObjectNative*)this)->getName()->getString();
       break;
     }
   }
@@ -42,12 +47,23 @@ bool ObjectString::Comparator::operator()(
   return a->getString() == b->getString();
 }
 
-ObjectFunction::ObjectFunction(int arity, std::shared_ptr<ObjectString> name)
-    : Object(OBJECT_FUNCTION), arity{arity}, name{name} {}
+ObjectFunction::ObjectFunction(std::shared_ptr<ObjectString> name)
+    : Object(OBJECT_FUNCTION), arity{0}, name{name} {}
 
 const std::shared_ptr<ObjectString> ObjectFunction::getName() const {
-  (void)arity;
   return name;
 }
 
 Chunk& ObjectFunction::getChunk() { return chunk; }
+
+void ObjectFunction::increaseArity() { arity++; }
+
+int ObjectFunction::getArity() const { return arity; }
+
+ObjectNative::ObjectNative(const NativeFn function,
+                           const std::shared_ptr<ObjectString> name)
+    : Object(OBJECT_NATIVE), function{function}, name{name} {}
+
+NativeFn ObjectNative::getFunction() { return function; }
+
+std::shared_ptr<ObjectString> ObjectNative::getName() { return name; }

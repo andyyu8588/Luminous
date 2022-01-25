@@ -25,4 +25,7 @@ local variables and scopes ({})
 
 control flow (if else while for)
 
+global functions (function (...params) {body})
+native functions (clock)
+
 runtime errors
