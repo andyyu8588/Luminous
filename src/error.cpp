@@ -8,7 +8,8 @@ bool panicMode = false;
 
 void error(int line, std::string message) {
   if (!panicMode) {
-    std::cerr << "ERROR: " << message << " (line " << line << ")" << std::endl;
+    std::cerr << message << " (line " << line << ")" << std::endl;
+    std::cerr << "(Compile Error)" << std::endl;
     errorOccured = true;
     panicMode = true;
   }

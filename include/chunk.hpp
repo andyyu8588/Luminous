@@ -21,12 +21,14 @@ enum OpCode {
   OP_SUBSTRACT,
   OP_MULTIPLY,
   OP_DIVIDE,
+  OP_MODULO,
   OP_NOT,
   OP_NEGATE,
   OP_PRINT,
   OP_JUMP,
   OP_JUMP_IF_FALSE,
   OP_LOOP,
+  OP_CALL,
   OP_RETURN
 };
 
@@ -41,7 +43,6 @@ class Chunk {
  private:
   std::vector<ByteCode> bytecode;
   std::vector<Value> constants;
-  size_t PC = 0;
 
  public:
   // bytecode vector getters and setters:
@@ -54,10 +55,4 @@ class Chunk {
   size_t getConstantsSize() const;
   Value getConstantAt(size_t index) const;
   size_t addConstant(Value value);  // returns the index in the vector
-
-  // PC functions:
-  ByteCode getBytecodeAtPC();  // increments PC by 1
-  ByteCode getPrevBytecode() const;
-  void addToPC(size_t count);
-  void substractFromPC(size_t count);
 };

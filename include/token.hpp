@@ -18,6 +18,7 @@ enum TokenType {
   TOKEN_STAR,
   TOKEN_SLASH,
   TOKEN_SEMI,
+  TOKEN_PERC,
 
   // Single and double symbol tokens:
   TOKEN_LT,
@@ -49,6 +50,7 @@ enum TokenType {
   TOKEN_FROM,
   TOKEN_TO,
   TOKEN_BY,
+  TOKEN_FUNCTION,
 
   // Misc:
   TOKEN_EOF

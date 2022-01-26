@@ -1,0 +1,44 @@
+function add(a, b) {
+    return a + b;
+}
+
+function div(a, b) {
+    return a / b;
+}
+
+function printAdd(a, b) {
+    print(add(a, b));
+}
+
+function recursion(a) {
+    if(a equals 1) {
+        return;
+    }
+    a = a - 1;
+    print(a);
+    recursion(a);
+}
+
+function fizzbuzz(num) {
+    toPrint = "";
+    if(num % 3 equals 0) {
+        toPrint = toPrint + "fizz";
+    }
+    if(num % 5 equals 0) {
+        toPrint = toPrint + "buzz";
+    }
+    print(toPrint);
+}
+
+function spam() {
+    printAdd(1, 2);
+    printAdd(3, 4);
+    fizzbuzz(3);
+    fizzbuzz(5);
+    fizzbuzz(15);
+    print(div(6, 3));
+    print(div(3, 6));
+    recursion(5);
+}
+
+spam();

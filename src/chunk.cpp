@@ -22,11 +22,3 @@ size_t Chunk::addConstant(Value value) {
   constants.emplace_back(value);
   return constants.size() - 1;
 }
-
-ByteCode Chunk::getBytecodeAtPC() { return bytecode[PC++]; }
-
-ByteCode Chunk::getPrevBytecode() const { return bytecode[PC - 1]; }
-
-void Chunk::addToPC(size_t count) { PC += count; }
-
-void Chunk::substractFromPC(size_t count) { PC -= count; }

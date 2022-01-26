@@ -1,0 +1,42 @@
+function collatz(a) {
+    print(a);
+    if(a equals 1) {
+        return;
+    }
+    else if(a % 2 equals 0) {
+        collatz(a / 2);
+    }
+    else {
+        collatz(3 * a + 1);
+    }
+}
+print(collatz);
+collatz(15);
+collatz(50);
+collatz(123);
+
+a = 1;
+b = 2;
+c = 3;
+d = 4;
+e = 5;
+f = 6;
+g = 7;
+
+function hard2Print(aa, bb, cc, dd, ee, ff, gg) {
+    print(aa);
+    print(bb);
+    print(cc);
+    print(dd + ee);
+    print(ee - ff + gg);
+    a = aa + b;
+    c = c + dd;
+    e = ff - gg;
+}
+print(hard2Print);
+hard2Print(0, -1, 2, 5, -10, 20, 16);
+
+print(a);
+print(c);
+print(e);
+print(clock);

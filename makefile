@@ -16,7 +16,7 @@ EXECUTABLE = luminous
 
 FORMATTER = clang-format
 FORMATTER_FLAGS = -i -style=Google
-FORMATER_FILES = $(wildcard $(SRC_DIR)/*.cpp $(SRC_DIR)/*.h)
+FORMATER_FILES = $(wildcard $(SRC_DIR)/*.cpp $(INCLUDE_DIR)/*.hpp)
 
 format:
 	$(FORMATTER) $(FORMATTER_FLAGS) $(FORMATER_FILES)
@@ -27,7 +27,7 @@ setup:
 
 main:
 	$(MAKE) setup
-	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) -I ./$(INCLUDE_DIR) $(SRC_FILES) $(WARNINGS_FLAGS) 
+	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) -I ./$(INCLUDE_DIR) $(SRC_FILES) $(WARNINGS_FLAGS)
 
 debug:
 	$(MAKE) setup	
@@ -46,7 +46,6 @@ memory:
 test:
 	$(MAKE) main
 	$(MAKE) io
-	$(MAKE) memory
 
 clean:
 	rm -r $(BIN_DIR)
