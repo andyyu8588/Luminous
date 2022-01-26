@@ -100,6 +100,7 @@ void VM::runtimeError(const char* format, ...) {
     frames.pop();
   }
 
+  std::cerr << "(Runtime Error)" << std::endl;
   resetMemory();
 }
 
@@ -254,9 +255,9 @@ InterpretResult VM::run() {
         Value top = memory.top();
         memory.pop();
 
-        // pop all function arguments with function object
-        int argNum = frames.top().function.getArity();
-        for (int i = 0; i <= argNum; i++) {
+        // pop all local variables alongside function object
+        size_t initialMemorySize = memory.size();
+        for (size_t i = frames.top().stackPos; i < initialMemorySize; i++) {
           memory.pop();
         }
 
@@ -266,8 +267,7 @@ InterpretResult VM::run() {
         if (frames.empty()) {
 #ifdef DEBUG
           if (memory.size() != 0) {
-            std::cout << "PANIC: STACK IS NOT EMPTY!" << std::endl <<
-            std::endl;
+            std::cout << "PANIC: STACK IS NOT EMPTY!" << std::endl << std::endl;
           }
           printStack(memory);
 #endif

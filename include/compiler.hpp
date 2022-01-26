@@ -88,6 +88,11 @@ class LocalVariables {
 
 enum FunctionType { TYPE_FUNCTION, TYPE_SCRIPT };
 
+struct Functions {
+  std::stack<std::shared_ptr<ObjectFunction>> ptrs;
+  std::stack<FunctionType> types;
+};
+
 class Compiler {
   Parser parser;
   Scanner scanner;
@@ -99,8 +104,7 @@ class Compiler {
   int scopeDepth = 0;
 
   // for functions:
-  std::stack<std::shared_ptr<ObjectFunction>> functions;
-  std::stack<FunctionType> funcTypes;
+  Functions functions;
 
   // returns the current chunk:
   Chunk& currentChunk();

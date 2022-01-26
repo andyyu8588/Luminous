@@ -105,7 +105,7 @@ Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
   }
 }
 
-Chunk& Compiler::currentChunk() { return functions.top()->getChunk(); }
+Chunk& Compiler::currentChunk() { return functions.ptrs.top()->getChunk(); }
 
 void Compiler::expression() { parsePrecedence(PREC_ASSIGNMENT); }
 
@@ -121,8 +121,8 @@ void Compiler::compile(const std::string& code) {
   }
 
   // emulate stack that will have script has bottom element and first frame
-  functions.push(std::make_shared<ObjectFunction>(nullptr));
-  funcTypes.push(TYPE_SCRIPT);
+  functions.ptrs.push(std::make_shared<ObjectFunction>(nullptr));
+  functions.types.push(TYPE_SCRIPT);
 
   std::shared_ptr<Local> script =
       std::make_shared<Local>(Token(TOKEN_ID, "", 0), 0);
@@ -138,8 +138,8 @@ void Compiler::compile(const std::string& code) {
   if (errorOccured) {
     globalVars.tempClear();
     localVars.clear();
-    while (!functions.empty()) functions.pop();
-    while (!funcTypes.empty()) funcTypes.pop();
+    while (!functions.ptrs.empty()) functions.ptrs.pop();
+    while (!functions.types.empty()) functions.types.pop();
     throw CompilerException();
   }
 
@@ -165,22 +165,23 @@ void Compiler::emitByte(uint8_t byte) {
   currentChunk().addBytecode(byte, parser.prev->line);
 #ifdef DEBUG
   if (byte == OP_RETURN)
-    printChunk(currentChunk(), functions.top()->getName() == nullptr
-                                   ? "<script>"
-                                   : functions.top()->getName()->getString());
+    printChunk(currentChunk(),
+               functions.ptrs.top()->getName() == nullptr
+                   ? "<script>"
+                   : functions.ptrs.top()->getName()->getString());
 #endif
 }
 
 std::shared_ptr<ObjectFunction> Compiler::getFunction() {
-  std::shared_ptr<ObjectFunction> topFunc = functions.top();
+  std::shared_ptr<ObjectFunction> topFunc = functions.ptrs.top();
   Chunk& topFuncChunk = topFunc->getChunk();
   if (topFuncChunk.getBytecodeAt(topFuncChunk.getBytecodeSize() - 1).code !=
       OP_RETURN) {
     emitByte(OP_NULL);
     emitByte(OP_RETURN);
   }
-  functions.pop();
-  funcTypes.pop();
+  functions.ptrs.pop();
+  functions.types.pop();
   return topFunc;
 }
 
@@ -368,15 +369,15 @@ void Compiler::function(FunctionType type) {
   beginScope();
 
   // push new function on stack:
-  functions.push(std::make_shared<ObjectFunction>(
+  functions.ptrs.push(std::make_shared<ObjectFunction>(
       std::make_shared<ObjectString>(parser.prev->lexeme)));
-  funcTypes.push(type);
+  functions.types.push(type);
 
   // parameters:
   consume(TOKEN_LPAREN, "Expect '(' after function name.");
   if (parser.current->type != TOKEN_RPAREN) {
     do {
-      functions.top()->increaseArity();
+      functions.ptrs.top()->increaseArity();
 
       consume(TOKEN_ID, "Expect function parameter name.");
       if (globalVars.contains(parser.prev->lexeme)) {
@@ -400,7 +401,6 @@ void Compiler::function(FunctionType type) {
   emitByte(OP_CONSTANT);
   emitByte(makeConstant(OBJECT_VAL(newFunction)));
 
-  // endScope without emit OP_POP
   scopeDepth--;
 
   while (localVars.size() > 0 && localVars.back()->depth > scopeDepth) {
@@ -647,7 +647,7 @@ void Compiler::forStatement() {
 }
 
 void Compiler::returnStatement() {
-  if (funcTypes.top() == TYPE_SCRIPT) {
+  if (functions.types.top() == TYPE_SCRIPT) {
     error(parser.current->line, "Can't return from top-level code.");
   }
 
