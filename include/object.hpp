@@ -7,6 +7,8 @@
 
 #define OBJECT_TYPE(value) (AS_OBJECT(value)->getType())
 
+#define IS_CLOSURE(value) \
+  (IS_OBJECT(value) && OBJECT_TYPE(value) == OBJECT_CLOSURE)
 #define IS_FUNCTION(value) \
   (IS_OBJECT(value) && OBJECT_TYPE(value) == OBJECT_FUNCTION)
 #define IS_NATIVE(value) \
@@ -14,6 +16,8 @@
 #define IS_STRING(value) \
   (IS_OBJECT(value) && OBJECT_TYPE(value) == OBJECT_STRING)
 
+#define AS_CLOSURE(value) \
+  (std::static_pointer_cast<ObjectClosure>(AS_OBJECT(value)))
 #define AS_FUNCTION(value) \
   (std::static_pointer_cast<ObjectFunction>(AS_OBJECT(value)))
 #define AS_NATIVE(value) \
@@ -23,7 +27,12 @@
 #define AS_STRING(value) \
   ((std::static_pointer_cast<ObjectString>(AS_OBJECT(value)))->getString())
 
-enum ObjectType { OBJECT_FUNCTION, OBJECT_NATIVE, OBJECT_STRING };
+enum ObjectType {
+  OBJECT_CLOSURE,
+  OBJECT_FUNCTION,
+  OBJECT_NATIVE,
+  OBJECT_STRING
+};
 
 class Object {
  protected:
@@ -78,4 +87,12 @@ class ObjectNative : public Object {
                const std::shared_ptr<ObjectString> name);
   NativeFn getFunction();
   std::shared_ptr<ObjectString> getName();
+};
+
+class ObjectClosure : public Object {
+  std::shared_ptr<ObjectFunction> function;
+
+ public:
+  ObjectClosure(std::shared_ptr<ObjectFunction>);
+  std::shared_ptr<ObjectFunction> getFunction();
 };

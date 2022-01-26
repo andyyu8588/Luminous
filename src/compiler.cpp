@@ -398,7 +398,7 @@ void Compiler::function(FunctionType type) {
 
   // Create function object:
   std::shared_ptr<ObjectFunction> newFunction = getFunction();
-  emitByte(OP_CONSTANT);
+  emitByte(OP_CLOSURE);
   emitByte(makeConstant(OBJECT_VAL(newFunction)));
 
   scopeDepth--;

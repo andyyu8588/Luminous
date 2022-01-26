@@ -20,6 +20,9 @@ void printValueType(Value value) {
       break;
     case VAL_OBJECT:
       switch (OBJECT_TYPE(value)) {
+        case OBJECT_CLOSURE:
+          std::cout << "OBJECT_CLOSURE";
+          break;
         case OBJECT_FUNCTION:
           std::cout << "OBJECT_FUNCTION";
           break;
@@ -120,6 +123,8 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return constantInstruction("OP_CALL", chunk, index);
     case OP_MODULO:
       return simpleInstruction("OP_MODULO", index);
+    case OP_CLOSURE:
+      return constantInstruction("OP_CLOSURE", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;

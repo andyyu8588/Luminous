@@ -17,6 +17,10 @@ size_t ObjectString::getHash() const { return hash; }
 
 void Object::printObject() const {
   switch (type) {
+    case OBJECT_CLOSURE: {
+      ((ObjectClosure*)this)->getFunction()->printObject();
+      break;
+    }
     case OBJECT_FUNCTION: {
       if (((ObjectFunction*)this)->getName() == nullptr) {
         std::cout << "<script>";
@@ -67,3 +71,10 @@ ObjectNative::ObjectNative(const NativeFn function,
 NativeFn ObjectNative::getFunction() { return function; }
 
 std::shared_ptr<ObjectString> ObjectNative::getName() { return name; }
+
+ObjectClosure::ObjectClosure(std::shared_ptr<ObjectFunction> function)
+    : Object(OBJECT_CLOSURE), function{function} {}
+
+std::shared_ptr<ObjectFunction> ObjectClosure::getFunction() {
+  return function;
+}

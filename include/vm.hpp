@@ -24,7 +24,7 @@ class MemoryStack : public std::stack<Value> {
 };
 
 struct CallFrame {
-  ObjectFunction& function;
+  ObjectClosure& closure;
   size_t stackPos;
   size_t PC;
 };
@@ -52,7 +52,7 @@ class VM {
 
   // for calling functions:
   bool callValue(Value callee, int argCount);
-  bool call(std::shared_ptr<ObjectFunction> function, int argCount);
+  bool call(std::shared_ptr<ObjectClosure> closure, int argCount);
 
   // for native functions:
   void defineNative(std::string name, NativeFn function);

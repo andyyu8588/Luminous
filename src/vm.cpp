@@ -86,7 +86,7 @@ void VM::runtimeError(const char* format, ...) {
 
   while (!frames.empty()) {
     CallFrame& frame = frames.top();
-    ObjectFunction& function = frame.function;
+    ObjectFunction& function = *(frame.closure.getFunction());
 
     std::cerr << "[line "
               << function.getChunk().getBytecodeAt(frame.PC - 1).line
@@ -105,8 +105,10 @@ void VM::runtimeError(const char* format, ...) {
 }
 
 InterpretResult VM::interpret(std::shared_ptr<ObjectFunction> function) {
-  memory.push(OBJECT_VAL(function));
-  callValue(OBJECT_VAL(function), 0);
+  std::shared_ptr<ObjectClosure> closure =
+      std::make_shared<ObjectClosure>(function);
+  memory.push(OBJECT_VAL(closure));
+  callValue(OBJECT_VAL(closure), 0);
   return run();
 }
 
@@ -250,6 +252,13 @@ InterpretResult VM::run() {
         frame = &(frames.top());
         break;
       }
+      case OP_CLOSURE: {
+        std::shared_ptr<ObjectFunction> function = AS_FUNCTION(readConstant());
+        std::shared_ptr<ObjectClosure> closure =
+            std::make_shared<ObjectClosure>(function);
+        memory.push(OBJECT_VAL(closure));
+        break;
+      }
       case OP_RETURN: {
         // retrieve and pop return value
         Value top = memory.top();
@@ -288,10 +297,10 @@ InterpretResult VM::run() {
   return INTERPRET_OK;
 }
 
-bool VM::call(std::shared_ptr<ObjectFunction> function, int argCount) {
-  if (argCount != function->getArity()) {
-    runtimeError("Expected %d arguments but found %d.", function->getArity(),
-                 argCount);
+bool VM::call(std::shared_ptr<ObjectClosure> closure, int argCount) {
+  if (argCount != closure->getFunction()->getArity()) {
+    runtimeError("Expected %d arguments but found %d.",
+                 closure->getFunction()->getArity(), argCount);
     return false;
   }
 
@@ -300,7 +309,7 @@ bool VM::call(std::shared_ptr<ObjectFunction> function, int argCount) {
     return false;
   }
 
-  CallFrame newFrame{*function, memory.size() - argCount - 1, 0};
+  CallFrame newFrame{*closure, memory.size() - argCount - 1, 0};
   frames.push(newFrame);
   return true;
 }
@@ -308,8 +317,6 @@ bool VM::call(std::shared_ptr<ObjectFunction> function, int argCount) {
 bool VM::callValue(Value callee, int argCount) {
   if (IS_OBJECT(callee)) {
     switch (OBJECT_TYPE(callee)) {
-      case OBJECT_FUNCTION:
-        return call(AS_FUNCTION(callee), argCount);
       case OBJECT_NATIVE: {
         NativeFn native = AS_NATIVE(callee)->getFunction();
         Value result = native(argCount, memory.size() - argCount);
@@ -319,6 +326,8 @@ bool VM::callValue(Value callee, int argCount) {
         memory.push(result);
         return true;
       }
+      case OBJECT_CLOSURE:
+        return call(AS_CLOSURE(callee), argCount);
       default:
         break;
     }
@@ -337,7 +346,9 @@ void VM::concatenate(const std::string& c, const std::string& d) {
   memory.push(OBJECT_VAL(std::make_shared<ObjectString>(d + c)));
 }
 
-Chunk& VM::getTopChunk() { return frames.top().function.getChunk(); }
+Chunk& VM::getTopChunk() {
+  return frames.top().closure.getFunction()->getChunk();
+}
 
 uint8_t VM::readByte() {
   uint8_t byte = getTopChunk().getBytecodeAt(frames.top().PC).code;
