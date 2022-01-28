@@ -34,4 +34,9 @@
 # Testing errors
 *.err
 *.errval
+
+# Scratch file
 bugs.txt
+
+# Weird dual macOS/Windows VSCode Vim configuration
+*.vimrc
