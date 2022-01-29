@@ -78,6 +78,9 @@ InterpretResult VM::binaryOperation(char operation) {
 void VM::resetMemory() { memory = MemoryStack(); }
 
 void VM::runtimeError(const char* format, ...) {
+#ifdef DEBUG
+  printStack(memory);
+#endif
   va_list args;
   va_start(args, format);
   vfprintf(stderr, format, args);

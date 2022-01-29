@@ -52,9 +52,16 @@ struct Local {
   };
 
   struct Comparator {
-    bool operator()(const std::shared_ptr<Local>& a,
-                    const std::shared_ptr<Local>& b) const;
+    bool operator()(const std::shared_ptr<Local>&,
+                    const std::shared_ptr<Local>&) const;
   };
+};
+
+struct Upvalue {
+  uint8_t index;
+  bool isLocal;
+
+  bool operator==(const Upvalue&) const;
 };
 
 struct GlobalVariables {
@@ -88,9 +95,10 @@ class LocalVariables {
 
 enum FunctionType { TYPE_FUNCTION, TYPE_SCRIPT };
 
-struct Functions {
-  std::stack<std::shared_ptr<ObjectFunction>> ptrs;
-  std::stack<FunctionType> types;
+struct FunctionInfo {
+  std::shared_ptr<ObjectFunction> function;
+  FunctionType type;
+  std::vector<Upvalue> upvalues;
 };
 
 class Compiler {
@@ -100,11 +108,11 @@ class Compiler {
 
   // for variables:
   GlobalVariables globalVars;
-  LocalVariables localVars;
+  std::vector<LocalVariables> localVars;
   int scopeDepth = 0;
 
   // for functions:
-  Functions functions;
+  std::vector<FunctionInfo> functions;
 
   // returns the current chunk:
   Chunk& currentChunk();
@@ -157,7 +165,7 @@ class Compiler {
   void endScope();
   void block();
   void declareLocal();
-  int resolveLocal(const Token* name);
+  int resolveLocal(const Token* name, size_t index);
   void markInitialized();
   bool inLocalVars(const Token&);
 
@@ -175,6 +183,10 @@ class Compiler {
   void call(bool canAssign);
   uint8_t argumentList();
   void returnStatement();
+
+  // closures:
+  int resolveUpvalue(const Token*, size_t);
+  int addUpvalue(uint8_t, bool, size_t);
 
   // for error synchronization:
   void synchronize();

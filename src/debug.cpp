@@ -45,16 +45,13 @@ size_t simpleInstruction(std::string name, size_t index) {
 
 size_t constantInstruction(std::string name, Chunk& chunk, size_t index) {
   uint8_t constantIndex = chunk.getBytecodeAt(index + 1).code;
-  if (constantIndex >= chunk.getConstantsSize()) {
-    std::cout << "Constant out of range" << std::endl;
-    return index + 2;
-  }
-  std::cout << name << std::endl;
+  std::cout << name;
   // const Value& constant = chunk.getConstantAt(constantIndex);
-  // std::cout << name << " ";
+  std::cout << " " << (int)constantIndex;
   // constant.printValue();
-  // std::cout << " ";
+  // std::cout << name << " ";
   // printValueType(constant);
+  std::cout << std::endl;
   return index + 2;
 }
 
@@ -125,6 +122,10 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return simpleInstruction("OP_MODULO", index);
     case OP_CLOSURE:
       return constantInstruction("OP_CLOSURE", chunk, index);
+    case OP_GET_UPVALUE:
+    case OP_SET_UPVALUE:
+      std::cout << "XD" << std::endl;
+      return index + 2;
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;

@@ -31,7 +31,7 @@ main:
 
 debug:
 	$(MAKE) setup	
-	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) -Iinclude $(SRC_FILES) $(WARNINGS_FLAGS)
+	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) -Iinclude $(SRC_FILES) $(WARNINGS_FLAGS) $(TESTING_FLAGS)
 	gdb ./$(BIN_DIR)/$(EXECUTABLE)
 
 basic:
