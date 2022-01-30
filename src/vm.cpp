@@ -18,6 +18,10 @@ VM::VM() { defineNative("clock", VM::clockNative); }
 
 Value MemoryStack::getValueAt(size_t index) const { return c[index]; }
 
+Value* MemoryStack::getValuePtrAt(size_t index) const {
+  return (Value*)&(c[index]);
+}
+
 void MemoryStack::setValueAt(Value value, size_t index) { c[index] = value; }
 
 InterpretResult VM::binaryOperation(char operation) {
@@ -78,6 +82,9 @@ InterpretResult VM::binaryOperation(char operation) {
 void VM::resetMemory() { memory = MemoryStack(); }
 
 void VM::runtimeError(const char* format, ...) {
+#ifdef DEBUG
+  printStack(memory);
+#endif
   va_list args;
   va_start(args, format);
   vfprintf(stderr, format, args);
@@ -86,7 +93,7 @@ void VM::runtimeError(const char* format, ...) {
 
   while (!frames.empty()) {
     CallFrame& frame = frames.top();
-    ObjectFunction& function = frame.function;
+    ObjectFunction& function = *(frame.closure.getFunction());
 
     std::cerr << "[line "
               << function.getChunk().getBytecodeAt(frame.PC - 1).line
@@ -105,8 +112,10 @@ void VM::runtimeError(const char* format, ...) {
 }
 
 InterpretResult VM::interpret(std::shared_ptr<ObjectFunction> function) {
-  memory.push(OBJECT_VAL(function));
-  callValue(OBJECT_VAL(function), 0);
+  std::shared_ptr<ObjectClosure> closure =
+      std::make_shared<ObjectClosure>(function);
+  memory.push(OBJECT_VAL(closure));
+  callValue(OBJECT_VAL(closure), 0);
   return run();
 }
 
@@ -159,6 +168,7 @@ InterpretResult VM::run() {
       case OP_SET_GLOBAL: {
         Value constantName = readConstant();
         std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(constantName);
+        // std::cout << name->getString() << std::endl;
         globals.insert_or_assign(name, memory.top());
         break;
       }
@@ -250,10 +260,44 @@ InterpretResult VM::run() {
         frame = &(frames.top());
         break;
       }
+      case OP_CLOSURE: {
+        std::shared_ptr<ObjectFunction> function = AS_FUNCTION(readConstant());
+        std::shared_ptr<ObjectClosure> closure =
+            std::make_shared<ObjectClosure>(function);
+        memory.push(OBJECT_VAL(closure));
+        for (int i = 0; i < closure->getUpvalueCount(); i++) {
+          uint8_t isLocal = readByte();
+          uint8_t index = readByte();
+          if (isLocal) {
+            closure->addUpvalue(
+                captureUpvalue(memory.getValuePtrAt(frame->stackPos + index),
+                               frame->stackPos + index));
+          } else {
+            closure->addUpvalue(frame->closure.getUpvalue(index));
+          }
+        }
+        break;
+      }
+      case OP_GET_UPVALUE: {
+        uint8_t slot = readByte();
+        memory.push(*(frame->closure.getUpvalue(slot)->getLocation()));
+        break;
+      }
+      case OP_SET_UPVALUE: {
+        uint8_t slot = readByte();
+        *(frame->closure.getUpvalue(slot)->getLocation()) = memory.top();
+        break;
+      }
+      case OP_CLOSE_UPVALUE: {
+        closeUpvalues(memory.size() - 1);
+        memory.pop();
+        break;
+      }
       case OP_RETURN: {
         // retrieve and pop return value
         Value top = memory.top();
         memory.pop();
+        closeUpvalues(frame->stackPos);
 
         // pop all local variables alongside function object
         size_t initialMemorySize = memory.size();
@@ -288,10 +332,10 @@ InterpretResult VM::run() {
   return INTERPRET_OK;
 }
 
-bool VM::call(std::shared_ptr<ObjectFunction> function, int argCount) {
-  if (argCount != function->getArity()) {
-    runtimeError("Expected %d arguments but found %d.", function->getArity(),
-                 argCount);
+bool VM::call(std::shared_ptr<ObjectClosure> closure, int argCount) {
+  if (argCount != closure->getFunction()->getArity()) {
+    runtimeError("Expected %d arguments but found %d.",
+                 closure->getFunction()->getArity(), argCount);
     return false;
   }
 
@@ -300,7 +344,7 @@ bool VM::call(std::shared_ptr<ObjectFunction> function, int argCount) {
     return false;
   }
 
-  CallFrame newFrame{*function, memory.size() - argCount - 1, 0};
+  CallFrame newFrame{*closure, memory.size() - argCount - 1, 0};
   frames.push(newFrame);
   return true;
 }
@@ -308,8 +352,6 @@ bool VM::call(std::shared_ptr<ObjectFunction> function, int argCount) {
 bool VM::callValue(Value callee, int argCount) {
   if (IS_OBJECT(callee)) {
     switch (OBJECT_TYPE(callee)) {
-      case OBJECT_FUNCTION:
-        return call(AS_FUNCTION(callee), argCount);
       case OBJECT_NATIVE: {
         NativeFn native = AS_NATIVE(callee)->getFunction();
         Value result = native(argCount, memory.size() - argCount);
@@ -319,6 +361,8 @@ bool VM::callValue(Value callee, int argCount) {
         memory.push(result);
         return true;
       }
+      case OBJECT_CLOSURE:
+        return call(AS_CLOSURE(callee), argCount);
       default:
         break;
     }
@@ -337,7 +381,9 @@ void VM::concatenate(const std::string& c, const std::string& d) {
   memory.push(OBJECT_VAL(std::make_shared<ObjectString>(d + c)));
 }
 
-Chunk& VM::getTopChunk() { return frames.top().function.getChunk(); }
+Chunk& VM::getTopChunk() {
+  return frames.top().closure.getFunction()->getChunk();
+}
 
 uint8_t VM::readByte() {
   uint8_t byte = getTopChunk().getBytecodeAt(frames.top().PC).code;
@@ -364,4 +410,39 @@ Value VM::clockNative(int argCount, size_t index) {
   (void)argCount;
   (void)index;
   return NUM_VAL((double)clock() / CLOCKS_PER_SEC);
+}
+
+std::shared_ptr<ObjectUpvalue> VM::captureUpvalue(Value* local,
+                                                  int localIndex) {
+  std::shared_ptr<ObjectUpvalue> prevUpvalue = nullptr;
+  std::shared_ptr<ObjectUpvalue> upvalue = openUpvalues;
+  while (upvalue != nullptr && upvalue->getLocationIndex() > localIndex) {
+    prevUpvalue = upvalue;
+    upvalue = upvalue->next;
+  }
+  if (upvalue != nullptr && upvalue->getLocation() == local) {
+    return upvalue;
+  }
+
+  std::shared_ptr<ObjectUpvalue> toReturn =
+      std::make_shared<ObjectUpvalue>(local, localIndex);
+  toReturn->next = upvalue;
+
+  if (prevUpvalue == nullptr) {
+    openUpvalues = toReturn;
+  } else {
+    prevUpvalue->next = toReturn;
+  }
+
+  return toReturn;
+}
+
+void VM::closeUpvalues(int lastIndex) {
+  while (openUpvalues != nullptr &&
+         openUpvalues->getLocationIndex() >= lastIndex) {
+    std::shared_ptr<ObjectUpvalue> upvalue = openUpvalues;
+    upvalue->closed = *(upvalue->getLocation());
+    upvalue->location = &(upvalue->closed.value());
+    openUpvalues = upvalue->next;
+  }
 }

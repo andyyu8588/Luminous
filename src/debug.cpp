@@ -20,6 +20,9 @@ void printValueType(Value value) {
       break;
     case VAL_OBJECT:
       switch (OBJECT_TYPE(value)) {
+        case OBJECT_CLOSURE:
+          std::cout << "OBJECT_CLOSURE";
+          break;
         case OBJECT_FUNCTION:
           std::cout << "OBJECT_FUNCTION";
           break;
@@ -28,6 +31,9 @@ void printValueType(Value value) {
           break;
         case OBJECT_STRING:
           std::cout << "OBJECT_STRING";
+          break;
+        case OBJECT_UPVALUE:
+          std::cout << "OBJECT_UPVALUE";
           break;
       }
       break;
@@ -42,16 +48,13 @@ size_t simpleInstruction(std::string name, size_t index) {
 
 size_t constantInstruction(std::string name, Chunk& chunk, size_t index) {
   uint8_t constantIndex = chunk.getBytecodeAt(index + 1).code;
-  if (constantIndex >= chunk.getConstantsSize()) {
-    std::cout << "Constant out of range" << std::endl;
-    return index + 2;
-  }
-  std::cout << name << std::endl;
+  std::cout << name;
   // const Value& constant = chunk.getConstantAt(constantIndex);
-  // std::cout << name << " ";
+  std::cout << " " << (int)constantIndex;
   // constant.printValue();
-  // std::cout << " ";
+  // std::cout << name << " ";
   // printValueType(constant);
+  std::cout << std::endl;
   return index + 2;
 }
 
@@ -120,6 +123,14 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return constantInstruction("OP_CALL", chunk, index);
     case OP_MODULO:
       return simpleInstruction("OP_MODULO", index);
+    case OP_CLOSURE:
+      return constantInstruction("OP_CLOSURE", chunk, index);
+    case OP_GET_UPVALUE:
+      return constantInstruction("OP_GET_UPVALUE", chunk, index);
+    case OP_SET_UPVALUE:
+      return constantInstruction("OP_SET_UPVALUE", chunk, index);
+    case OP_CLOSE_UPVALUE:
+      return simpleInstruction("OP_CLOSE_OPVALUE", index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;

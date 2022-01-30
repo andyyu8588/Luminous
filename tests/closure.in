@@ -1,0 +1,70 @@
+xd = "xd";
+function outer() {
+    message = "Hello World!";
+    function inner() {
+        print(message);
+        message = "Bye bye world!";
+        print(message);
+    }
+    a = 4;
+    b = 9;
+    function loop() {
+        for(a from a to b by 1) {
+            print(a);
+        }
+        print(a);
+        c = 15;
+        function printXD() {
+            xd = "XD";
+            for(j from b to c by 1) {
+                print(xd);
+            }
+            message = "XD Again";
+            print(message);
+        }
+        function blabla(param1, param2) {
+            print(param1 + param2);
+            print(c + param2);
+        }
+        printXD();
+        print(message);
+        blabla(1, 2);
+    }
+    inner();
+    loop();
+}
+outer();
+
+set = null;
+get = null;
+
+function niceAndy() {
+    a = "test";
+    print(a);
+
+    function setA() {
+        a = "testtest";
+    }
+    function getA() {
+        print(a);
+        return a;
+    }
+
+    set = setA;
+    get = getA;
+}
+
+niceAndy();
+set();
+print(get());
+
+function printTest() {
+    x = "Hi";
+    function innerFunc() {
+        print(x);
+    }
+    return innerFunc;
+}
+
+closure = printTest();
+closure();
