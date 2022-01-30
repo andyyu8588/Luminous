@@ -18,6 +18,10 @@ VM::VM() { defineNative("clock", VM::clockNative); }
 
 Value MemoryStack::getValueAt(size_t index) const { return c[index]; }
 
+Value* MemoryStack::getValuePtrAt(size_t index) const {
+  return (Value*)&(c[index]);
+}
+
 void MemoryStack::setValueAt(Value value, size_t index) { c[index] = value; }
 
 InterpretResult VM::binaryOperation(char operation) {
@@ -164,6 +168,7 @@ InterpretResult VM::run() {
       case OP_SET_GLOBAL: {
         Value constantName = readConstant();
         std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(constantName);
+        // std::cout << name->getString() << std::endl;
         globals.insert_or_assign(name, memory.top());
         break;
       }
@@ -260,12 +265,39 @@ InterpretResult VM::run() {
         std::shared_ptr<ObjectClosure> closure =
             std::make_shared<ObjectClosure>(function);
         memory.push(OBJECT_VAL(closure));
+        for (int i = 0; i < closure->getUpvalueCount(); i++) {
+          uint8_t isLocal = readByte();
+          uint8_t index = readByte();
+          if (isLocal) {
+            closure->addUpvalue(
+                captureUpvalue(memory.getValuePtrAt(frame->stackPos + index),
+                               frame->stackPos + index));
+          } else {
+            closure->addUpvalue(frame->closure.getUpvalue(index));
+          }
+        }
+        break;
+      }
+      case OP_GET_UPVALUE: {
+        uint8_t slot = readByte();
+        memory.push(*(frame->closure.getUpvalue(slot)->getLocation()));
+        break;
+      }
+      case OP_SET_UPVALUE: {
+        uint8_t slot = readByte();
+        *(frame->closure.getUpvalue(slot)->getLocation()) = memory.top();
+        break;
+      }
+      case OP_CLOSE_UPVALUE: {
+        closeUpvalues(memory.size() - 1);
+        memory.pop();
         break;
       }
       case OP_RETURN: {
         // retrieve and pop return value
         Value top = memory.top();
         memory.pop();
+        closeUpvalues(frame->stackPos);
 
         // pop all local variables alongside function object
         size_t initialMemorySize = memory.size();
@@ -378,4 +410,39 @@ Value VM::clockNative(int argCount, size_t index) {
   (void)argCount;
   (void)index;
   return NUM_VAL((double)clock() / CLOCKS_PER_SEC);
+}
+
+std::shared_ptr<ObjectUpvalue> VM::captureUpvalue(Value* local,
+                                                  int localIndex) {
+  std::shared_ptr<ObjectUpvalue> prevUpvalue = nullptr;
+  std::shared_ptr<ObjectUpvalue> upvalue = openUpvalues;
+  while (upvalue != nullptr && upvalue->getLocationIndex() > localIndex) {
+    prevUpvalue = upvalue;
+    upvalue = upvalue->next;
+  }
+  if (upvalue != nullptr && upvalue->getLocation() == local) {
+    return upvalue;
+  }
+
+  std::shared_ptr<ObjectUpvalue> toReturn =
+      std::make_shared<ObjectUpvalue>(local, localIndex);
+  toReturn->next = upvalue;
+
+  if (prevUpvalue == nullptr) {
+    openUpvalues = toReturn;
+  } else {
+    prevUpvalue->next = toReturn;
+  }
+
+  return toReturn;
+}
+
+void VM::closeUpvalues(int lastIndex) {
+  while (openUpvalues != nullptr &&
+         openUpvalues->getLocationIndex() >= lastIndex) {
+    std::shared_ptr<ObjectUpvalue> upvalue = openUpvalues;
+    upvalue->closed = *(upvalue->getLocation());
+    upvalue->location = &(upvalue->closed.value());
+    openUpvalues = upvalue->next;
+  }
 }

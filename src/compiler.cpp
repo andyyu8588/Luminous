@@ -124,7 +124,7 @@ void Compiler::compile(const std::string& code) {
 
   // emulate stack that will have script has bottom element and first frame
   functions.push_back(
-      {std::make_shared<ObjectFunction>(nullptr), TYPE_SCRIPT, {}});
+      FunctionInfo(std::make_shared<ObjectFunction>(nullptr), TYPE_SCRIPT));
   localVars.push_back(LocalVariables());
 
   std::shared_ptr<Local> script =
@@ -371,7 +371,7 @@ void Compiler::function(FunctionType type) {
   std::shared_ptr<ObjectFunction> objectFunction =
       std::make_shared<ObjectFunction>(
           std::make_shared<ObjectString>(parser.prev->lexeme));
-  functions.push_back({objectFunction, type, {}});
+  functions.push_back(FunctionInfo(objectFunction, type));
 
   localVars.push_back(LocalVariables());
   localVars.back().insert(std::make_shared<Local>(*(parser.prev), scopeDepth));
@@ -400,21 +400,24 @@ void Compiler::function(FunctionType type) {
   block();
 
   // Create function object:
+  endScope();
+  std::vector<Upvalue> upvalues(functions.back().upvalues);
   std::shared_ptr<ObjectFunction> newFunction = getFunction();
   emitByte(OP_CLOSURE);
   emitByte(makeConstant(OBJECT_VAL(newFunction)));
 
-  for (size_t i = 0; i < functions.back().upvalues.size() - 1; i++) {
-    emitByte(functions.back().upvalues[i].isLocal ? 1 : 0);
-    emitByte(functions.back().upvalues[i].index);
+  for (int i = 0; i < (int)upvalues.size(); i++) {
+    emitByte(upvalues[i].isLocal ? 1 : 0);
+    emitByte(upvalues[i].index);
   }
+  /*
+    scopeDepth--;
 
-  scopeDepth--;
-
-  while (localVars.back().size() > 0 &&
-         localVars.back().back()->depth > scopeDepth) {
-    localVars.back().pop_back();
-  }
+    while (localVars.back().size() > 0 &&
+           localVars.back().back()->depth > scopeDepth) {
+      localVars.back().pop_back();
+    }
+  */
 }
 
 void Compiler::declaration() {
@@ -434,8 +437,12 @@ void Compiler::endScope() {
 
   while (localVars.back().size() > 0 &&
          localVars.back().back()->depth > scopeDepth) {
+    if (localVars.back().back()->isCaptured) {
+      emitByte(OP_CLOSE_UPVALUE);
+    } else {
+      emitByte(OP_POP);
+    }
     localVars.back().pop_back();
-    emitByte(OP_POP);
   }
 }
 
@@ -539,9 +546,15 @@ void Compiler::forStatement() {
   const Token* varName = parser.prev;
   bool inLocal = inLocalVars(*(varName));
   bool inGlobal = globalVars.contains(varName->lexeme);
+  int index = 0;
+  bool isUpvalue = false;
+
+  if ((index = resolveUpvalue(varName, functions.size() - 1)) != -1) {
+    isUpvalue = true;
+  }
 
   // if it's a new variable, then we need to add it in localVars
-  if (!inLocal && !inGlobal) {
+  if (!inLocal && !inGlobal && !isUpvalue) {
     std::shared_ptr<Local> local = std::make_shared<Local>(*(varName), -1);
     localVars.back().insert(local);
   }
@@ -550,12 +563,14 @@ void Compiler::forStatement() {
 
   // variable is in localVars for sure now, so get the index and push expression
   // on stack
-  int index = 0;
-  if (!inGlobal) {
-    index = resolveLocal(varName, functions.size() - 1);
-  } else {
-    index = identifierConstant(varName);
+  if (!isUpvalue) {
+    if (!inGlobal) {
+      index = resolveLocal(varName, functions.size() - 1);
+    } else {
+      index = identifierConstant(varName);
+    }
   }
+
   expression();
 
   // mark initialized since we got the RHS from expression() already
@@ -564,7 +579,9 @@ void Compiler::forStatement() {
   }
 
   // set the value on the stack, we already have the index
-  if (!inGlobal) {
+  if (isUpvalue) {
+    emitByte(OP_SET_UPVALUE);
+  } else if (!inGlobal) {
     emitByte(OP_SET_LOCAL);
   } else {
     emitByte(OP_SET_GLOBAL);
@@ -583,7 +600,9 @@ void Compiler::forStatement() {
   consume(TOKEN_TO, "Expect 'to' delimiter in for loop declaration.");
 
   // get the value of variable and the expression it's being compared to
-  if (!inGlobal) {
+  if (isUpvalue) {
+    emitByte(OP_GET_UPVALUE);
+  } else if (!inGlobal) {
     emitByte(OP_GET_LOCAL);
   } else {
     emitByte(OP_GET_GLOBAL);
@@ -619,7 +638,9 @@ void Compiler::forStatement() {
 
   int incrementStart = currentChunk().getBytecodeSize();
 
-  if (!inGlobal) {
+  if (isUpvalue) {
+    emitByte(OP_GET_UPVALUE);
+  } else if (!inGlobal) {
     emitByte(OP_GET_LOCAL);
   } else {
     emitByte(OP_GET_GLOBAL);
@@ -631,7 +652,9 @@ void Compiler::forStatement() {
     emitByte(OP_NEGATE);
   }
   emitByte(OP_ADD);
-  if (!inGlobal) {
+  if (isUpvalue) {
+    emitByte(OP_SET_UPVALUE);
+  } else if (!inGlobal) {
     emitByte(OP_SET_LOCAL);
   } else {
     emitByte(OP_SET_GLOBAL);
@@ -766,7 +789,9 @@ void Compiler::declareLocal() {
 
   // variable exists already:
   if (globalVars.contains(parser.prev->lexeme)) return;
-  if (localVars.back().contains(local)) return;
+  for (LocalVariables lv : localVars) {
+    if (lv.contains(local)) return;
+  }
 
   local->depth = -1;
   localVars.back().insert(local);
@@ -782,7 +807,7 @@ void Compiler::variable(bool canAssign) {
 // find a local's index in localVars with a token
 int Compiler::resolveLocal(const Token* name, size_t functionIndex) {
   for (int i = (int)(localVars[functionIndex].size()) - 1; i >= 0; i--) {
-    std::shared_ptr<Local> curLocal = localVars.back().at(i);
+    std::shared_ptr<Local> curLocal = localVars[functionIndex].at(i);
     if (curLocal->name.lexeme == name->lexeme) {
       return i;
     }
@@ -799,6 +824,9 @@ void Compiler::namedVariable(const Token* name, bool canAssign) {
   if (arg != -1) {
     getOp = OP_GET_LOCAL;
     setOp = OP_SET_LOCAL;
+  } else if ((arg = resolveUpvalue(name, functions.size() - 1)) != -1) {
+    getOp = OP_GET_UPVALUE;
+    setOp = OP_SET_UPVALUE;
   } else {
     arg = identifierConstant(name);
     getOp = OP_GET_GLOBAL;
@@ -889,10 +917,11 @@ void LocalVariables::pop_back() {
 size_t LocalVariables::size() const { return hash.size(); }
 
 int Compiler::resolveUpvalue(const Token* name, size_t functionIndex) {
-  if (localVars.size() == 1) return -1;
+  if (localVars.size() == 1 || functionIndex == 0) return -1;
 
   int local = resolveLocal(name, functionIndex - 1);
   if (local != -1) {
+    localVars[functionIndex - 1].getLocalAt(local)->isCaptured = true;
     return addUpvalue((uint8_t)local, true, functionIndex);
   }
 
@@ -903,6 +932,10 @@ int Compiler::resolveUpvalue(const Token* name, size_t functionIndex) {
 
   return -1;
 }
+
+FunctionInfo::FunctionInfo(std::shared_ptr<ObjectFunction> function,
+                           FunctionType type)
+    : function{function}, type{type} {}
 
 bool Upvalue::operator==(const Upvalue& compared) const {
   return this->index == compared.index && this->isLocal == compared.isLocal;
@@ -919,5 +952,10 @@ int Compiler::addUpvalue(uint8_t upvalueIndex, bool isLocal,
   }
 
   functions[functionIndex].upvalues.push_back(newUpvalue);
+  functions[functionIndex].function->increateUpvalueCount();
   return functions[functionIndex].upvalues.size() - 1;
+}
+
+std::shared_ptr<Local> LocalVariables::getLocalAt(int index) {
+  return list[index];
 }

@@ -32,6 +32,9 @@ void printValueType(Value value) {
         case OBJECT_STRING:
           std::cout << "OBJECT_STRING";
           break;
+        case OBJECT_UPVALUE:
+          std::cout << "OBJECT_UPVALUE";
+          break;
       }
       break;
   }
@@ -123,9 +126,11 @@ size_t printInstruction(Chunk& chunk, size_t index) {
     case OP_CLOSURE:
       return constantInstruction("OP_CLOSURE", chunk, index);
     case OP_GET_UPVALUE:
+      return constantInstruction("OP_GET_UPVALUE", chunk, index);
     case OP_SET_UPVALUE:
-      std::cout << "XD" << std::endl;
-      return index + 2;
+      return constantInstruction("OP_SET_UPVALUE", chunk, index);
+    case OP_CLOSE_UPVALUE:
+      return simpleInstruction("OP_CLOSE_OPVALUE", index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;

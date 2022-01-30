@@ -44,6 +44,7 @@ struct ParseRule {
 struct Local {
   const Token& name;
   int depth;
+  bool isCaptured = false;
 
   Local(const Token& name, int depth);
 
@@ -91,6 +92,7 @@ class LocalVariables {
   void insert(const std::shared_ptr<Local>);
   void pop_back();
   size_t size() const;
+  std::shared_ptr<Local> getLocalAt(int);
 };
 
 enum FunctionType { TYPE_FUNCTION, TYPE_SCRIPT };
@@ -99,6 +101,8 @@ struct FunctionInfo {
   std::shared_ptr<ObjectFunction> function;
   FunctionType type;
   std::vector<Upvalue> upvalues;
+
+  FunctionInfo(std::shared_ptr<ObjectFunction> function, FunctionType type);
 };
 
 class Compiler {

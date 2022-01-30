@@ -20,6 +20,7 @@ enum InterpretResult {
 class MemoryStack : public std::stack<Value> {
  public:
   Value getValueAt(size_t index) const;
+  Value* getValuePtrAt(size_t index) const;
   void setValueAt(Value value, size_t index);
 };
 
@@ -36,6 +37,7 @@ class VM {
   std::unordered_map<std::shared_ptr<ObjectString>, Value, ObjectString::Hash,
                      ObjectString::Comparator>
       globals;
+  std::shared_ptr<ObjectUpvalue> openUpvalues = nullptr;  // head of linked list
 
   InterpretResult binaryOperation(char operation);
   InterpretResult run();
@@ -57,6 +59,10 @@ class VM {
   // for native functions:
   void defineNative(std::string name, NativeFn function);
   static Value clockNative(int argCount, size_t start);
+
+  // for upvalues:
+  std::shared_ptr<ObjectUpvalue> captureUpvalue(Value* local, int localIndex);
+  void closeUpvalues(int lastIndex);
 
  public:
   InterpretResult interpret(std::shared_ptr<ObjectFunction> function);
