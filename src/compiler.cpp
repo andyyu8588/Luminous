@@ -921,7 +921,7 @@ int Compiler::resolveUpvalue(const Token* name, size_t functionIndex) {
 
   int local = resolveLocal(name, functionIndex - 1);
   if (local != -1) {
-    localVars[functionIndex - 1].getLocalAt(local)->isCaptured = true;
+    localVars[functionIndex - 1].at(local)->isCaptured = true;
     return addUpvalue((uint8_t)local, true, functionIndex);
   }
 
@@ -954,8 +954,4 @@ int Compiler::addUpvalue(uint8_t upvalueIndex, bool isLocal,
   functions[functionIndex].upvalues.push_back(newUpvalue);
   functions[functionIndex].function->increateUpvalueCount();
   return functions[functionIndex].upvalues.size() - 1;
-}
-
-std::shared_ptr<Local> LocalVariables::getLocalAt(int index) {
-  return list[index];
 }
