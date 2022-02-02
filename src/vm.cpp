@@ -172,6 +172,41 @@ InterpretResult VM::run() {
         globals.insert_or_assign(name, memory.top());
         break;
       }
+      case OP_GET_PROPERTY: {
+        if (!IS_INSTANCE(memory.top())) {
+          runtimeError("Only instances have properties.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+
+        ObjectInstance& instance = *(AS_INSTANCE(memory.top()));
+        std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(readConstant());
+
+        const Value* value = instance.getField(name);
+        if (value != nullptr) {
+          memory.pop();
+          memory.push(*value);
+          break;
+        }
+
+        runtimeError("Undefined property '%s'.", name->getString().c_str());
+        return INTERPRET_RUNTIME_ERROR;
+      }
+      case OP_SET_PROPERTY: {
+        Value value = memory.top();
+        memory.pop();
+
+        if (!IS_INSTANCE(memory.top())) {
+          runtimeError("Only instances have fields.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+
+        ObjectInstance* instance = AS_INSTANCE(memory.top()).get();
+        memory.pop();
+
+        instance->setField(AS_OBJECTSTRING(readConstant()), value);
+        memory.push(value);
+        break;
+      }
       case OP_EQUAL: {
         Value a = memory.top();
         memory.pop();
@@ -300,8 +335,13 @@ InterpretResult VM::run() {
         closeUpvalues(frame->stackPos);
 
         // pop all local variables alongside function object
-        size_t initialMemorySize = memory.size();
-        for (size_t i = frames.top().stackPos; i < initialMemorySize; i++) {
+        if (frames.size() > 1) {
+          size_t initialMemorySize = memory.size();
+          for (size_t i = frames.top().stackPos; i < initialMemorySize; i++) {
+            memory.pop();
+          }
+        } else {  // if we are at <script>, only pop once, since there shouldn't
+                  // be any local variables
           memory.pop();
         }
 
@@ -325,6 +365,11 @@ InterpretResult VM::run() {
         // push return value on stack (for outer scope) and set next frame
         memory.push(top);
         frame = &(frames.top());
+        break;
+      }
+      case OP_CLASS: {
+        memory.push(OBJECT_VAL(
+            std::make_shared<ObjectClass>(AS_STRING(readConstant()))));
         break;
       }
     }
@@ -352,6 +397,14 @@ bool VM::call(std::shared_ptr<ObjectClosure> closure, int argCount) {
 bool VM::callValue(Value callee, int argCount) {
   if (IS_OBJECT(callee)) {
     switch (OBJECT_TYPE(callee)) {
+      case OBJECT_CLASS: {
+        ObjectClass* instanceOf = AS_CLASS(callee).get();
+        memory.pop();
+        memory.push(OBJECT_VAL(std::make_shared<ObjectInstance>(*instanceOf)));
+        return true;
+      }
+      case OBJECT_CLOSURE:
+        return call(AS_CLOSURE(callee), argCount);
       case OBJECT_NATIVE: {
         NativeFn native = AS_NATIVE(callee)->getFunction();
         Value result = native(argCount, memory.size() - argCount);
@@ -361,8 +414,6 @@ bool VM::callValue(Value callee, int argCount) {
         memory.push(result);
         return true;
       }
-      case OBJECT_CLOSURE:
-        return call(AS_CLOSURE(callee), argCount);
       default:
         break;
     }
@@ -425,7 +476,7 @@ std::shared_ptr<ObjectUpvalue> VM::captureUpvalue(Value* local,
   }
 
   std::shared_ptr<ObjectUpvalue> toReturn =
-      std::make_shared<ObjectUpvalue>(local, localIndex);
+      std::make_shared<ObjectUpvalue>(localIndex, local);
   toReturn->next = upvalue;
 
   if (prevUpvalue == nullptr) {

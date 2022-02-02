@@ -20,11 +20,17 @@ void printValueType(Value value) {
       break;
     case VAL_OBJECT:
       switch (OBJECT_TYPE(value)) {
+        case OBJECT_CLASS:
+          std::cout << "OBJECT_CLASS";
+          break;
         case OBJECT_CLOSURE:
           std::cout << "OBJECT_CLOSURE";
           break;
         case OBJECT_FUNCTION:
           std::cout << "OBJECT_FUNCTION";
+          break;
+        case OBJECT_INSTANCE:
+          std::cout << "OBJECT_INSTANCE";
           break;
         case OBJECT_NATIVE:
           std::cout << "OBJECT_FUNCTION";
@@ -131,6 +137,12 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return constantInstruction("OP_SET_UPVALUE", chunk, index);
     case OP_CLOSE_UPVALUE:
       return simpleInstruction("OP_CLOSE_OPVALUE", index);
+    case OP_CLASS:
+      return constantInstruction("OP_CLASS", chunk, index);
+    case OP_GET_PROPERTY:
+      return constantInstruction("OP_GET_PROPERTY", chunk, index);
+    case OP_SET_PROPERTY:
+      return constantInstruction("OP_SET_PROPERTY", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
@@ -299,6 +311,9 @@ void printTokens(const std::vector<Token>& tokens) {
       case TOKEN_PERC:
         std::cout << "PERC" << std::endl;
         break;
+      case TOKEN_CLASS:
+        std::cout << "CLASS" << std::endl;
+        break;
     }
   }
   std::cout << std::endl;
@@ -325,4 +340,16 @@ void printStack(MemoryStack& memory) {
     std::cout << std::endl;
   }
   std::cout << std::endl;
+}
+
+void printGlobals(
+    std::unordered_map<std::shared_ptr<ObjectString>, Value, ObjectString::Hash,
+                       ObjectString::Comparator>& globals) {
+  for (auto& it : globals) {
+    std::cout << "Variable name: " << it.first->getString();
+    std::cout << std::endl;
+    std::cout << "Value: ";
+    it.second.printValue();
+    std::cout << std::endl;
+  }
 }

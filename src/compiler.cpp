@@ -99,6 +99,10 @@ Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
         ruleMap[TOKEN_PERC] = {nullptr, std::bind(&Compiler::binary, this, _1),
                                PREC_TERM};
         break;
+      case TOKEN_DOT:
+        ruleMap[TOKEN_DOT] = {nullptr, std::bind(&Compiler::dot, this, _1),
+                              PREC_CALL};
+        break;
       default:
         ruleMap[curToken] = {nullptr, nullptr, PREC_NONE};
     }
@@ -410,18 +414,12 @@ void Compiler::function(FunctionType type) {
     emitByte(upvalues[i].isLocal ? 1 : 0);
     emitByte(upvalues[i].index);
   }
-  /*
-    scopeDepth--;
-
-    while (localVars.back().size() > 0 &&
-           localVars.back().back()->depth > scopeDepth) {
-      localVars.back().pop_back();
-    }
-  */
 }
 
 void Compiler::declaration() {
-  if (match(TOKEN_FUNCTION)) {
+  if (match(TOKEN_CLASS)) {
+    classDeclaration();
+  } else if (match(TOKEN_FUNCTION)) {
     functionDeclaration();
   } else {
     statement();
@@ -682,6 +680,16 @@ void Compiler::forStatement() {
 void Compiler::returnStatement() {
   if (functions.back().type == TYPE_SCRIPT) {
     error(parser.current->line, "Can't return from top-level code.");
+  }
+
+  while (localVars.back().size() > 0 &&
+         localVars.back().back()->depth > scopeDepth) {
+    if (localVars.back().back()->isCaptured) {
+      emitByte(OP_CLOSE_UPVALUE);
+    } else {
+      emitByte(OP_POP);
+    }
+    localVars.back().pop_back();
   }
 
   if (match(TOKEN_SEMI)) {
@@ -954,4 +962,35 @@ int Compiler::addUpvalue(uint8_t upvalueIndex, bool isLocal,
   functions[functionIndex].upvalues.push_back(newUpvalue);
   functions[functionIndex].function->increateUpvalueCount();
   return functions[functionIndex].upvalues.size() - 1;
+}
+
+void Compiler::classDeclaration() {
+  consume(TOKEN_ID, "Expect class name.");
+
+  if (globalVars.contains(parser.prev->lexeme)) {
+    error(parser.prev->line, "Illegal class name '" + parser.prev->lexeme +
+                                 "'. Class already exists.");
+  }
+
+  uint8_t global = identifierConstant(parser.prev);
+
+  emitByte(OP_CLASS);
+  emitByte(global);
+  emitByte(OP_SET_GLOBAL);
+  emitByte(global);
+  emitByte(OP_POP);
+}
+
+void Compiler::dot(bool canAssign) {
+  consume(TOKEN_ID, "Expect property name after '.'.");
+  uint8_t name = identifierConstant(parser.prev);
+
+  // does this work for for loop from?
+  if (canAssign && match(TOKEN_BECOMES)) {
+    expression();
+    emitByte(OP_SET_PROPERTY);
+  } else {
+    emitByte(OP_GET_PROPERTY);
+  }
+  emitByte(name);
 }

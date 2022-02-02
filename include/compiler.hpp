@@ -150,6 +150,8 @@ class Compiler {
   void variable(bool canAssign);
   void andOperation(bool canAssign);
   void orOperation(bool canAssign);
+  void call(bool canAssign);
+  void dot(bool canAssign);
 
   ParseRule* getRule(TokenType type);
 
@@ -159,11 +161,11 @@ class Compiler {
   void printStatement();
   void expressionStatement();
 
-  // for variable assignment and retrieval
+  // variable assignment and retrieval:
   uint8_t identifierConstant(const Token* var);
   void namedVariable(const Token* name, bool canAssign);
 
-  // for local variables:
+  // local variables:
   void beginScope();
   void endScope();
   void block();
@@ -183,13 +185,15 @@ class Compiler {
   // functions:
   void functionDeclaration();
   void function(FunctionType type);
-  void call(bool canAssign);
   uint8_t argumentList();
   void returnStatement();
 
   // closures:
   int resolveUpvalue(const Token*, size_t);
   int addUpvalue(uint8_t, bool, size_t);
+
+  // classes:
+  void classDeclaration();
 
   // for error synchronization:
   void synchronize();

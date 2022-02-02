@@ -34,7 +34,8 @@ class Scanner {
       {"from", TOKEN_FROM},
       {"to", TOKEN_TO},
       {"by", TOKEN_BY},
-      {"function", TOKEN_FUNCTION}};
+      {"function", TOKEN_FUNCTION},
+      {"class", TOKEN_CLASS}};
   int start = 0;
   int current = 0;
   int line = 1;

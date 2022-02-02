@@ -7,9 +7,7 @@ Object::Object(ObjectType type) : type{type} {}
 ObjectType Object::getType() const { return type; }
 
 ObjectString::ObjectString(const std::string& str)
-    : Object(OBJECT_STRING), str{str} {
-  hash = std::hash<std::string>{}(str);
-}
+    : Object(OBJECT_STRING), str{str}, hash{std::hash<std::string>{}(str)} {}
 
 const std::string& ObjectString::getString() const { return str; }
 
@@ -17,6 +15,10 @@ size_t ObjectString::getHash() const { return hash; }
 
 void Object::printObject() const {
   switch (type) {
+    case OBJECT_CLASS: {
+      std::cout << ((ObjectClass*)this)->getName().getString();
+      break;
+    }
     case OBJECT_CLOSURE: {
       ((ObjectClosure*)this)->getFunction()->printObject();
       break;
@@ -27,6 +29,21 @@ void Object::printObject() const {
       } else {
         std::cout << ((ObjectFunction*)this)->getName()->getString();
       }
+      break;
+    }
+    case OBJECT_INSTANCE: {
+      ((ObjectInstance*)this)->getInstanceOf().printObject();
+      std::cout << " instance";
+#ifdef DEBUG
+      std::cout << std::endl;
+      std::cout << "Fields:" << std::endl;
+      for (auto& it : ((ObjectInstance*)this)->getFields()) {
+        std::cout << "Name: " << it.first->getString() << std::endl;
+        std::cout << "Value: ";
+        it.second.printValue();
+        std::cout << std::endl;
+      }
+#endif
       break;
     }
     case OBJECT_STRING: {
@@ -56,7 +73,7 @@ bool ObjectString::Comparator::operator()(
 }
 
 ObjectFunction::ObjectFunction(std::shared_ptr<ObjectString> name)
-    : Object(OBJECT_FUNCTION), arity{0}, name{name} {}
+    : Object(OBJECT_FUNCTION), name{name} {}
 
 const std::shared_ptr<ObjectString> ObjectFunction::getName() const {
   return name;
@@ -96,7 +113,7 @@ std::shared_ptr<ObjectUpvalue> ObjectClosure::getUpvalue(int index) const {
   return upvalues[index];
 }
 
-ObjectUpvalue::ObjectUpvalue(Value* location, int locationIndex)
+ObjectUpvalue::ObjectUpvalue(int locationIndex, Value* location)
     : Object(OBJECT_UPVALUE),
       locationIndex{locationIndex},
       location{location} {}
@@ -114,3 +131,24 @@ void ObjectClosure::addUpvalue(std::shared_ptr<ObjectUpvalue> upvalue) {
 }
 
 int ObjectUpvalue::getLocationIndex() const { return locationIndex; }
+
+ObjectClass::ObjectClass(const std::string& name)
+    : Object(OBJECT_CLASS), name{ObjectString(name)} {}
+
+const ObjectString& ObjectClass::getName() const { return name; }
+
+ObjectInstance::ObjectInstance(const ObjectClass& instanceOf)
+    : Object(OBJECT_INSTANCE), instanceOf{instanceOf} {}
+
+const ObjectClass& ObjectInstance::getInstanceOf() const { return instanceOf; }
+
+const Value* ObjectInstance::getField(
+    std::shared_ptr<ObjectString> field) const {
+  if (fields.find(field) == fields.end()) return nullptr;
+  return &(fields.find(field)->second);
+}
+
+void ObjectInstance::setField(std::shared_ptr<ObjectString> field,
+                              Value value) {
+  fields.insert_or_assign(field, value);
+}
