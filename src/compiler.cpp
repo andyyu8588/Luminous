@@ -1027,7 +1027,8 @@ void Compiler::classDeclaration() {
 
 void Compiler::method() {
   consume(TOKEN_ID, "Expect method name.");
-  uint8_t constant = identifierConstant(parser.prev);
+  uint8_t constant = makeConstant(
+      OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
   FunctionType type = TYPE_METHOD;
   if (parser.prev->lexeme == "constructor") {
     type = TYPE_CONSTRUCTOR;
@@ -1039,7 +1040,8 @@ void Compiler::method() {
 
 void Compiler::dot(bool canAssign) {
   consume(TOKEN_ID, "Expect property name after '.'.");
-  uint8_t name = identifierConstant(parser.prev);
+  uint8_t name = makeConstant(
+      OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
 
   // does this work for for loop from?
   if (canAssign && match(TOKEN_BECOMES)) {

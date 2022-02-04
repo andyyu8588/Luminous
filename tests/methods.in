@@ -84,3 +84,12 @@ function test() {
 test();
 andyAction();
 andyAction2();
+
+job1 = Job("bigman", 10);
+
+function changeSalary(job) {
+    job.salary = 0;
+}
+
+changeSalary(job1);
+print(job1.salary);
