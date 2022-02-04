@@ -15,6 +15,10 @@ size_t ObjectString::getHash() const { return hash; }
 
 void Object::printObject() const {
   switch (type) {
+    case OBJECT_BOUND_METHOD: {
+      ((ObjectBoundMethod*)this)->getMethod()->getFunction()->printObject();
+      break;
+    }
     case OBJECT_CLASS: {
       std::cout << ((ObjectClass*)this)->getName().getString();
       break;
@@ -137,18 +141,36 @@ ObjectClass::ObjectClass(const std::string& name)
 
 const ObjectString& ObjectClass::getName() const { return name; }
 
+const Value* ObjectClass::getMethod(std::shared_ptr<ObjectString> name) const {
+  if (methods.find(name) == methods.end()) return nullptr;
+  return &(methods.find(name)->second);
+}
+
+void ObjectClass::setMethod(std::shared_ptr<ObjectString> name, Value method) {
+  methods.insert_or_assign(name, method);
+}
+
 ObjectInstance::ObjectInstance(const ObjectClass& instanceOf)
     : Object(OBJECT_INSTANCE), instanceOf{instanceOf} {}
 
 const ObjectClass& ObjectInstance::getInstanceOf() const { return instanceOf; }
 
 const Value* ObjectInstance::getField(
-    std::shared_ptr<ObjectString> field) const {
-  if (fields.find(field) == fields.end()) return nullptr;
-  return &(fields.find(field)->second);
+    std::shared_ptr<ObjectString> name) const {
+  if (fields.find(name) == fields.end()) return nullptr;
+  return &(fields.find(name)->second);
 }
 
-void ObjectInstance::setField(std::shared_ptr<ObjectString> field,
-                              Value value) {
-  fields.insert_or_assign(field, value);
+void ObjectInstance::setField(std::shared_ptr<ObjectString> name, Value value) {
+  fields.insert_or_assign(name, value);
+}
+
+ObjectBoundMethod::ObjectBoundMethod(Value receiver,
+                                     std::shared_ptr<ObjectClosure> method)
+    : Object(OBJECT_BOUND_METHOD), receiver{receiver}, method{method} {}
+
+Value ObjectBoundMethod::getReceiver() const { return receiver; }
+
+std::shared_ptr<ObjectClosure> ObjectBoundMethod::getMethod() const {
+  return method;
 }

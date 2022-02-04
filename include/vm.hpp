@@ -38,6 +38,8 @@ class VM {
                      ObjectString::Comparator>
       globals;
   std::shared_ptr<ObjectUpvalue> openUpvalues = nullptr;  // head of linked list
+  const std::shared_ptr<ObjectString> constructorString =
+      std::make_shared<ObjectString>("constructor");
 
   InterpretResult binaryOperation(char operation);
   InterpretResult run();
@@ -63,6 +65,11 @@ class VM {
   // for upvalues:
   std::shared_ptr<ObjectUpvalue> captureUpvalue(Value* local, int localIndex);
   void closeUpvalues(int lastIndex);
+
+  // for classes:
+  void defineMethod(std::shared_ptr<ObjectString> name);
+  bool bindMethod(const ObjectClass& instanceOf,
+                  std::shared_ptr<ObjectString> name);
 
  public:
   InterpretResult interpret(std::shared_ptr<ObjectFunction> function);

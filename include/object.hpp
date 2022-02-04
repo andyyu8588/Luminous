@@ -9,6 +9,8 @@
 
 #define OBJECT_TYPE(value) (AS_OBJECT(value)->getType())
 
+#define IS_BOUND_METHOD(value) \
+  (IS_OBJECT(value) && OBJECT_TYPE(value) == OBJECT_BOUND_METHOD)
 #define IS_CLASS(value) (IS_OBJECT(value) && OBJECT_TYPE(value) == OBJECT_CLASS)
 #define IS_CLOSURE(value) \
   (IS_OBJECT(value) && OBJECT_TYPE(value) == OBJECT_CLOSURE)
@@ -21,6 +23,8 @@
 #define IS_STRING(value) \
   (IS_OBJECT(value) && OBJECT_TYPE(value) == OBJECT_STRING)
 
+#define AS_BOUND_METHOD(value) \
+  (std::static_pointer_cast<ObjectBoundMethod>(AS_OBJECT(value)))
 #define AS_CLASS(value) \
   (std::static_pointer_cast<ObjectClass>(AS_OBJECT(value)))
 #define AS_CLOSURE(value) \
@@ -37,6 +41,7 @@
   ((std::static_pointer_cast<ObjectString>(AS_OBJECT(value)))->getString())
 
 enum ObjectType {
+  OBJECT_BOUND_METHOD,
   OBJECT_CLASS,
   OBJECT_CLOSURE,
   OBJECT_FUNCTION,
@@ -138,11 +143,16 @@ class ObjectClosure : public Object {
 
 class ObjectClass : public Object {
   ObjectString name;
+  std::unordered_map<std::shared_ptr<ObjectString>, Value, ObjectString::Hash,
+                     ObjectString::Comparator>
+      methods;
 
  public:
   ObjectClass(const std::string& name);
 
   const ObjectString& getName() const;
+  const Value* getMethod(std::shared_ptr<ObjectString>) const;
+  void setMethod(std::shared_ptr<ObjectString>, Value);
 };
 
 class ObjectInstance : public Object {
@@ -155,8 +165,8 @@ class ObjectInstance : public Object {
   ObjectInstance(const ObjectClass& instanceOf);
 
   const ObjectClass& getInstanceOf() const;
-  const Value* getField(std::shared_ptr<ObjectString> field) const;
-  void setField(std::shared_ptr<ObjectString> field, Value value);
+  const Value* getField(std::shared_ptr<ObjectString> name) const;
+  void setField(std::shared_ptr<ObjectString> name, Value value);
 
 #ifdef DEBUG
   std::unordered_map<std::shared_ptr<ObjectString>, Value, ObjectString::Hash,
@@ -165,4 +175,15 @@ class ObjectInstance : public Object {
     return fields;
   }
 #endif
+};
+
+class ObjectBoundMethod : public Object {
+  const Value receiver;
+  std::shared_ptr<ObjectClosure> method;
+
+ public:
+  ObjectBoundMethod(Value receiver, std::shared_ptr<ObjectClosure> method);
+
+  Value getReceiver() const;
+  std::shared_ptr<ObjectClosure> getMethod() const;
 };

@@ -1,0 +1,54 @@
+class Andy {
+    constructor(age, height, weight, job) {
+        this.age = age;
+        this.height = height;
+        this.weight = weight;
+        this.job = job;
+    }
+
+    workout() {
+        print("Andy did some workout.");
+        this.weight = this.weight - 0.2;
+        print("Current weight: ");
+        print(this.weight);
+    }
+
+    grow() {
+        print("Andy aged.");
+        this.height = this.height + 2;
+        this.age = this.age + 1;
+        print("Current age: ");
+        print(this.age);
+        print("Current height: ");
+        print(this.height);
+    }
+}
+
+class Job {
+    constructor(title, salary) {
+        this.title = title;
+        this.salary = salary;
+    }
+
+    makeMoney() {
+        if(this.title equals "software developer") {
+            this.salary = this.salary + 100000;
+        } else {
+            this.salary = 0;
+        }
+        print("Salary: ");
+        print(this.salary);
+    }
+
+    changeJob(newJob) {
+        this.job = newJob;
+        print("New job is: " + this.job);
+    }
+}
+
+andy = Andy(18, 180.5, 75.4, Job("software developer", 200000));
+andy.workout();
+andy.grow();
+andy.job.makeMoney();
+andy.job.changeJob("CEO");
+andy.job.makeMoney();

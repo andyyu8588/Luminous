@@ -103,6 +103,10 @@ Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
         ruleMap[TOKEN_DOT] = {nullptr, std::bind(&Compiler::dot, this, _1),
                               PREC_CALL};
         break;
+      case TOKEN_THIS:
+        ruleMap[TOKEN_THIS] = {std::bind(&Compiler::this_, this, _1), nullptr,
+                               PREC_NONE};
+        break;
       default:
         ruleMap[curToken] = {nullptr, nullptr, PREC_NONE};
     }
@@ -181,11 +185,19 @@ void Compiler::emitByte(uint8_t byte) {
 std::shared_ptr<ObjectFunction> Compiler::getFunction() {
   std::shared_ptr<ObjectFunction> topFunc = functions.back().function;
   Chunk& topFuncChunk = topFunc->getChunk();
+
+  // if the function doesn't have a return statement at the end
   if (topFuncChunk.getBytecodeAt(topFuncChunk.getBytecodeSize() - 1).code !=
       OP_RETURN) {
-    emitByte(OP_NULL);
+    if (functions.back().type == TYPE_CONSTRUCTOR) {
+      emitByte(OP_GET_LOCAL);
+      emitByte(0);
+    } else {
+      emitByte(OP_NULL);
+    }
     emitByte(OP_RETURN);
   }
+
   functions.pop_back();
   localVars.pop_back();
   return topFunc;
@@ -378,7 +390,13 @@ void Compiler::function(FunctionType type) {
   functions.push_back(FunctionInfo(objectFunction, type));
 
   localVars.push_back(LocalVariables());
-  localVars.back().insert(std::make_shared<Local>(*(parser.prev), scopeDepth));
+
+  // use first position on stack if it's a method
+  const Token& firstLocalName =
+      type != TYPE_FUNCTION
+          ? *(std::make_shared<Token>(TOKEN_THIS, "this", parser.prev->line))
+          : *(parser.prev);
+  localVars.back().insert(std::make_shared<Local>(firstLocalName, scopeDepth));
 
   // parameters:
   consume(TOKEN_LPAREN, "Expect '(' after function name.");
@@ -681,6 +699,9 @@ void Compiler::returnStatement() {
   if (functions.back().type == TYPE_SCRIPT) {
     error(parser.current->line, "Can't return from top-level code.");
   }
+  if (functions.back().type == TYPE_CONSTRUCTOR) {
+    error(parser.current->line, "Can't return a value from a constructor.");
+  }
 
   while (localVars.back().size() > 0 &&
          localVars.back().back()->depth > scopeDepth) {
@@ -972,13 +993,42 @@ void Compiler::classDeclaration() {
                                  "'. Class already exists.");
   }
 
-  uint8_t global = identifierConstant(parser.prev);
+  // add to stack of classes
+  classes.push_back(parser.prev);
 
+  // define the class as a global var
+  const Token* className = parser.prev;
+  uint8_t global = identifierConstant(className);
   emitByte(OP_CLASS);
   emitByte(global);
   emitByte(OP_SET_GLOBAL);
   emitByte(global);
   emitByte(OP_POP);
+
+  // parse the methods
+  namedVariable(className, false);
+  consume(TOKEN_LBRACE, "Expect '{' before class body.");
+  while (!(TOKEN_RBRACE == parser.current->type) &&
+         !(TOKEN_EOF == parser.current->type)) {
+    method();
+  }
+  consume(TOKEN_RBRACE, "Expect '}' after class body.");
+  emitByte(OP_POP);
+
+  // pop from stack of classes
+  classes.pop_back();
+}
+
+void Compiler::method() {
+  consume(TOKEN_ID, "Expect method name.");
+  uint8_t constant = identifierConstant(parser.prev);
+  FunctionType type = TYPE_METHOD;
+  if (parser.prev->lexeme == "constructor") {
+    type = TYPE_CONSTRUCTOR;
+  }
+  function(type);
+  emitByte(OP_METHOD);
+  emitByte(constant);
 }
 
 void Compiler::dot(bool canAssign) {
@@ -993,4 +1043,11 @@ void Compiler::dot(bool canAssign) {
     emitByte(OP_GET_PROPERTY);
   }
   emitByte(name);
+}
+
+void Compiler::this_(bool canAssign) {
+  (void)canAssign;
+  if (classes.empty())
+    error(parser.current->line, "Can't use 'this' outside of a class.");
+  variable(false);
 }

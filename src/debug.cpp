@@ -20,6 +20,9 @@ void printValueType(Value value) {
       break;
     case VAL_OBJECT:
       switch (OBJECT_TYPE(value)) {
+        case OBJECT_BOUND_METHOD:
+          std::cout << "OBJECT_BOUND_METHOD";
+          break;
         case OBJECT_CLASS:
           std::cout << "OBJECT_CLASS";
           break;
@@ -143,6 +146,8 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return constantInstruction("OP_GET_PROPERTY", chunk, index);
     case OP_SET_PROPERTY:
       return constantInstruction("OP_SET_PROPERTY", chunk, index);
+    case OP_METHOD:
+      return constantInstruction("OP_METHOD", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
@@ -313,6 +318,9 @@ void printTokens(const std::vector<Token>& tokens) {
         break;
       case TOKEN_CLASS:
         std::cout << "CLASS" << std::endl;
+        break;
+      case TOKEN_THIS:
+        std::cout << "THIS" << std::endl;
         break;
     }
   }

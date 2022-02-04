@@ -188,8 +188,10 @@ InterpretResult VM::run() {
           break;
         }
 
-        runtimeError("Undefined property '%s'.", name->getString().c_str());
-        return INTERPRET_RUNTIME_ERROR;
+        if (!bindMethod(instance.getInstanceOf(), name)) {
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        break;
       }
       case OP_SET_PROPERTY: {
         Value value = memory.top();
@@ -328,6 +330,10 @@ InterpretResult VM::run() {
         memory.pop();
         break;
       }
+      case OP_METHOD: {
+        defineMethod(AS_OBJECTSTRING(readConstant()));
+        break;
+      }
       case OP_RETURN: {
         // retrieve and pop return value
         Value top = memory.top();
@@ -397,10 +403,23 @@ bool VM::call(std::shared_ptr<ObjectClosure> closure, int argCount) {
 bool VM::callValue(Value callee, int argCount) {
   if (IS_OBJECT(callee)) {
     switch (OBJECT_TYPE(callee)) {
+      case OBJECT_BOUND_METHOD: {
+        ObjectBoundMethod* bound = AS_BOUND_METHOD(callee).get();
+        memory.setValueAt(bound->getReceiver(), memory.size() - 1 - argCount);
+        return call(bound->getMethod(), argCount);
+      }
       case OBJECT_CLASS: {
         ObjectClass* instanceOf = AS_CLASS(callee).get();
-        memory.pop();
-        memory.push(OBJECT_VAL(std::make_shared<ObjectInstance>(*instanceOf)));
+        memory.setValueAt(
+            OBJECT_VAL(std::make_shared<ObjectInstance>(*instanceOf)),
+            memory.size() - 1 - argCount);
+        const Value* initializer = instanceOf->getMethod(constructorString);
+        if (initializer != nullptr) {
+          return call(AS_CLOSURE(*initializer), argCount);
+        } else if (argCount != 0) {
+          runtimeError("Expected 0 arguments but got %d.", argCount);
+          return false;
+        }
         return true;
       }
       case OBJECT_CLOSURE:
@@ -496,4 +515,27 @@ void VM::closeUpvalues(int lastIndex) {
     upvalue->location = &(upvalue->closed.value());
     openUpvalues = upvalue->next;
   }
+}
+
+void VM::defineMethod(std::shared_ptr<ObjectString> name) {
+  Value method = memory.top();
+  std::shared_ptr<ObjectClass> classObj =
+      AS_CLASS(memory.getValueAt(memory.size() - 2));
+  classObj->setMethod(name, method);
+  memory.pop();
+}
+
+bool VM::bindMethod(const ObjectClass& instanceOf,
+                    std::shared_ptr<ObjectString> name) {
+  const Value* method = instanceOf.getMethod(name);
+  if (method == nullptr) {
+    runtimeError("Undefined property '%s'.", name->getString().c_str());
+    return false;
+  }
+
+  std::shared_ptr<ObjectBoundMethod> bound =
+      std::make_shared<ObjectBoundMethod>(memory.top(), AS_CLOSURE(*method));
+  memory.pop();
+  memory.push(OBJECT_VAL(bound));
+  return true;
 }

@@ -36,6 +36,7 @@ enum OpCode {
   OP_CLOSURE,
   OP_CLOSE_UPVALUE,
   OP_RETURN,
+  OP_METHOD,
   OP_CLASS
 };
 

@@ -94,7 +94,7 @@ class LocalVariables {
   size_t size() const;
 };
 
-enum FunctionType { TYPE_FUNCTION, TYPE_SCRIPT };
+enum FunctionType { TYPE_FUNCTION, TYPE_METHOD, TYPE_SCRIPT, TYPE_CONSTRUCTOR };
 
 struct FunctionInfo {
   std::shared_ptr<ObjectFunction> const function;
@@ -116,6 +116,9 @@ class Compiler {
 
   // for functions:
   std::vector<FunctionInfo> functions;
+
+  // for classes:
+  std::vector<const Token*> classes;
 
   // returns the current chunk:
   Chunk& currentChunk();
@@ -152,6 +155,7 @@ class Compiler {
   void orOperation(bool canAssign);
   void call(bool canAssign);
   void dot(bool canAssign);
+  void this_(bool canAssign);
 
   ParseRule* getRule(TokenType type);
 
@@ -194,6 +198,7 @@ class Compiler {
 
   // classes:
   void classDeclaration();
+  void method();
 
   // for error synchronization:
   void synchronize();
