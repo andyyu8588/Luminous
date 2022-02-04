@@ -297,6 +297,15 @@ InterpretResult VM::run() {
         frame = &(frames.top());
         break;
       }
+      case OP_INVOKE: {
+        std::shared_ptr<ObjectString> method = AS_OBJECTSTRING(readConstant());
+        int argCount = readByte();
+        if (!invoke(method, argCount)) {
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        frame = &(frames.top());
+        break;
+      }
       case OP_CLOSURE: {
         std::shared_ptr<ObjectFunction> function = AS_FUNCTION(readConstant());
         std::shared_ptr<ObjectClosure> closure =
@@ -538,4 +547,36 @@ bool VM::bindMethod(const ObjectClass& instanceOf,
   memory.pop();
   memory.push(OBJECT_VAL(bound));
   return true;
+}
+
+bool VM::invoke(std::shared_ptr<ObjectString> name, int argCount) {
+  Value receiver = memory.getValueAt(memory.size() - 1 - argCount);
+
+  if (!IS_INSTANCE(receiver)) {
+    runtimeError("Only instances have methods.");
+    return false;
+  }
+
+  std::shared_ptr<ObjectInstance> instance = AS_INSTANCE(receiver);
+
+  const Value* field = instance->getField(name);
+
+  if (field != nullptr) {
+    memory.setValueAt(*field, memory.size() - 1 - argCount);
+    return callValue(*field, argCount);
+  }
+
+  return invokeFromClass(instance->getInstanceOf(), name, argCount);
+}
+
+bool VM::invokeFromClass(const ObjectClass& instanceOf,
+                         std::shared_ptr<ObjectString> name, int argCount) {
+  const Value* method = instanceOf.getMethod(name);
+
+  if (method == nullptr) {
+    runtimeError("Undefined property '%s'.", name->getString().c_str());
+    return false;
+  }
+
+  return call(AS_CLOSURE(*method), argCount);
 }

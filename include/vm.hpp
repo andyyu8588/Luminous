@@ -70,6 +70,9 @@ class VM {
   void defineMethod(std::shared_ptr<ObjectString> name);
   bool bindMethod(const ObjectClass& instanceOf,
                   std::shared_ptr<ObjectString> name);
+  bool invoke(std::shared_ptr<ObjectString> name, int argCount);
+  bool invokeFromClass(const ObjectClass& instanceOf,
+                       std::shared_ptr<ObjectString> name, int argCount);
 
  public:
   InterpretResult interpret(std::shared_ptr<ObjectFunction> function);

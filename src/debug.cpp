@@ -75,6 +75,13 @@ size_t jumpInstruction(std::string name, int sign, Chunk& chunk, size_t index) {
   return index + 3;
 }
 
+size_t invokeInstruction(std::string name, Chunk& chunk, size_t index) {
+  uint8_t constant = chunk.getBytecodeAt(index + 1).code;
+  uint8_t argCount = chunk.getBytecodeAt(index + 2).code;
+  std::cout << name << " " << constant << " " << argCount << std::endl;
+  return index + 3;
+}
+
 size_t printInstruction(Chunk& chunk, size_t index) {
   std::cout << std::setfill('0') << std::setw(5) << index << " ";
   std::cout << std::setfill(' ') << std::setw(5)
@@ -148,6 +155,8 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return constantInstruction("OP_SET_PROPERTY", chunk, index);
     case OP_METHOD:
       return constantInstruction("OP_METHOD", chunk, index);
+    case OP_INVOKE:
+      return invokeInstruction("OP_INVOKE", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;

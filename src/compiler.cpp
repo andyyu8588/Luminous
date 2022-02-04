@@ -1043,14 +1043,19 @@ void Compiler::dot(bool canAssign) {
   uint8_t name = makeConstant(
       OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
 
-  // does this work for for loop from?
   if (canAssign && match(TOKEN_BECOMES)) {
     expression();
     emitByte(OP_SET_PROPERTY);
+    emitByte(name);
+  } else if (match(TOKEN_LPAREN)) {
+    uint8_t argCount = argumentList();
+    emitByte(OP_INVOKE);
+    emitByte(name);
+    emitByte(argCount);
   } else {
     emitByte(OP_GET_PROPERTY);
+    emitByte(name);
   }
-  emitByte(name);
 }
 
 void Compiler::this_(bool canAssign) {
