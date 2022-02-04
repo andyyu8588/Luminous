@@ -32,7 +32,7 @@ main:
 debug:
 	$(MAKE) setup	
 	$(COMPILER) -o $(BIN_DIR)/$(EXECUTABLE) -Iinclude $(SRC_FILES) $(WARNINGS_FLAGS) $(TESTING_FLAGS)
-	lldb ./$(BIN_DIR)/$(EXECUTABLE)
+	gdb ./$(BIN_DIR)/$(EXECUTABLE)
 
 basic:
 	./$(BIN_DIR)/$(EXECUTABLE) ./$(TESTS_DIR)/basic.in
@@ -51,7 +51,7 @@ clean:
 	rm -r $(BIN_DIR)
 
 gdb:
-	lldb ./$(BIN_DIR)/$(EXECUTABLE)
+	gdb ./$(BIN_DIR)/$(EXECUTABLE)
 
 repl:
 	./$(BIN_DIR)/$(EXECUTABLE) 

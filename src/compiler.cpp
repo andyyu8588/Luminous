@@ -392,11 +392,10 @@ void Compiler::function(FunctionType type) {
   localVars.push_back(LocalVariables());
 
   // use first position on stack if it's a method
-  const Token& firstLocalName =
-      type != TYPE_FUNCTION
-          ? *(std::make_shared<Token>(TOKEN_THIS, "this", parser.prev->line))
-          : *(parser.prev);
-  localVars.back().insert(std::make_shared<Local>(firstLocalName, scopeDepth));
+  localVars.back().insert(std::make_shared<Local>(
+      type != TYPE_FUNCTION ? Token(TOKEN_THIS, "this", parser.prev->line)
+                            : *(parser.prev),
+      scopeDepth));
 
   // parameters:
   consume(TOKEN_LPAREN, "Expect '(' after function name.");
@@ -453,6 +452,13 @@ void Compiler::endScope() {
 
   while (localVars.back().size() > 0 &&
          localVars.back().back()->depth > scopeDepth) {
+    // don't emit a pop/close upvalue if returning this for constructor
+    if (functions.size() > 0 && functions.back().type == TYPE_CONSTRUCTOR &&
+        localVars.back().size() == 1) {
+      localVars.back().pop_back();
+      break;
+    }
+
     if (localVars.back().back()->isCaptured) {
       emitByte(OP_CLOSE_UPVALUE);
     } else {

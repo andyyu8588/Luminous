@@ -4,6 +4,8 @@ class Andy {
         this.height = height;
         this.weight = weight;
         this.job = job;
+        this.myself = this;
+        this.myself2 = this;
     }
 
     workout() {
@@ -22,12 +24,20 @@ class Andy {
         print("Current height: ");
         print(this.height);
     }
+
+    printAndy() {
+        print(this.age);
+        print(this.height);
+        print(this.weight);
+        this.job.printJob();
+    }
 }
 
 class Job {
     constructor(title, salary) {
         this.title = title;
         this.salary = salary;
+        this.myself = this;
     }
 
     makeMoney() {
@@ -41,14 +51,36 @@ class Job {
     }
 
     changeJob(newJob) {
-        this.job = newJob;
-        print("New job is: " + this.job);
+        this.title = newJob;
+        print("New job is: " + this.title);
+    }
+
+    printJob() {
+        print(this.title);
+        print(this.salary);
     }
 }
 
-andy = Andy(18, 180.5, 75.4, Job("software developer", 200000));
-andy.workout();
-andy.grow();
-andy.job.makeMoney();
-andy.job.changeJob("CEO");
-andy.job.makeMoney();
+andyAction = null;
+andyAction2 = null;
+
+function test() {
+    andy = Andy(18, 180.5, 75.4, Job("software developer", 200000));
+    function test2() {
+        andy.workout();
+        andy.myself2.grow();
+        andy.job.makeMoney();
+    }
+    function test3() {
+        andy.myself.job.changeJob("CEO");
+        andy.job.myself.makeMoney();
+        andy.printAndy();
+        andy.myself.printAndy();
+    }
+    andyAction = test2;
+    andyAction2 = test3;
+}
+
+test();
+andyAction();
+andyAction2();

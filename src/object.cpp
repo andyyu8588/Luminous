@@ -161,8 +161,16 @@ const Value* ObjectInstance::getField(
   return &(fields.find(name)->second);
 }
 
+void nullDeleter(ObjectInstance* toVoid) { (void)toVoid; }
+
 void ObjectInstance::setField(std::shared_ptr<ObjectString> name, Value value) {
-  fields.insert_or_assign(name, value);
+  if (IS_INSTANCE(value) && AS_INSTANCE(value).get() == this) {
+    std::shared_ptr<ObjectInstance> copy(AS_INSTANCE(value).get(),
+                                         &nullDeleter);
+    fields.insert_or_assign(name, OBJECT_VAL(copy));
+  } else {
+    fields.insert_or_assign(name, value);
+  }
 }
 
 ObjectBoundMethod::ObjectBoundMethod(Value receiver,
