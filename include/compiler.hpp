@@ -104,6 +104,13 @@ struct FunctionInfo {
   FunctionInfo(std::shared_ptr<ObjectFunction> function, FunctionType type);
 };
 
+struct ClassInfo {
+  const Token* name;
+  bool hasSuperclass = false;
+
+  ClassInfo(const Token* name);
+};
+
 class Compiler {
   Parser parser;
   Scanner scanner;
@@ -118,7 +125,7 @@ class Compiler {
   std::vector<FunctionInfo> functions;
 
   // for classes:
-  std::vector<const Token*> classes;
+  std::vector<ClassInfo> classes;
 
   // returns the current chunk:
   Chunk& currentChunk();
@@ -156,6 +163,7 @@ class Compiler {
   void call(bool canAssign);
   void dot(bool canAssign);
   void this_(bool canAssign);
+  void super_(bool canAssign);
 
   ParseRule* getRule(TokenType type);
 
@@ -199,6 +207,7 @@ class Compiler {
   // classes:
   void classDeclaration();
   void method();
+  std::shared_ptr<Token> syntheticToken(const std::string lexeme);
 
   // for error synchronization:
   void synchronize();

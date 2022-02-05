@@ -53,6 +53,8 @@ enum TokenType {
   TOKEN_FUNCTION,
   TOKEN_CLASS,
   TOKEN_THIS,
+  TOKEN_INHERITS,
+  TOKEN_SUPER,
 
   // Misc:
   TOKEN_EOF

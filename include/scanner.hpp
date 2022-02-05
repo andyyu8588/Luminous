@@ -36,7 +36,9 @@ class Scanner {
       {"by", TOKEN_BY},
       {"function", TOKEN_FUNCTION},
       {"class", TOKEN_CLASS},
-      {"this", TOKEN_THIS}};
+      {"this", TOKEN_THIS},
+      {"inherits", TOKEN_INHERITS},
+      {"super", TOKEN_SUPER}};
   int start = 0;
   int current = 0;
   int line = 1;

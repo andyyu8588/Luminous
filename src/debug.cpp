@@ -157,6 +157,12 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return constantInstruction("OP_METHOD", chunk, index);
     case OP_INVOKE:
       return invokeInstruction("OP_INVOKE", chunk, index);
+    case OP_INHERIT:
+      return simpleInstruction("OP_INHERIT", index);
+    case OP_GET_SUPER:
+      return constantInstruction("OP_GET_SUPER", chunk, index);
+    case OP_SUPER_INVOKE:
+      return invokeInstruction("OP_SUPER_INVOKE", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
@@ -330,6 +336,12 @@ void printTokens(const std::vector<Token>& tokens) {
         break;
       case TOKEN_THIS:
         std::cout << "THIS" << std::endl;
+        break;
+      case TOKEN_INHERITS:
+        std::cout << "INHERITS" << std::endl;
+        break;
+      case TOKEN_SUPER:
+        std::cout << "SUPER" << std::endl;
         break;
     }
   }

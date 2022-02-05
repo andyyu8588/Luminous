@@ -153,6 +153,9 @@ class ObjectClass : public Object {
   const ObjectString& getName() const;
   const Value* getMethod(std::shared_ptr<ObjectString>) const;
   void setMethod(std::shared_ptr<ObjectString>, Value);
+
+  // for inheritance
+  void copyMethodsFrom(const ObjectClass& parent);
 };
 
 class ObjectInstance : public Object {

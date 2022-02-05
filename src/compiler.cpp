@@ -107,6 +107,10 @@ Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
         ruleMap[TOKEN_THIS] = {std::bind(&Compiler::this_, this, _1), nullptr,
                                PREC_NONE};
         break;
+      case TOKEN_SUPER:
+        ruleMap[TOKEN_SUPER] = {std::bind(&Compiler::super_, this, _1), nullptr,
+                                PREC_NONE};
+        break;
       default:
         ruleMap[curToken] = {nullptr, nullptr, PREC_NONE};
     }
@@ -1000,7 +1004,7 @@ void Compiler::classDeclaration() {
   }
 
   // add to stack of classes
-  classes.push_back(parser.prev);
+  classes.emplace_back(parser.prev);
 
   // define the class as a global var
   const Token* className = parser.prev;
@@ -1010,6 +1014,23 @@ void Compiler::classDeclaration() {
   emitByte(OP_SET_GLOBAL);
   emitByte(global);
   emitByte(OP_POP);
+
+  if (match(TOKEN_INHERITS)) {
+    consume(TOKEN_ID, "Expects parent class name.");
+    variable(false);
+
+    if (className->lexeme == parser.prev->lexeme) {
+      error(parser.prev->line, "A class cannot inherit from itself.");
+    }
+
+    beginScope();
+    localVars.back().insert(
+        std::make_shared<Local>(*syntheticToken("super"), scopeDepth));
+
+    namedVariable(className, false);
+    emitByte(OP_INHERIT);
+    classes.back().hasSuperclass = true;
+  }
 
   // parse the methods
   namedVariable(className, false);
@@ -1021,8 +1042,16 @@ void Compiler::classDeclaration() {
   consume(TOKEN_RBRACE, "Expect '}' after class body.");
   emitByte(OP_POP);
 
+  if (classes.back().hasSuperclass) {
+    endScope();
+  }
+
   // pop from stack of classes
   classes.pop_back();
+}
+
+std::shared_ptr<Token> Compiler::syntheticToken(const std::string lexeme) {
+  return std::make_shared<Token>(TOKEN_ID, lexeme, parser.prev->line);
 }
 
 void Compiler::method() {
@@ -1064,3 +1093,32 @@ void Compiler::this_(bool canAssign) {
     error(parser.current->line, "Can't use 'this' outside of a class.");
   variable(false);
 }
+
+void Compiler::super_(bool canAssign) {
+  (void)canAssign;
+  if (classes.empty()) {
+    error(parser.prev->line, "Can't use 'super' outside of a class.");
+  } else if (!classes.back().hasSuperclass) {
+    error(parser.prev->line,
+          "Can't use 'super' in a class without superclass.");
+  }
+  consume(TOKEN_DOT, "Expect '.' after 'super'.");
+  consume(TOKEN_ID, "Expect superclass method name.");
+  uint8_t name = makeConstant(
+      OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
+
+  namedVariable(syntheticToken("this").get(), false);
+  if (match(TOKEN_LPAREN)) {
+    uint8_t argCount = argumentList();
+    namedVariable(syntheticToken("super").get(), false);
+    emitByte(OP_SUPER_INVOKE);
+    emitByte(name);
+    emitByte(argCount);
+  } else {
+    namedVariable(syntheticToken("super").get(), false);
+    emitByte(OP_GET_SUPER);
+    emitByte(name);
+  }
+}
+
+ClassInfo::ClassInfo(const Token* name) : name{name} {}

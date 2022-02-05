@@ -209,6 +209,15 @@ InterpretResult VM::run() {
         memory.push(value);
         break;
       }
+      case OP_GET_SUPER: {
+        std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(readConstant());
+        std::shared_ptr<ObjectClass> superclass = AS_CLASS(memory.top());
+        memory.pop();
+        if (!bindMethod(*superclass, name)) {
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        break;
+      }
       case OP_EQUAL: {
         Value a = memory.top();
         memory.pop();
@@ -306,6 +315,17 @@ InterpretResult VM::run() {
         frame = &(frames.top());
         break;
       }
+      case OP_SUPER_INVOKE: {
+        std::shared_ptr<ObjectString> method = AS_OBJECTSTRING(readConstant());
+        int argCount = readByte();
+        std::shared_ptr<ObjectClass> superclass = AS_CLASS(memory.top());
+        memory.pop();
+        if (!invokeFromClass(*superclass, method, argCount)) {
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        frame = &(frames.top());
+        break;
+      }
       case OP_CLOSURE: {
         std::shared_ptr<ObjectFunction> function = AS_FUNCTION(readConstant());
         std::shared_ptr<ObjectClosure> closure =
@@ -322,6 +342,17 @@ InterpretResult VM::run() {
             closure->addUpvalue(frame->closure.getUpvalue(index));
           }
         }
+        break;
+      }
+      case OP_INHERIT: {
+        Value parent = memory.getValueAt(memory.size() - 2);
+        if (!IS_CLASS(parent)) {
+          runtimeError("Must inherit from a class.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        std::shared_ptr<ObjectClass> child = AS_CLASS(memory.top());
+        child->copyMethodsFrom(*(AS_CLASS(parent)));
+        memory.pop();  // Pop the child class
         break;
       }
       case OP_GET_UPVALUE: {

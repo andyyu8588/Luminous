@@ -150,6 +150,12 @@ void ObjectClass::setMethod(std::shared_ptr<ObjectString> name, Value method) {
   methods.insert_or_assign(name, method);
 }
 
+void ObjectClass::copyMethodsFrom(const ObjectClass& parent) {
+  for (auto& it : parent.methods) {
+    methods.insert_or_assign(it.first, it.second);
+  }
+}
+
 ObjectInstance::ObjectInstance(const ObjectClass& instanceOf)
     : Object(OBJECT_INSTANCE), instanceOf{instanceOf} {}
 
