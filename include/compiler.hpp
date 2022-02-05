@@ -127,17 +127,16 @@ class Compiler {
   // for classes:
   std::vector<ClassInfo> classes;
 
-  // returns the current chunk:
-  Chunk& currentChunk();
-
+  // parser token management:
   // advance to the next token in the stream
   void advance();
-
   // advance with type checking
   void consume(TokenType type, const std::string& message);
-
   // returns true if the current token matches the given type and advances
   bool match(TokenType type);
+
+  // returns the current chunk:
+  Chunk& currentChunk();
 
   // add given byte to the current chunk
   void emitByte(uint8_t byte);

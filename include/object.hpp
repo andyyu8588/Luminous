@@ -58,7 +58,9 @@ class Object {
  public:
   Object(ObjectType type);
 
+  // getters
   ObjectType getType() const;
+
   void printObject() const;
 };
 
@@ -68,6 +70,8 @@ class ObjectString : public Object {
 
  public:
   ObjectString(const std::string& str);
+
+  // getters
   const std::string& getString() const;
   size_t getHash() const;
 
@@ -90,12 +94,14 @@ class ObjectFunction : public Object {
  public:
   ObjectFunction(std::shared_ptr<ObjectString> name);
 
+  // getters
   const std::shared_ptr<ObjectString> getName() const;
   Chunk& getChunk();
-  void increaseArity();
   int getArity() const;
-  void increateUpvalueCount();
   int getUpvalueCount() const;
+
+  void increaseArity();
+  void increateUpvalueCount();
 };
 
 typedef Value (*NativeFn)(int argCount, size_t start);
@@ -107,6 +113,7 @@ class ObjectNative : public Object {
   ObjectNative(const NativeFn function,
                const std::shared_ptr<ObjectString> name);
 
+  // getters
   NativeFn getFunction();
   std::shared_ptr<ObjectString> getName();
 };
@@ -121,6 +128,7 @@ class ObjectUpvalue : public Object {
 
   ObjectUpvalue(int locationIndex, Value* location);
 
+  // getters
   Value* getLocation() const;
   int getLocationIndex() const;
 };
@@ -133,12 +141,14 @@ class ObjectClosure : public Object {
  public:
   ObjectClosure(std::shared_ptr<ObjectFunction>);
 
-  std::shared_ptr<ObjectFunction> getFunction();
+  // getters
   size_t getUpvaluesSize() const;
-  void setUpvalue(int, std::shared_ptr<ObjectUpvalue>);
-  void addUpvalue(std::shared_ptr<ObjectUpvalue>);
   std::shared_ptr<ObjectUpvalue> getUpvalue(int) const;
   int getUpvalueCount() const;
+
+  void setUpvalue(int, std::shared_ptr<ObjectUpvalue>);
+  void addUpvalue(std::shared_ptr<ObjectUpvalue>);
+  std::shared_ptr<ObjectFunction> getFunction();
 };
 
 class ObjectClass : public Object {
@@ -150,8 +160,10 @@ class ObjectClass : public Object {
  public:
   ObjectClass(const std::string& name);
 
+  // getters
   const ObjectString& getName() const;
   const Value* getMethod(std::shared_ptr<ObjectString>) const;
+
   void setMethod(std::shared_ptr<ObjectString>, Value);
 
   // for inheritance
