@@ -1024,8 +1024,8 @@ void Compiler::classDeclaration() {
     }
 
     beginScope();
-    localVars.back().insert(
-        std::make_shared<Local>(*syntheticToken("super"), scopeDepth));
+    localVars.back().insert(std::make_shared<Local>(
+        Token(TOKEN_ID, "super", parser.prev->line), scopeDepth));
 
     namedVariable(className, false);
     emitByte(OP_INHERIT);
