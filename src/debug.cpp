@@ -44,6 +44,9 @@ void printValueType(Value value) {
         case OBJECT_UPVALUE:
           std::cout << "OBJECT_UPVALUE";
           break;
+        case OBJECT_ARRAY:
+          std::cout << "OBJECT_ARRAY";
+          break;
       }
       break;
   }
@@ -163,6 +166,12 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return constantInstruction("OP_GET_SUPER", chunk, index);
     case OP_SUPER_INVOKE:
       return invokeInstruction("OP_SUPER_INVOKE", chunk, index);
+    case OP_ARRAY:
+      return constantInstruction("OP_ARRAY", chunk, index);
+    case OP_ARRAY_SET:
+      return constantInstruction("OP_ARRAY_SET", chunk, index);
+    case OP_ARRAY_GET:
+      return constantInstruction("OP_ARRAY_GET", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;

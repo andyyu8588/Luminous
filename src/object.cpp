@@ -62,6 +62,9 @@ void Object::printObject() const {
       std::cout << "upvalue" << std::endl;
       break;
     }
+    case OBJECT_ARRAY: {
+      ((ObjectArray*)this)->printArray();
+    }
   }
 }
 
@@ -188,3 +191,22 @@ Value ObjectBoundMethod::getReceiver() const { return receiver; }
 std::shared_ptr<ObjectClosure> ObjectBoundMethod::getMethod() const {
   return method;
 }
+
+ObjectArray::ObjectArray() : Object(OBJECT_ARRAY) {}
+void ObjectArray::add(Value v) { array.push_back(v); }
+Value ObjectArray::get(int i) { return array[i]; }
+
+void ObjectArray::printArray() {
+  std::cout << "[";
+  for (unsigned i = 0; i < array.size(); i++) {
+    array.at(i).printValue();
+    if (i + 1 != array.size()) {
+      std::cout << ", ";
+    }
+  }
+  std::cout << "]";
+}
+
+size_t ObjectArray::size() const { return array.size(); }
+
+void ObjectArray::set(Value v, int i) { array[i] = v; }

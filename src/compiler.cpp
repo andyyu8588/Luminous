@@ -111,6 +111,11 @@ Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
         ruleMap[TOKEN_SUPER] = {std::bind(&Compiler::super_, this, _1), nullptr,
                                 PREC_NONE};
         break;
+      case TOKEN_LBRACK:
+        ruleMap[TOKEN_LBRACK] = {std::bind(&Compiler::array, this, _1),
+                                 std::bind(&Compiler::referenceOp, this, _1),
+                                 PREC_ASSIGNMENT};
+        break;
       default:
         ruleMap[curToken] = {nullptr, nullptr, PREC_NONE};
     }
@@ -490,6 +495,32 @@ void Compiler::statement() {
   } else {
     expressionStatement();
   }
+}
+
+void Compiler::referenceOp(bool canAssign) {
+  expression();
+  consume(TOKEN_RBRACK, "Expect ']' to close reference operator.");
+  if (match(TOKEN_BECOMES) && canAssign) {
+    expression();
+    emitByte(OP_ARRAY_SET);
+  } else {
+    emitByte(OP_ARRAY_GET);
+  }
+}
+
+void Compiler::array(bool canAssign) {
+  (void)canAssign;
+  uint8_t itemCount = 0;
+  if (parser.current->type != TOKEN_RBRACK) {
+    do {
+      expression();
+      itemCount++;
+    } while (match(TOKEN_COMMA));
+  }
+
+  consume(TOKEN_RBRACK, "Expect ']' to close array.");
+  emitByte(OP_ARRAY);
+  emitByte(itemCount);
 }
 
 void Compiler::block() {

@@ -39,6 +39,8 @@
   (std::static_pointer_cast<ObjectString>(AS_OBJECT(value)))
 #define AS_STRING(value) \
   ((std::static_pointer_cast<ObjectString>(AS_OBJECT(value)))->getString())
+#define AS_OBJECTARRAY(value) \
+  (std::static_pointer_cast<ObjectArray>(AS_OBJECT(value)))
 
 enum ObjectType {
   OBJECT_BOUND_METHOD,
@@ -48,7 +50,8 @@ enum ObjectType {
   OBJECT_INSTANCE,
   OBJECT_NATIVE,
   OBJECT_STRING,
-  OBJECT_UPVALUE
+  OBJECT_UPVALUE,
+  OBJECT_ARRAY
 };
 
 class Object {
@@ -201,4 +204,16 @@ class ObjectBoundMethod : public Object {
 
   Value getReceiver() const;
   std::shared_ptr<ObjectClosure> getMethod() const;
+};
+
+class ObjectArray : public Object {
+  std::vector<Value> array;
+
+ public:
+  ObjectArray();
+  void add(Value v);
+  Value get(int i);
+  void printArray();
+  size_t size() const;
+  void set(Value v, int i);
 };

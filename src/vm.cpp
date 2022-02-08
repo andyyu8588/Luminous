@@ -418,6 +418,62 @@ InterpretResult VM::run() {
             std::make_shared<ObjectClass>(AS_STRING(readConstant()))));
         break;
       }
+      case OP_ARRAY: {
+        uint8_t itemNum = readByte();
+        std::shared_ptr<ObjectArray> arr = std::make_shared<ObjectArray>();
+        for (unsigned i = memory.size() - itemNum; i < memory.size(); i++) {
+          arr->add(memory.getValueAt(i));
+        }
+        for (unsigned i = 0; i < itemNum; i++) {
+          memory.pop();
+        }
+        memory.push(OBJECT_VAL(arr));
+        break;
+      }
+      case OP_ARRAY_GET: {
+        Value& index = memory.top();
+        if (!IS_NUM(index)) {
+          runtimeError("Index must be an integer.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        double indexVal = AS_NUM(index);
+        if (ceil(indexVal) != floor(indexVal)) {
+          runtimeError("Index must be an integer.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        memory.pop();
+        std::shared_ptr<ObjectArray> arr = AS_OBJECTARRAY(memory.top());
+        if (indexVal > arr->size()) {
+          runtimeError("Index out of bounds.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        memory.pop();
+        memory.push(arr->get(indexVal));
+        break;
+      }
+      case OP_ARRAY_SET: {
+        Value value = memory.top();
+        memory.pop();
+        Value& index = memory.top();
+        if (!IS_NUM(index)) {
+          runtimeError("Index must be an integer.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        double indexVal = AS_NUM(index);
+        if (ceil(indexVal) != floor(indexVal)) {
+          runtimeError("Index must be an integer.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        memory.pop();
+        std::shared_ptr<ObjectArray> arr = AS_OBJECTARRAY(memory.top());
+        if (indexVal > arr->size()) {
+          runtimeError("Index out of bounds.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        memory.pop();
+        arr->set(value, indexVal);
+        break;
+      }
     }
   }
   return INTERPRET_OK;

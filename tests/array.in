@@ -1,0 +1,63 @@
+class Object1 {
+    constructor() {
+        this.x = "pogg";
+    }
+    printPogg() {
+        print(this.x);
+    }
+}
+
+class Object2 inherits Object1 {
+    constructor() {
+        this.x = "Not pogg";
+    }
+    printPogg() {
+        print(this.x);
+    }
+}
+
+class Container {
+    constructor() {
+        this.arr = [Object1(), Object2()];
+    }
+    printContainer() {
+        print(this.arr);
+        for(i from 0 to 2 by 1) {
+            this.arr[i].printPogg();
+        }
+    }
+}
+
+container = Container();
+container.printContainer();
+globalNum = 3.1414;
+globalStr = "this is a string";
+
+globalArr = [container, globalNum, globalStr];
+print(globalArr);
+
+changeArrVar = null;
+
+function printRandom() {
+    randomArr = [1, 2, 3, 4, 5];
+    function changeArr() {
+        randomArr[0] = "ok";
+        randomArr[2] = "nice!";
+        randomArr[4] = "Lets gooo!";
+    }
+    changeArrVar = changeArr;
+    return randomArr;
+}
+
+printRandomReturnVal = printRandom();
+changeArrVar();
+print(printRandomReturnVal);
+
+function modifyArray(arr) {
+    arr[0] = "modifed";
+    arr[1] = "corrupted";
+}
+
+a1 = [1, 2];
+modifyArray(a1);
+print(a1);

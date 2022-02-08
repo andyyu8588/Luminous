@@ -208,6 +208,10 @@ class Compiler {
   void method();
   std::shared_ptr<Token> syntheticToken(const std::string lexeme);
 
+  // native array:
+  void array(bool);
+  void referenceOp(bool);
+
   // for error synchronization:
   void synchronize();
 
