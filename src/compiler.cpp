@@ -99,6 +99,18 @@ Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
         ruleMap[TOKEN_PERC] = {nullptr, std::bind(&Compiler::binary, this, _1),
                                PREC_TERM};
         break;
+      case TOKEN_DOT:
+        ruleMap[TOKEN_DOT] = {nullptr, std::bind(&Compiler::dot, this, _1),
+                              PREC_CALL};
+        break;
+      case TOKEN_THIS:
+        ruleMap[TOKEN_THIS] = {std::bind(&Compiler::this_, this, _1), nullptr,
+                               PREC_NONE};
+        break;
+      case TOKEN_SUPER:
+        ruleMap[TOKEN_SUPER] = {std::bind(&Compiler::super_, this, _1), nullptr,
+                                PREC_NONE};
+        break;
       default:
         ruleMap[curToken] = {nullptr, nullptr, PREC_NONE};
     }
@@ -177,11 +189,19 @@ void Compiler::emitByte(uint8_t byte) {
 std::shared_ptr<ObjectFunction> Compiler::getFunction() {
   std::shared_ptr<ObjectFunction> topFunc = functions.back().function;
   Chunk& topFuncChunk = topFunc->getChunk();
+
+  // if the function doesn't have a return statement at the end
   if (topFuncChunk.getBytecodeAt(topFuncChunk.getBytecodeSize() - 1).code !=
       OP_RETURN) {
-    emitByte(OP_NULL);
+    if (functions.back().type == TYPE_CONSTRUCTOR) {
+      emitByte(OP_GET_LOCAL);
+      emitByte(0);
+    } else {
+      emitByte(OP_NULL);
+    }
     emitByte(OP_RETURN);
   }
+
   functions.pop_back();
   localVars.pop_back();
   return topFunc;
@@ -374,7 +394,12 @@ void Compiler::function(FunctionType type) {
   functions.push_back(FunctionInfo(objectFunction, type));
 
   localVars.push_back(LocalVariables());
-  localVars.back().insert(std::make_shared<Local>(*(parser.prev), scopeDepth));
+
+  // use first position on stack if it's a method
+  localVars.back().insert(std::make_shared<Local>(
+      type != TYPE_FUNCTION ? Token(TOKEN_THIS, "this", parser.prev->line)
+                            : *(parser.prev),
+      scopeDepth));
 
   // parameters:
   consume(TOKEN_LPAREN, "Expect '(' after function name.");
@@ -410,18 +435,12 @@ void Compiler::function(FunctionType type) {
     emitByte(upvalues[i].isLocal ? 1 : 0);
     emitByte(upvalues[i].index);
   }
-  /*
-    scopeDepth--;
-
-    while (localVars.back().size() > 0 &&
-           localVars.back().back()->depth > scopeDepth) {
-      localVars.back().pop_back();
-    }
-  */
 }
 
 void Compiler::declaration() {
-  if (match(TOKEN_FUNCTION)) {
+  if (match(TOKEN_CLASS)) {
+    classDeclaration();
+  } else if (match(TOKEN_FUNCTION)) {
     functionDeclaration();
   } else {
     statement();
@@ -437,6 +456,13 @@ void Compiler::endScope() {
 
   while (localVars.back().size() > 0 &&
          localVars.back().back()->depth > scopeDepth) {
+    // don't emit a pop/close upvalue if returning this for constructor
+    if (functions.size() > 0 && functions.back().type == TYPE_CONSTRUCTOR &&
+        localVars.back().size() == 1) {
+      localVars.back().pop_back();
+      break;
+    }
+
     if (localVars.back().back()->isCaptured) {
       emitByte(OP_CLOSE_UPVALUE);
     } else {
@@ -683,6 +709,19 @@ void Compiler::returnStatement() {
   if (functions.back().type == TYPE_SCRIPT) {
     error(parser.current->line, "Can't return from top-level code.");
   }
+  if (functions.back().type == TYPE_CONSTRUCTOR) {
+    error(parser.current->line, "Can't return a value from a constructor.");
+  }
+
+  while (localVars.back().size() > 0 &&
+         localVars.back().back()->depth > scopeDepth) {
+    if (localVars.back().back()->isCaptured) {
+      emitByte(OP_CLOSE_UPVALUE);
+    } else {
+      emitByte(OP_POP);
+    }
+    localVars.back().pop_back();
+  }
 
   if (match(TOKEN_SEMI)) {
     emitByte(OP_NULL);
@@ -921,7 +960,7 @@ int Compiler::resolveUpvalue(const Token* name, size_t functionIndex) {
 
   int local = resolveLocal(name, functionIndex - 1);
   if (local != -1) {
-    localVars[functionIndex - 1].getLocalAt(local)->isCaptured = true;
+    localVars[functionIndex - 1].at(local)->isCaptured = true;
     return addUpvalue((uint8_t)local, true, functionIndex);
   }
 
@@ -956,6 +995,130 @@ int Compiler::addUpvalue(uint8_t upvalueIndex, bool isLocal,
   return functions[functionIndex].upvalues.size() - 1;
 }
 
-std::shared_ptr<Local> LocalVariables::getLocalAt(int index) {
-  return list[index];
+void Compiler::classDeclaration() {
+  consume(TOKEN_ID, "Expect class name.");
+
+  if (globalVars.contains(parser.prev->lexeme)) {
+    error(parser.prev->line, "Illegal class name '" + parser.prev->lexeme +
+                                 "'. Class already exists.");
+  }
+
+  // add to stack of classes
+  classes.emplace_back(parser.prev);
+
+  // define the class as a global var
+  const Token* className = parser.prev;
+  uint8_t global = identifierConstant(className);
+  emitByte(OP_CLASS);
+  emitByte(global);
+  emitByte(OP_SET_GLOBAL);
+  emitByte(global);
+  emitByte(OP_POP);
+
+  if (match(TOKEN_INHERITS)) {
+    consume(TOKEN_ID, "Expects parent class name.");
+    variable(false);
+
+    if (className->lexeme == parser.prev->lexeme) {
+      error(parser.prev->line, "A class cannot inherit from itself.");
+    }
+
+    beginScope();
+    localVars.back().insert(std::make_shared<Local>(
+        Token(TOKEN_ID, "super", parser.prev->line), scopeDepth));
+
+    namedVariable(className, false);
+    emitByte(OP_INHERIT);
+    classes.back().hasSuperclass = true;
+  }
+
+  // parse the methods
+  namedVariable(className, false);
+  consume(TOKEN_LBRACE, "Expect '{' before class body.");
+  while (!(TOKEN_RBRACE == parser.current->type) &&
+         !(TOKEN_EOF == parser.current->type)) {
+    method();
+  }
+  consume(TOKEN_RBRACE, "Expect '}' after class body.");
+  emitByte(OP_POP);
+
+  if (classes.back().hasSuperclass) {
+    endScope();
+  }
+
+  // pop from stack of classes
+  classes.pop_back();
 }
+
+std::shared_ptr<Token> Compiler::syntheticToken(const std::string lexeme) {
+  return std::make_shared<Token>(TOKEN_ID, lexeme, parser.prev->line);
+}
+
+void Compiler::method() {
+  consume(TOKEN_ID, "Expect method name.");
+  uint8_t constant = makeConstant(
+      OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
+  FunctionType type = TYPE_METHOD;
+  if (parser.prev->lexeme == "constructor") {
+    type = TYPE_CONSTRUCTOR;
+  }
+  function(type);
+  emitByte(OP_METHOD);
+  emitByte(constant);
+}
+
+void Compiler::dot(bool canAssign) {
+  consume(TOKEN_ID, "Expect property name after '.'.");
+  uint8_t name = makeConstant(
+      OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
+
+  if (canAssign && match(TOKEN_BECOMES)) {
+    expression();
+    emitByte(OP_SET_PROPERTY);
+    emitByte(name);
+  } else if (match(TOKEN_LPAREN)) {
+    uint8_t argCount = argumentList();
+    emitByte(OP_INVOKE);
+    emitByte(name);
+    emitByte(argCount);
+  } else {
+    emitByte(OP_GET_PROPERTY);
+    emitByte(name);
+  }
+}
+
+void Compiler::this_(bool canAssign) {
+  (void)canAssign;
+  if (classes.empty())
+    error(parser.current->line, "Can't use 'this' outside of a class.");
+  variable(false);
+}
+
+void Compiler::super_(bool canAssign) {
+  (void)canAssign;
+  if (classes.empty()) {
+    error(parser.prev->line, "Can't use 'super' outside of a class.");
+  } else if (!classes.back().hasSuperclass) {
+    error(parser.prev->line,
+          "Can't use 'super' in a class without superclass.");
+  }
+  consume(TOKEN_DOT, "Expect '.' after 'super'.");
+  consume(TOKEN_ID, "Expect superclass method name.");
+  uint8_t name = makeConstant(
+      OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
+
+  namedVariable(syntheticToken("this").get(), false);
+  if (match(TOKEN_LPAREN)) {
+    uint8_t argCount = argumentList();
+    namedVariable(syntheticToken("super").get(), false);
+    emitByte(OP_SUPER_INVOKE);
+    emitByte(name);
+    emitByte(argCount);
+  } else {
+    namedVariable(syntheticToken("super").get(), false);
+    emitByte(OP_GET_SUPER);
+    emitByte(name);
+  }
+}
+
+ClassInfo::ClassInfo(const Token* name) : name{name} {}

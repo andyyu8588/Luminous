@@ -1,0 +1,25 @@
+class A {}
+
+class B {}
+
+class C {}
+
+a = A();
+b = B();
+c = C();
+
+a.a = 1;
+b.a = 1;
+c.a = 2;
+
+print(a.a equals b.a);
+print(a.a equals c.a);
+print(b.a equals c.a);
+
+for (i from 0 to 10 by 1) {
+	a.a = a.a + 1;
+}
+
+print(a.a equals 11);
+print(a.a equals b.a);
+print(b.a + 1 equals c.a);

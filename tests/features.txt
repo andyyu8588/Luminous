@@ -28,4 +28,10 @@ control flow (if else while for)
 global functions (function (...params) {body})
 native functions (clock)
 
+closures (function (...params) { function (...params) {body} body})
+
+class blueprint with methods (class { method() {}})
+instances (a = A())
+constructors
+
 runtime errors

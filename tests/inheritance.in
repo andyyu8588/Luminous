@@ -1,0 +1,34 @@
+class Yunze {
+    playGames() {
+        this.x = "Yunze played some games.";
+        print(this.x);
+    }
+    okkk() {
+        this.ok = 1;
+        print(this.ok);
+        print(this.x);
+    }
+}
+
+class Andy inherits Yunze {
+    playGames() {
+        this.x = "Andy played some games.";
+        print(this.x);
+    }
+    yunzePlayGames() {
+        super.playGames();
+    }
+}
+
+andy = Andy();
+andy.playGames();
+andy.okkk();
+print(andy.ok);
+
+yunze = Yunze();
+yunze.playGames();
+yunze.okkk();
+print(yunze.ok);
+
+andy.yunzePlayGames();
+print(andy.x);

@@ -59,8 +59,8 @@ struct Local {
 };
 
 struct Upvalue {
-  uint8_t index;
-  bool isLocal;
+  const uint8_t index;
+  const bool isLocal;
 
   bool operator==(const Upvalue&) const;
 };
@@ -92,17 +92,23 @@ class LocalVariables {
   void insert(const std::shared_ptr<Local>);
   void pop_back();
   size_t size() const;
-  std::shared_ptr<Local> getLocalAt(int);
 };
 
-enum FunctionType { TYPE_FUNCTION, TYPE_SCRIPT };
+enum FunctionType { TYPE_FUNCTION, TYPE_METHOD, TYPE_SCRIPT, TYPE_CONSTRUCTOR };
 
 struct FunctionInfo {
-  std::shared_ptr<ObjectFunction> function;
-  FunctionType type;
+  std::shared_ptr<ObjectFunction> const function;
+  const FunctionType type;
   std::vector<Upvalue> upvalues;
 
   FunctionInfo(std::shared_ptr<ObjectFunction> function, FunctionType type);
+};
+
+struct ClassInfo {
+  const Token* name;
+  bool hasSuperclass = false;
+
+  ClassInfo(const Token* name);
 };
 
 class Compiler {
@@ -118,17 +124,19 @@ class Compiler {
   // for functions:
   std::vector<FunctionInfo> functions;
 
-  // returns the current chunk:
-  Chunk& currentChunk();
+  // for classes:
+  std::vector<ClassInfo> classes;
 
+  // parser token management:
   // advance to the next token in the stream
   void advance();
-
   // advance with type checking
   void consume(TokenType type, const std::string& message);
-
   // returns true if the current token matches the given type and advances
   bool match(TokenType type);
+
+  // returns the current chunk:
+  Chunk& currentChunk();
 
   // add given byte to the current chunk
   void emitByte(uint8_t byte);
@@ -151,6 +159,10 @@ class Compiler {
   void variable(bool canAssign);
   void andOperation(bool canAssign);
   void orOperation(bool canAssign);
+  void call(bool canAssign);
+  void dot(bool canAssign);
+  void this_(bool canAssign);
+  void super_(bool canAssign);
 
   ParseRule* getRule(TokenType type);
 
@@ -160,11 +172,11 @@ class Compiler {
   void printStatement();
   void expressionStatement();
 
-  // for variable assignment and retrieval
+  // variable assignment and retrieval:
   uint8_t identifierConstant(const Token* var);
   void namedVariable(const Token* name, bool canAssign);
 
-  // for local variables:
+  // local variables:
   void beginScope();
   void endScope();
   void block();
@@ -184,13 +196,17 @@ class Compiler {
   // functions:
   void functionDeclaration();
   void function(FunctionType type);
-  void call(bool canAssign);
   uint8_t argumentList();
   void returnStatement();
 
   // closures:
   int resolveUpvalue(const Token*, size_t);
   int addUpvalue(uint8_t, bool, size_t);
+
+  // classes:
+  void classDeclaration();
+  void method();
+  std::shared_ptr<Token> syntheticToken(const std::string lexeme);
 
   // for error synchronization:
   void synchronize();

@@ -172,6 +172,52 @@ InterpretResult VM::run() {
         globals.insert_or_assign(name, memory.top());
         break;
       }
+      case OP_GET_PROPERTY: {
+        if (!IS_INSTANCE(memory.top())) {
+          runtimeError("Only instances have properties.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+
+        ObjectInstance& instance = *(AS_INSTANCE(memory.top()));
+        std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(readConstant());
+
+        const Value* value = instance.getField(name);
+        if (value != nullptr) {
+          memory.pop();
+          memory.push(*value);
+          break;
+        }
+
+        if (!bindMethod(instance.getInstanceOf(), name)) {
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        break;
+      }
+      case OP_SET_PROPERTY: {
+        Value value = memory.top();
+        memory.pop();
+
+        if (!IS_INSTANCE(memory.top())) {
+          runtimeError("Only instances have fields.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+
+        ObjectInstance* instance = AS_INSTANCE(memory.top()).get();
+        memory.pop();
+
+        instance->setField(AS_OBJECTSTRING(readConstant()), value);
+        memory.push(value);
+        break;
+      }
+      case OP_GET_SUPER: {
+        std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(readConstant());
+        std::shared_ptr<ObjectClass> superclass = AS_CLASS(memory.top());
+        memory.pop();
+        if (!bindMethod(*superclass, name)) {
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        break;
+      }
       case OP_EQUAL: {
         Value a = memory.top();
         memory.pop();
@@ -260,6 +306,26 @@ InterpretResult VM::run() {
         frame = &(frames.top());
         break;
       }
+      case OP_INVOKE: {
+        std::shared_ptr<ObjectString> method = AS_OBJECTSTRING(readConstant());
+        int argCount = readByte();
+        if (!invoke(method, argCount)) {
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        frame = &(frames.top());
+        break;
+      }
+      case OP_SUPER_INVOKE: {
+        std::shared_ptr<ObjectString> method = AS_OBJECTSTRING(readConstant());
+        int argCount = readByte();
+        std::shared_ptr<ObjectClass> superclass = AS_CLASS(memory.top());
+        memory.pop();
+        if (!invokeFromClass(*superclass, method, argCount)) {
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        frame = &(frames.top());
+        break;
+      }
       case OP_CLOSURE: {
         std::shared_ptr<ObjectFunction> function = AS_FUNCTION(readConstant());
         std::shared_ptr<ObjectClosure> closure =
@@ -278,6 +344,17 @@ InterpretResult VM::run() {
         }
         break;
       }
+      case OP_INHERIT: {
+        Value parent = memory.getValueAt(memory.size() - 2);
+        if (!IS_CLASS(parent)) {
+          runtimeError("Must inherit from a class.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        std::shared_ptr<ObjectClass> child = AS_CLASS(memory.top());
+        child->copyMethodsFrom(*(AS_CLASS(parent)));
+        memory.pop();  // Pop the child class
+        break;
+      }
       case OP_GET_UPVALUE: {
         uint8_t slot = readByte();
         memory.push(*(frame->closure.getUpvalue(slot)->getLocation()));
@@ -293,6 +370,10 @@ InterpretResult VM::run() {
         memory.pop();
         break;
       }
+      case OP_METHOD: {
+        defineMethod(AS_OBJECTSTRING(readConstant()));
+        break;
+      }
       case OP_RETURN: {
         // retrieve and pop return value
         Value top = memory.top();
@@ -300,8 +381,13 @@ InterpretResult VM::run() {
         closeUpvalues(frame->stackPos);
 
         // pop all local variables alongside function object
-        size_t initialMemorySize = memory.size();
-        for (size_t i = frames.top().stackPos; i < initialMemorySize; i++) {
+        if (frames.size() > 1) {
+          size_t initialMemorySize = memory.size();
+          for (size_t i = frames.top().stackPos; i < initialMemorySize; i++) {
+            memory.pop();
+          }
+        } else {  // if we are at <script>, only pop once, since there shouldn't
+                  // be any local variables
           memory.pop();
         }
 
@@ -325,6 +411,11 @@ InterpretResult VM::run() {
         // push return value on stack (for outer scope) and set next frame
         memory.push(top);
         frame = &(frames.top());
+        break;
+      }
+      case OP_CLASS: {
+        memory.push(OBJECT_VAL(
+            std::make_shared<ObjectClass>(AS_STRING(readConstant()))));
         break;
       }
     }
@@ -352,6 +443,27 @@ bool VM::call(std::shared_ptr<ObjectClosure> closure, int argCount) {
 bool VM::callValue(Value callee, int argCount) {
   if (IS_OBJECT(callee)) {
     switch (OBJECT_TYPE(callee)) {
+      case OBJECT_BOUND_METHOD: {
+        ObjectBoundMethod* bound = AS_BOUND_METHOD(callee).get();
+        memory.setValueAt(bound->getReceiver(), memory.size() - 1 - argCount);
+        return call(bound->getMethod(), argCount);
+      }
+      case OBJECT_CLASS: {
+        ObjectClass* instanceOf = AS_CLASS(callee).get();
+        memory.setValueAt(
+            OBJECT_VAL(std::make_shared<ObjectInstance>(*instanceOf)),
+            memory.size() - 1 - argCount);
+        const Value* initializer = instanceOf->getMethod(constructorString);
+        if (initializer != nullptr) {
+          return call(AS_CLOSURE(*initializer), argCount);
+        } else if (argCount != 0) {
+          runtimeError("Expected 0 arguments but got %d.", argCount);
+          return false;
+        }
+        return true;
+      }
+      case OBJECT_CLOSURE:
+        return call(AS_CLOSURE(callee), argCount);
       case OBJECT_NATIVE: {
         NativeFn native = AS_NATIVE(callee)->getFunction();
         Value result = native(argCount, memory.size() - argCount);
@@ -361,8 +473,6 @@ bool VM::callValue(Value callee, int argCount) {
         memory.push(result);
         return true;
       }
-      case OBJECT_CLOSURE:
-        return call(AS_CLOSURE(callee), argCount);
       default:
         break;
     }
@@ -425,7 +535,7 @@ std::shared_ptr<ObjectUpvalue> VM::captureUpvalue(Value* local,
   }
 
   std::shared_ptr<ObjectUpvalue> toReturn =
-      std::make_shared<ObjectUpvalue>(local, localIndex);
+      std::make_shared<ObjectUpvalue>(localIndex, local);
   toReturn->next = upvalue;
 
   if (prevUpvalue == nullptr) {
@@ -445,4 +555,59 @@ void VM::closeUpvalues(int lastIndex) {
     upvalue->location = &(upvalue->closed.value());
     openUpvalues = upvalue->next;
   }
+}
+
+void VM::defineMethod(std::shared_ptr<ObjectString> name) {
+  Value method = memory.top();
+  std::shared_ptr<ObjectClass> classObj =
+      AS_CLASS(memory.getValueAt(memory.size() - 2));
+  classObj->setMethod(name, method);
+  memory.pop();
+}
+
+bool VM::bindMethod(const ObjectClass& instanceOf,
+                    std::shared_ptr<ObjectString> name) {
+  const Value* method = instanceOf.getMethod(name);
+  if (method == nullptr) {
+    runtimeError("Undefined property '%s'.", name->getString().c_str());
+    return false;
+  }
+
+  std::shared_ptr<ObjectBoundMethod> bound =
+      std::make_shared<ObjectBoundMethod>(memory.top(), AS_CLOSURE(*method));
+  memory.pop();
+  memory.push(OBJECT_VAL(bound));
+  return true;
+}
+
+bool VM::invoke(std::shared_ptr<ObjectString> name, int argCount) {
+  Value receiver = memory.getValueAt(memory.size() - 1 - argCount);
+
+  if (!IS_INSTANCE(receiver)) {
+    runtimeError("Only instances have methods.");
+    return false;
+  }
+
+  std::shared_ptr<ObjectInstance> instance = AS_INSTANCE(receiver);
+
+  const Value* field = instance->getField(name);
+
+  if (field != nullptr) {
+    memory.setValueAt(*field, memory.size() - 1 - argCount);
+    return callValue(*field, argCount);
+  }
+
+  return invokeFromClass(instance->getInstanceOf(), name, argCount);
+}
+
+bool VM::invokeFromClass(const ObjectClass& instanceOf,
+                         std::shared_ptr<ObjectString> name, int argCount) {
+  const Value* method = instanceOf.getMethod(name);
+
+  if (method == nullptr) {
+    runtimeError("Undefined property '%s'.", name->getString().c_str());
+    return false;
+  }
+
+  return call(AS_CLOSURE(*method), argCount);
 }

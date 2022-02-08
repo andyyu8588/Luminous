@@ -20,11 +20,20 @@ void printValueType(Value value) {
       break;
     case VAL_OBJECT:
       switch (OBJECT_TYPE(value)) {
+        case OBJECT_BOUND_METHOD:
+          std::cout << "OBJECT_BOUND_METHOD";
+          break;
+        case OBJECT_CLASS:
+          std::cout << "OBJECT_CLASS";
+          break;
         case OBJECT_CLOSURE:
           std::cout << "OBJECT_CLOSURE";
           break;
         case OBJECT_FUNCTION:
           std::cout << "OBJECT_FUNCTION";
+          break;
+        case OBJECT_INSTANCE:
+          std::cout << "OBJECT_INSTANCE";
           break;
         case OBJECT_NATIVE:
           std::cout << "OBJECT_FUNCTION";
@@ -63,6 +72,13 @@ size_t jumpInstruction(std::string name, int sign, Chunk& chunk, size_t index) {
   uint8_t lo = chunk.getBytecodeAt(index + 2).code;
   uint16_t jump = (uint16_t)((high << 8) | lo);
   std::cout << name << " " << index + 3 + sign * jump << std::endl;
+  return index + 3;
+}
+
+size_t invokeInstruction(std::string name, Chunk& chunk, size_t index) {
+  uint8_t constant = chunk.getBytecodeAt(index + 1).code;
+  uint8_t argCount = chunk.getBytecodeAt(index + 2).code;
+  std::cout << name << " " << constant << " " << argCount << std::endl;
   return index + 3;
 }
 
@@ -131,6 +147,22 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return constantInstruction("OP_SET_UPVALUE", chunk, index);
     case OP_CLOSE_UPVALUE:
       return simpleInstruction("OP_CLOSE_OPVALUE", index);
+    case OP_CLASS:
+      return constantInstruction("OP_CLASS", chunk, index);
+    case OP_GET_PROPERTY:
+      return constantInstruction("OP_GET_PROPERTY", chunk, index);
+    case OP_SET_PROPERTY:
+      return constantInstruction("OP_SET_PROPERTY", chunk, index);
+    case OP_METHOD:
+      return constantInstruction("OP_METHOD", chunk, index);
+    case OP_INVOKE:
+      return invokeInstruction("OP_INVOKE", chunk, index);
+    case OP_INHERIT:
+      return simpleInstruction("OP_INHERIT", index);
+    case OP_GET_SUPER:
+      return constantInstruction("OP_GET_SUPER", chunk, index);
+    case OP_SUPER_INVOKE:
+      return invokeInstruction("OP_SUPER_INVOKE", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
@@ -299,6 +331,18 @@ void printTokens(const std::vector<Token>& tokens) {
       case TOKEN_PERC:
         std::cout << "PERC" << std::endl;
         break;
+      case TOKEN_CLASS:
+        std::cout << "CLASS" << std::endl;
+        break;
+      case TOKEN_THIS:
+        std::cout << "THIS" << std::endl;
+        break;
+      case TOKEN_INHERITS:
+        std::cout << "INHERITS" << std::endl;
+        break;
+      case TOKEN_SUPER:
+        std::cout << "SUPER" << std::endl;
+        break;
     }
   }
   std::cout << std::endl;
@@ -325,4 +369,16 @@ void printStack(MemoryStack& memory) {
     std::cout << std::endl;
   }
   std::cout << std::endl;
+}
+
+void printGlobals(
+    std::unordered_map<std::shared_ptr<ObjectString>, Value, ObjectString::Hash,
+                       ObjectString::Comparator>& globals) {
+  for (auto& it : globals) {
+    std::cout << "Variable name: " << it.first->getString();
+    std::cout << std::endl;
+    std::cout << "Value: ";
+    it.second.printValue();
+    std::cout << std::endl;
+  }
 }
