@@ -470,7 +470,6 @@ InterpretResult VM::run() {
           runtimeError("Index out of bounds.");
           return INTERPRET_RUNTIME_ERROR;
         }
-        memory.pop();
         arr->set(value, indexVal);
         break;
       }

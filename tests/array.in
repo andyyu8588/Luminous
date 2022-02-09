@@ -54,7 +54,7 @@ changeArrVar();
 print(printRandomReturnVal);
 
 function modifyArray(arr) {
-    arr[0] = "modifed";
+    arr[0] = "modified";
     arr[1] = "corrupted";
 }
 

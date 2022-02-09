@@ -169,9 +169,9 @@ size_t printInstruction(Chunk& chunk, size_t index) {
     case OP_ARRAY:
       return constantInstruction("OP_ARRAY", chunk, index);
     case OP_ARRAY_SET:
-      return constantInstruction("OP_ARRAY_SET", chunk, index);
+      return simpleInstruction("OP_ARRAY_SET", index);
     case OP_ARRAY_GET:
-      return constantInstruction("OP_ARRAY_GET", chunk, index);
+      return simpleInstruction("OP_ARRAY_GET", index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
