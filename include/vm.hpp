@@ -47,6 +47,7 @@ class VM {
   void resetMemory();
   bool isFalsey(Value value) const;
   void concatenate(const std::string& c, const std::string& d);
+  void concatenate(const std::string& c, double d);
   Chunk& getTopChunk();
 
   // read the next bytecode depending on situation:

@@ -140,16 +140,28 @@ void Scanner::scanToken() {
       addToken(TOKEN_DOT);
       break;
     case '-':
-      addToken(TOKEN_MINUS);
+      if (match('=')) {
+        addToken(TOKEN_MINUSEQ);
+      } else {
+        addToken(TOKEN_MINUS);
+      }
       break;
     case '+':
-      addToken(TOKEN_PLUS);
+      if (match('=')) {
+        addToken(TOKEN_PLUSEQ);
+      } else {
+        addToken(TOKEN_PLUS);
+      }
       break;
     case ',':
       addToken(TOKEN_COMMA);
       break;
     case '*':
-      addToken(TOKEN_STAR);
+      if (match('=')) {
+        addToken(TOKEN_STAREQ);
+      } else {
+        addToken(TOKEN_STAR);
+      }
       break;
     case ';':
       addToken(TOKEN_SEMI);
@@ -177,6 +189,8 @@ void Scanner::scanToken() {
         while (peek() != '\n' && !isAtEnd()) {
           nextChar();
         }
+      } else if (match('=')) {
+        addToken(TOKEN_SLASHEQ);
       } else {
         addToken(TOKEN_SLASH);
       }

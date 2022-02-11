@@ -175,6 +175,7 @@ class Compiler {
   // variable assignment and retrieval:
   uint8_t identifierConstant(const Token* var);
   void namedVariable(const Token* name, bool canAssign);
+  bool matchBinaryEq(uint8_t& binOp);
 
   // local variables:
   void beginScope();

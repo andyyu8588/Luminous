@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <ctime>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 #include "chunk.hpp"
@@ -70,6 +71,19 @@ InterpretResult VM::binaryOperation(char operation) {
       default:
         std::string symbol(1, operation);
         runtimeError("Invalid operation '%s' on strings.", symbol.c_str());
+        return INTERPRET_RUNTIME_ERROR;
+    }
+  } else if (IS_STRING(b) && IS_NUM(a)) {
+    const std::string& c = AS_STRING(b);
+    double d = AS_NUM(a);
+    switch (operation) {
+      case '+':
+        concatenate(c, d);
+        break;
+      default:
+        std::string symbol(1, operation);
+        runtimeError("Invalid operation '%s' on string and number.",
+                     symbol.c_str());
         return INTERPRET_RUNTIME_ERROR;
     }
   } else {
@@ -184,6 +198,26 @@ InterpretResult VM::run() {
         const Value* value = instance.getField(name);
         if (value != nullptr) {
           memory.pop();
+          memory.push(*value);
+          break;
+        }
+
+        if (!bindMethod(instance.getInstanceOf(), name)) {
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        break;
+      }
+      case OP_GET_PROPERTY_NOPOP: {
+        if (!IS_INSTANCE(memory.top())) {
+          runtimeError("Only instances have properties.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+
+        ObjectInstance& instance = *(AS_INSTANCE(memory.top()));
+        std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(readConstant());
+
+        const Value* value = instance.getField(name);
+        if (value != nullptr) {
           memory.push(*value);
           break;
         }
@@ -451,6 +485,26 @@ InterpretResult VM::run() {
         memory.push(arr->get(indexVal));
         break;
       }
+      case OP_ARRAY_GET_NOPOP: {
+        Value& index = memory.top();
+        if (!IS_NUM(index)) {
+          runtimeError("Index must be an integer.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        double indexVal = AS_NUM(index);
+        if (ceil(indexVal) != floor(indexVal)) {
+          runtimeError("Index must be an integer.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        std::shared_ptr<ObjectArray> arr =
+            AS_OBJECTARRAY(memory.getValueAt(memory.size() - 2));
+        if (indexVal > arr->size()) {
+          runtimeError("Index out of bounds.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        memory.push(arr->get(indexVal));
+        break;
+      }
       case OP_ARRAY_SET: {
         Value value = memory.top();
         memory.pop();
@@ -544,6 +598,14 @@ bool VM::isFalsey(Value value) const {
 
 void VM::concatenate(const std::string& c, const std::string& d) {
   memory.push(OBJECT_VAL(std::make_shared<ObjectString>(d + c)));
+}
+
+void VM::concatenate(const std::string& c, double d) {
+  std::stringstream num;
+  num << d;
+  std::string numStr;
+  num >> numStr;
+  memory.push(OBJECT_VAL(std::make_shared<ObjectString>(c + numStr)));
 }
 
 Chunk& VM::getTopChunk() {

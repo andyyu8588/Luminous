@@ -61,3 +61,4 @@ function modifyArray(arr) {
 a1 = [1, 2];
 modifyArray(a1);
 print(a1);
+print(a1[1 + 0]);

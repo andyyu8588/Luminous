@@ -229,9 +229,27 @@ void Compiler::parsePrecedence(Precedence precedence) {
     infixRule(canAssign);
   }
 
-  if (canAssign && match(TOKEN_BECOMES)) {
+  uint8_t binaryType = 0;
+  if (canAssign && (match(TOKEN_BECOMES) || matchBinaryEq(binaryType))) {
     error(parser.current->line, "Invalid assignment target.");
   }
+}
+
+bool Compiler::matchBinaryEq(uint8_t& binOp) {
+  if (match(TOKEN_PLUSEQ)) {
+    binOp = OP_ADD;
+    return true;
+  } else if (match(TOKEN_MINUSEQ)) {
+    binOp = OP_SUBSTRACT;
+    return true;
+  } else if (match(TOKEN_STAREQ)) {
+    binOp = OP_MULTIPLY;
+    return true;
+  } else if (match(TOKEN_SLASHEQ)) {
+    binOp = OP_DIVIDE;
+    return true;
+  }
+  return false;
 }
 
 uint8_t Compiler::makeConstant(Value value) {
@@ -500,8 +518,16 @@ void Compiler::statement() {
 void Compiler::referenceOp(bool canAssign) {
   expression();
   consume(TOKEN_RBRACK, "Expect ']' to close reference operator.");
-  if (match(TOKEN_BECOMES) && canAssign) {
+  uint8_t binaryType = 0;
+  bool binaryEq = matchBinaryEq(binaryType);
+  if ((binaryEq || match(TOKEN_BECOMES)) && canAssign) {
+    if (binaryEq) {
+      emitByte(OP_ARRAY_GET);
+    }
     expression();
+    if (binaryEq) {
+      emitByte(binaryType);
+    }
     emitByte(OP_ARRAY_SET);
   } else {
     emitByte(OP_ARRAY_GET);
@@ -868,7 +894,12 @@ void Compiler::declareLocal() {
 }
 
 void Compiler::variable(bool canAssign) {
-  if (scopeDepth > 0 && canAssign && parser.current->type == TOKEN_BECOMES) {
+  if (scopeDepth > 0 && canAssign &&
+      (parser.current->type == TOKEN_BECOMES ||
+       parser.current->type == TOKEN_PLUSEQ ||
+       parser.current->type == TOKEN_MINUSEQ ||
+       parser.current->type == TOKEN_STAREQ ||
+       parser.current->type == TOKEN_SLASHEQ)) {
     declareLocal();
   }
   namedVariable(parser.prev, canAssign);
@@ -903,8 +934,20 @@ void Compiler::namedVariable(const Token* name, bool canAssign) {
     setOp = OP_SET_GLOBAL;
   }
 
-  if (canAssign && match(TOKEN_BECOMES)) {
+  uint8_t binaryType = 0;
+  bool binaryEq = matchBinaryEq(binaryType);
+  if (canAssign && (binaryEq || match(TOKEN_BECOMES))) {
+    if (binaryEq) {
+      if (getOp == OP_GET_LOCAL && localVars.back().at(arg)->depth == -1) {
+        error(name->line, "Can't read local variable in its own initializer.");
+      }
+      emitByte(getOp);
+      emitByte((uint8_t)arg);
+    }
     expression();
+    if (binaryEq) {
+      emitByte(binaryType);
+    }
     // initialize new local var
     if (localVars.back().size() > 0 && localVars.back().back()->depth == -1) {
       markInitialized();
@@ -1103,8 +1146,17 @@ void Compiler::dot(bool canAssign) {
   uint8_t name = makeConstant(
       OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
 
-  if (canAssign && match(TOKEN_BECOMES)) {
+  uint8_t binaryType = 0;
+  bool binaryEq = matchBinaryEq(binaryType);
+  if (canAssign && (binaryEq || match(TOKEN_BECOMES))) {
+    if (binaryEq) {
+      emitByte(OP_GET_PROPERTY_NOPOP);
+      emitByte(name);
+    }
     expression();
+    if (binaryEq) {
+      emitByte(binaryType);
+    }
     emitByte(OP_SET_PROPERTY);
     emitByte(name);
   } else if (match(TOKEN_LPAREN)) {

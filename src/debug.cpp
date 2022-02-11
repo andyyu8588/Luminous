@@ -172,6 +172,8 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return simpleInstruction("OP_ARRAY_SET", index);
     case OP_ARRAY_GET:
       return simpleInstruction("OP_ARRAY_GET", index);
+    case OP_ARRAY_GET_NOPOP:
+      return simpleInstruction("OP_ARRAY_GET_NOPOP", index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
@@ -351,6 +353,18 @@ void printTokens(const std::vector<Token>& tokens) {
         break;
       case TOKEN_SUPER:
         std::cout << "SUPER" << std::endl;
+        break;
+      case TOKEN_PLUSEQ:
+        std::cout << "PLUSEQ" << std::endl;
+        break;
+      case TOKEN_MINUSEQ:
+        std::cout << "MINUSEQ" << std::endl;
+        break;
+      case TOKEN_STAREQ:
+        std::cout << "STAREQ" << std::endl;
+        break;
+      case TOKEN_SLASHEQ:
+        std::cout << "SLASHEQ" << std::endl;
         break;
     }
   }

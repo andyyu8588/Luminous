@@ -1,0 +1,60 @@
+class Test {
+    constructor(x) {
+        this.x = x;
+    }
+
+    increment() {
+        this.x += 1;
+        print(this.x);
+    }
+
+    decrement() {
+        this.x -= 1;
+        print(this.x);
+    }
+
+    double() {
+        this.x *= 2;
+        print(this.x);
+    }
+
+    negate() {
+        this.x /= -1;
+        print(this.x);
+    }
+}
+
+test = Test(1);
+test.increment();
+test.increment();
+test.double();
+test.decrement();
+test.negate();
+
+function localTest() {
+    str = "hello";
+    str += " world!";
+    print(str);
+}
+
+localTest();
+
+
+innerFunc = null;
+function upvalue() {
+    val = 3;
+    function inner() {
+        val += 4;
+        val -= 9;
+        val /= 2;
+        print(val);
+    }
+    innerFunc = inner;
+}
+
+upvalue();
+innerFunc();
+
+globalStr = "This is: ";
+globalStr += 6;
+print(globalStr);
