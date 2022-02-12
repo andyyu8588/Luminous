@@ -1,0 +1,17 @@
+function mySubstring(str) {
+    return substring(str, 3, 5);
+}
+
+function wrongSubstring(str) {
+    return substring(str, 5, 5);
+}
+
+print(mySubstring("ok"));
+print(mySubstring("okbn"));
+print(mySubstring("hello world!"));
+print(wrongSubstring("blablablabla"));
+print(size(substring("nice to meet you!", 0, 8)));
+
+print("nani" < "nano");
+print("andys" < "andy");
+print("okkk" > "okka");

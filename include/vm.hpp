@@ -61,7 +61,10 @@ class VM {
 
   // for native functions:
   void defineNative(std::string name, NativeFn function);
-  static Value clockNative(int argCount, size_t start);
+  Value clockNative(int argCount, size_t start);
+  Value substringNative(int argCount, size_t start);
+  Value strSizeNative(int argCount, size_t start);
+  bool nativeError = false;
 
   // for upvalues:
   std::shared_ptr<ObjectUpvalue> captureUpvalue(Value* local, int localIndex);

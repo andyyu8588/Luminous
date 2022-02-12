@@ -1,11 +1,13 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
 
 #include "chunk.hpp"
+#include "value.hpp"
 
 #define OBJECT_TYPE(value) (AS_OBJECT(value)->getType())
 
@@ -107,7 +109,7 @@ class ObjectFunction : public Object {
   void increateUpvalueCount();
 };
 
-typedef Value (*NativeFn)(int argCount, size_t start);
+using NativeFn = std::function<Value(int, size_t)>;
 class ObjectNative : public Object {
   const NativeFn function;
   const std::shared_ptr<ObjectString> name;

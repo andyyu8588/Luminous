@@ -15,7 +15,15 @@
 #include "debug.hpp"
 #endif
 
-VM::VM() { defineNative("clock", VM::clockNative); }
+VM::VM() {
+  defineNative("clock", std::bind(&VM::clockNative, this, std::placeholders::_1,
+                                  std::placeholders::_2));
+  defineNative("substring",
+               std::bind(&VM::substringNative, this, std::placeholders::_1,
+                         std::placeholders::_2));
+  defineNative("size", std::bind(&VM::strSizeNative, this,
+                                 std::placeholders::_1, std::placeholders::_2));
+}
 
 Value MemoryStack::getValueAt(size_t index) const { return c[index]; }
 
@@ -67,6 +75,12 @@ InterpretResult VM::binaryOperation(char operation) {
     switch (operation) {
       case '+':
         concatenate(c, d);
+        break;
+      case '>':
+        memory.push(BOOL_VAL(d > c));
+        break;
+      case '<':
+        memory.push(BOOL_VAL(d < c));
         break;
       default:
         std::string symbol(1, operation);
@@ -576,6 +590,10 @@ bool VM::callValue(Value callee, int argCount) {
       case OBJECT_NATIVE: {
         NativeFn native = AS_NATIVE(callee)->getFunction();
         Value result = native(argCount, memory.size() - argCount);
+        if (nativeError) {
+          nativeError = false;
+          return false;
+        }
         for (int i = 0; i <= argCount; i++) {
           memory.pop();
         }
@@ -634,9 +652,70 @@ void VM::defineNative(std::string name, NativeFn function) {
 }
 
 Value VM::clockNative(int argCount, size_t index) {
-  (void)argCount;
+  if (argCount != 0) {
+    runtimeError("Expect 0 argument for 'clock', but found %d.", argCount);
+    nativeError = true;
+    return NULL_VAL;
+  }
   (void)index;
   return NUM_VAL((double)clock() / CLOCKS_PER_SEC);
+}
+
+Value VM::substringNative(int argCount, size_t start) {
+  if (argCount != 3) {
+    runtimeError("Expect 3 arguments for 'substring', but found %d.", argCount);
+    nativeError = true;
+    return NULL_VAL;
+  }
+  Value string = memory.getValueAt(start);
+  if (!IS_STRING(string)) {
+    runtimeError("Expect a string as first argument for 'substring'.");
+    nativeError = true;
+    return NULL_VAL;
+  }
+  Value startIndex = memory.getValueAt(start + 1);
+  Value endIndex = memory.getValueAt(start + 2);
+  if (!IS_NUM(startIndex) || !IS_NUM(endIndex)) {
+    runtimeError("Indices must be non-negative integers for 'substring'.");
+    nativeError = true;
+    return NULL_VAL;
+  }
+  std::string strVal = AS_STRING(string);
+  double startIndexVal = AS_NUM(startIndex);
+  double endIndexVal = AS_NUM(endIndex);
+  if (floor(startIndexVal) != ceil(startIndexVal) ||
+      floor(endIndexVal) != ceil(endIndexVal) || startIndexVal < 0 ||
+      endIndexVal < 0) {
+    runtimeError("Indices must be non-negative integers for 'substring'.");
+    nativeError = true;
+    return NULL_VAL;
+  }
+  if ((unsigned)startIndexVal >= strVal.size() ||
+      startIndexVal >= endIndexVal) {
+    return OBJECT_VAL(std::make_shared<ObjectString>(""));
+  } else if ((unsigned)endIndexVal >= strVal.size()) {
+    return OBJECT_VAL(
+        std::make_shared<ObjectString>(strVal.substr((unsigned)startIndexVal)));
+  } else {
+    double substrSize = endIndexVal - startIndexVal;
+    return OBJECT_VAL(std::make_shared<ObjectString>(
+        strVal.substr((unsigned)startIndexVal, (unsigned)substrSize)));
+  }
+}
+Value VM::strSizeNative(int argCount, size_t start) {
+  if (argCount != 1) {
+    runtimeError("Expect 1 argument for 'size', but found %d.", argCount);
+    nativeError = true;
+    return NULL_VAL;
+  }
+  Value string = memory.getValueAt(start);
+  if (!IS_STRING(string)) {
+    runtimeError("Expect a string as argument for 'size'.");
+    nativeError = true;
+    return NULL_VAL;
+  }
+  unsigned strSize = AS_STRING(string).size();
+  return NUM_VAL((double)strSize);
 }
 
 std::shared_ptr<ObjectUpvalue> VM::captureUpvalue(Value* local,
