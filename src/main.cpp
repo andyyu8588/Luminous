@@ -6,9 +6,10 @@
 #include "debug.hpp"
 #include "vm.hpp"
 
-static void run(Compiler& compiler, VM& vm, const std::string& code) {
+static void run(Compiler& compiler, VM& vm, const std::string& code,
+                std::string currentFile) {
   try {
-    compiler.compile(code);
+    compiler.compile(code, currentFile);
   } catch (const CompilerException& e) {
     return;
   }
@@ -33,7 +34,7 @@ static void repl(Compiler& compiler, VM& vm) {
       break;
     }
     if (!input.empty()) {
-      run(compiler, vm, input);
+      run(compiler, vm, input, "<repl>");
     }
   }
 }
@@ -43,7 +44,7 @@ static void runFile(Compiler& compiler, VM& vm, char* path) {
   std::string code((std::istreambuf_iterator<char>(sourceFile)),
                    std::istreambuf_iterator<char>());
   if (!code.empty()) {
-    run(compiler, vm, code);
+    run(compiler, vm, code, std::string(path));
   }
 }
 
