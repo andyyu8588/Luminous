@@ -1,6 +1,7 @@
 #include "scanner.hpp"
 
 #include <exception>
+#include <fstream>
 #include <iostream>
 #include <map>
 
@@ -104,11 +105,36 @@ void Scanner::id() {
   }
 
   std::string id = code->substr(start, current - start);
-  auto typeIter = keywords.find(id);
-  if (typeIter != keywords.end()) {
-    addToken(typeIter->second);
+  // dealing with imports
+  if (id == "import") {
+    nextChar();
+    std::string target = "";
+    while (peek() != ' ' && peek() != '\n' && peek() != '\0') {
+      target += nextChar();
+    }
+    std::ifstream importFile;
+    // TODO standard libs
+    importFile.open(target);
+    if (!importFile.is_open()) {
+      error(line,
+            "LINKER ERROR: Cannot open Luminous source file '" + target + "'.");
+    } else {
+      Scanner newScanner;
+      std::string code((std::istreambuf_iterator<char>(importFile)),
+                       std::istreambuf_iterator<char>());
+      newScanner.reset(code);
+      newScanner.tokenize();
+      for (Token token : newScanner.tokens) {
+        tokens.push_back(token);
+      }
+    }
   } else {
-    addToken(TOKEN_ID);
+    auto typeIter = keywords.find(id);
+    if (typeIter != keywords.end()) {
+      addToken(typeIter->second);
+    } else {
+      addToken(TOKEN_ID);
+    }
   }
 }
 
