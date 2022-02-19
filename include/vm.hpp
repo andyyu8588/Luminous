@@ -11,6 +11,8 @@
 class Chunk;
 class ObjectString;
 
+class VMException {};
+
 enum InterpretResult {
   INTERPRET_OK,
   INTERPRET_COMPILE_ERROR,
@@ -63,7 +65,7 @@ class VM {
   void defineNative(std::string name, NativeFn function);
   Value clockNative(int argCount, size_t start);
   Value substringNative(int argCount, size_t start);
-  Value strSizeNative(int argCount, size_t start);
+  Value sizeNative(int argCount, size_t start);
   bool nativeError = false;
 
   // for upvalues:

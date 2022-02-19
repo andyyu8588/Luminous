@@ -135,6 +135,10 @@ class Compiler {
   // returns true if the current token matches the given type and advances
   bool match(TokenType type);
 
+  // returns the associated OpCode if the current token matches any, otherwise
+  // returns 0
+  OpCode matchBinaryEq();
+
   // returns the current chunk:
   Chunk& currentChunk();
 
@@ -175,7 +179,6 @@ class Compiler {
   // variable assignment and retrieval:
   uint8_t identifierConstant(const Token* var);
   void namedVariable(const Token* name, bool canAssign);
-  bool matchBinaryEq(uint8_t& binOp);
 
   // local variables:
   void beginScope();
@@ -211,7 +214,7 @@ class Compiler {
 
   // native array:
   void array(bool);
-  void referenceOp(bool);
+  void index(bool);
 
   // for error synchronization:
   void synchronize();

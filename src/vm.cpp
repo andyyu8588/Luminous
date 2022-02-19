@@ -21,8 +21,8 @@ VM::VM() {
   defineNative("substring",
                std::bind(&VM::substringNative, this, std::placeholders::_1,
                          std::placeholders::_2));
-  defineNative("size", std::bind(&VM::strSizeNative, this,
-                                 std::placeholders::_1, std::placeholders::_2));
+  defineNative("size", std::bind(&VM::sizeNative, this, std::placeholders::_1,
+                                 std::placeholders::_2));
 }
 
 Value MemoryStack::getValueAt(size_t index) const { return c[index]; }
@@ -100,8 +100,82 @@ InterpretResult VM::binaryOperation(char operation) {
                      symbol.c_str());
         return INTERPRET_RUNTIME_ERROR;
     }
+  } else if (IS_LIST(b)) {
+    switch (operation) {
+      case '+': {
+        std::shared_ptr<ObjectList> curList = AS_OBJECTLIST(b);
+        std::vector<Value> newList;
+        for (unsigned i = 0; i < curList->size(); i++) {
+          newList.push_back(curList->get(i));
+        }
+        newList.push_back(a);
+        memory.push(OBJECT_VAL(std::make_shared<ObjectList>(newList)));
+        break;
+      }
+      case '-': {
+        if (!IS_NUM(a)) {
+          runtimeError("Index must be a positive integer.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        double index = AS_NUM(a);
+        if (index < 0) {
+          runtimeError("Index must be a positive integer");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        if (std::floor(index) != std::ceil(index)) {
+          runtimeError("Index must be a positive integer");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        std::shared_ptr<ObjectList> curList = AS_OBJECTLIST(b);
+        if (index >= curList->size()) {
+          runtimeError("Index out of bounds.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        std::vector<Value> newList;
+        for (unsigned i = 0; i < curList->size(); i++) {
+          newList.push_back(curList->get(i));
+        }
+        newList.erase(newList.begin() + (unsigned)index);
+        memory.push(OBJECT_VAL(std::make_shared<ObjectList>(newList)));
+        break;
+      }
+      case '*': {
+        if (!IS_NUM(a)) {
+          runtimeError("Multiplier must be a positive integer.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        double mult = AS_NUM(a);
+        if (mult < 0) {
+          runtimeError("Multiplier must be a positive integer");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        if (std::floor(mult) != std::ceil(mult)) {
+          runtimeError("Multiplier must be a positive integer");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        std::shared_ptr<ObjectList> curList = AS_OBJECTLIST(b);
+        std::vector<Value> newList;
+        for (unsigned i = 0; i < curList->size(); i++) {
+          newList.push_back(curList->get(i));
+        }
+        std::vector<Value> newDuplicatedList;
+        for (unsigned i = 0; i < (unsigned)mult; i++) {
+          newDuplicatedList.insert(newDuplicatedList.end(), newList.begin(),
+                                   newList.end());
+        }
+        memory.push(
+            OBJECT_VAL(std::make_shared<ObjectList>(newDuplicatedList)));
+        break;
+      }
+      default: {
+        std::string symbol(1, operation);
+        runtimeError("Invalid operation '%s' on array and value type.",
+                     symbol.c_str());
+        return INTERPRET_RUNTIME_ERROR;
+      }
+    }
   } else {
-    runtimeError("Operands must be numbers or strings.");
+    runtimeError("Invalid operands.");
     return INTERPRET_RUNTIME_ERROR;
   }
   return INTERPRET_OK;
@@ -212,26 +286,6 @@ InterpretResult VM::run() {
         const Value* value = instance.getField(name);
         if (value != nullptr) {
           memory.pop();
-          memory.push(*value);
-          break;
-        }
-
-        if (!bindMethod(instance.getInstanceOf(), name)) {
-          return INTERPRET_RUNTIME_ERROR;
-        }
-        break;
-      }
-      case OP_GET_PROPERTY_NOPOP: {
-        if (!IS_INSTANCE(memory.top())) {
-          runtimeError("Only instances have properties.");
-          return INTERPRET_RUNTIME_ERROR;
-        }
-
-        ObjectInstance& instance = *(AS_INSTANCE(memory.top()));
-        std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(readConstant());
-
-        const Value* value = instance.getField(name);
-        if (value != nullptr) {
           memory.push(*value);
           break;
         }
@@ -468,7 +522,7 @@ InterpretResult VM::run() {
       }
       case OP_ARRAY: {
         uint8_t itemNum = readByte();
-        std::shared_ptr<ObjectArray> arr = std::make_shared<ObjectArray>();
+        std::shared_ptr<ObjectList> arr = std::make_shared<ObjectList>();
         for (unsigned i = memory.size() - itemNum; i < memory.size(); i++) {
           arr->add(memory.getValueAt(i));
         }
@@ -481,41 +535,25 @@ InterpretResult VM::run() {
       case OP_ARRAY_GET: {
         Value& index = memory.top();
         if (!IS_NUM(index)) {
-          runtimeError("Index must be an integer.");
+          runtimeError("Index must be a positive integer.");
           return INTERPRET_RUNTIME_ERROR;
         }
         double indexVal = AS_NUM(index);
+        if (indexVal < 0) {
+          runtimeError("Index must be a positive integer.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
         if (ceil(indexVal) != floor(indexVal)) {
-          runtimeError("Index must be an integer.");
+          runtimeError("Index must be a positive integer.");
           return INTERPRET_RUNTIME_ERROR;
         }
         memory.pop();
-        std::shared_ptr<ObjectArray> arr = AS_OBJECTARRAY(memory.top());
+        std::shared_ptr<ObjectList> arr = AS_OBJECTLIST(memory.top());
         if (indexVal > arr->size()) {
           runtimeError("Index out of bounds.");
           return INTERPRET_RUNTIME_ERROR;
         }
         memory.pop();
-        memory.push(arr->get(indexVal));
-        break;
-      }
-      case OP_ARRAY_GET_NOPOP: {
-        Value& index = memory.top();
-        if (!IS_NUM(index)) {
-          runtimeError("Index must be an integer.");
-          return INTERPRET_RUNTIME_ERROR;
-        }
-        double indexVal = AS_NUM(index);
-        if (ceil(indexVal) != floor(indexVal)) {
-          runtimeError("Index must be an integer.");
-          return INTERPRET_RUNTIME_ERROR;
-        }
-        std::shared_ptr<ObjectArray> arr =
-            AS_OBJECTARRAY(memory.getValueAt(memory.size() - 2));
-        if (indexVal > arr->size()) {
-          runtimeError("Index out of bounds.");
-          return INTERPRET_RUNTIME_ERROR;
-        }
         memory.push(arr->get(indexVal));
         break;
       }
@@ -524,21 +562,33 @@ InterpretResult VM::run() {
         memory.pop();
         Value& index = memory.top();
         if (!IS_NUM(index)) {
-          runtimeError("Index must be an integer.");
+          runtimeError("Index must be a postive integer.");
           return INTERPRET_RUNTIME_ERROR;
         }
         double indexVal = AS_NUM(index);
+        if (indexVal < 0) {
+          runtimeError("Index must be a positive integer.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
         if (ceil(indexVal) != floor(indexVal)) {
-          runtimeError("Index must be an integer.");
+          runtimeError("Index must be a positive integer.");
           return INTERPRET_RUNTIME_ERROR;
         }
         memory.pop();
-        std::shared_ptr<ObjectArray> arr = AS_OBJECTARRAY(memory.top());
+        std::shared_ptr<ObjectList> arr = AS_OBJECTLIST(memory.top());
         if (indexVal > arr->size()) {
           runtimeError("Index out of bounds.");
           return INTERPRET_RUNTIME_ERROR;
         }
         arr->set(value, indexVal);
+        break;
+      }
+      case OP_DUPLICATE: {
+        uint8_t repeat = readByte();
+        size_t initialMemorySize = memory.size();
+        for (unsigned i = memory.size() - repeat; i < initialMemorySize; ++i) {
+          memory.push(memory.getValueAt(i));
+        }
         break;
       }
     }
@@ -702,20 +752,25 @@ Value VM::substringNative(int argCount, size_t start) {
         strVal.substr((unsigned)startIndexVal, (unsigned)substrSize)));
   }
 }
-Value VM::strSizeNative(int argCount, size_t start) {
+
+Value VM::sizeNative(int argCount, size_t start) {
   if (argCount != 1) {
     runtimeError("Expect 1 argument for 'size', but found %d.", argCount);
     nativeError = true;
     return NULL_VAL;
   }
-  Value string = memory.getValueAt(start);
-  if (!IS_STRING(string)) {
-    runtimeError("Expect a string as argument for 'size'.");
+  Value val = memory.getValueAt(start);
+  if (IS_STRING(val)) {
+    unsigned strSize = AS_STRING(val).size();
+    return NUM_VAL((double)strSize);
+  } else if (IS_LIST(val)) {
+    unsigned listSize = AS_OBJECTLIST(val)->size();
+    return NUM_VAL((double)listSize);
+  } else {
+    runtimeError("Invalid argument for 'size'.");
     nativeError = true;
     return NULL_VAL;
   }
-  unsigned strSize = AS_STRING(string).size();
-  return NUM_VAL((double)strSize);
 }
 
 std::shared_ptr<ObjectUpvalue> VM::captureUpvalue(Value* local,

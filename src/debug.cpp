@@ -44,8 +44,8 @@ void printValueType(Value value) {
         case OBJECT_UPVALUE:
           std::cout << "OBJECT_UPVALUE";
           break;
-        case OBJECT_ARRAY:
-          std::cout << "OBJECT_ARRAY";
+        case OBJECT_LIST:
+          std::cout << "OBJECT_LIST";
           break;
       }
       break;
@@ -172,7 +172,7 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return simpleInstruction("OP_ARRAY_SET", index);
     case OP_ARRAY_GET:
       return simpleInstruction("OP_ARRAY_GET", index);
-    case OP_ARRAY_GET_NOPOP:
+    case OP_DUPLICATE:
       return simpleInstruction("OP_ARRAY_GET_NOPOP", index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
@@ -354,16 +354,16 @@ void printTokens(const std::vector<Token>& tokens) {
       case TOKEN_SUPER:
         std::cout << "SUPER" << std::endl;
         break;
-      case TOKEN_PLUSEQ:
+      case TOKEN_PLUSBECOMES:
         std::cout << "PLUSEQ" << std::endl;
         break;
-      case TOKEN_MINUSEQ:
+      case TOKEN_MINUSBECOMES:
         std::cout << "MINUSEQ" << std::endl;
         break;
-      case TOKEN_STAREQ:
+      case TOKEN_STARBECOMES:
         std::cout << "STAREQ" << std::endl;
         break;
-      case TOKEN_SLASHEQ:
+      case TOKEN_SLASHBECOMES:
         std::cout << "SLASHEQ" << std::endl;
         break;
     }

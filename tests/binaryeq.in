@@ -58,3 +58,9 @@ innerFunc();
 globalStr = "This is: ";
 globalStr += 6;
 print(globalStr);
+
+a=[1, "Hello world"];
+a[0] += 1;
+print(a[0]);
+a[1] += "!";
+print(a[1]);

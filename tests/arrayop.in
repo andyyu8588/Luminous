@@ -1,0 +1,32 @@
+a = [1, 2, 3];
+b = ["a", "b", "c"];
+c = [true, false, null];
+
+d = a + 4;
+e = b + "d";
+f = c + (true equals false);
+
+print(d);
+print(e);
+print(f);
+
+g = d - 1;
+h = e - 2;
+i = f - 3;
+
+print(g);
+print(h);
+print(i);
+
+j = g * 2;
+k = h * 10;
+l = i * 1;
+
+print(j);
+print(k);
+print(l);
+
+print(size(j));
+print(size(k));
+print(size(l));
+

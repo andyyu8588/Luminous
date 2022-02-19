@@ -24,6 +24,7 @@
   (IS_OBJECT(value) && OBJECT_TYPE(value) == OBJECT_NATIVE)
 #define IS_STRING(value) \
   (IS_OBJECT(value) && OBJECT_TYPE(value) == OBJECT_STRING)
+#define IS_LIST(value) (IS_OBJECT(value) && OBJECT_TYPE(value) == OBJECT_LIST)
 
 #define AS_BOUND_METHOD(value) \
   (std::static_pointer_cast<ObjectBoundMethod>(AS_OBJECT(value)))
@@ -41,8 +42,8 @@
   (std::static_pointer_cast<ObjectString>(AS_OBJECT(value)))
 #define AS_STRING(value) \
   ((std::static_pointer_cast<ObjectString>(AS_OBJECT(value)))->getString())
-#define AS_OBJECTARRAY(value) \
-  (std::static_pointer_cast<ObjectArray>(AS_OBJECT(value)))
+#define AS_OBJECTLIST(value) \
+  (std::static_pointer_cast<ObjectList>(AS_OBJECT(value)))
 
 enum ObjectType {
   OBJECT_BOUND_METHOD,
@@ -53,7 +54,7 @@ enum ObjectType {
   OBJECT_NATIVE,
   OBJECT_STRING,
   OBJECT_UPVALUE,
-  OBJECT_ARRAY
+  OBJECT_LIST
 };
 
 class Object {
@@ -208,14 +209,17 @@ class ObjectBoundMethod : public Object {
   std::shared_ptr<ObjectClosure> getMethod() const;
 };
 
-class ObjectArray : public Object {
-  std::vector<Value> array;
+class ObjectList : public Object {
+  std::vector<Value> list;
 
  public:
-  ObjectArray();
+  ObjectList();
+  ObjectList(std::vector<Value>);
+
   void add(Value v);
-  Value get(int i);
-  void printArray();
-  size_t size() const;
   void set(Value v, int i);
+  Value get(int i) const;
+
+  void printList() const;
+  size_t size() const;
 };

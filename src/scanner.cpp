@@ -141,14 +141,14 @@ void Scanner::scanToken() {
       break;
     case '-':
       if (match('=')) {
-        addToken(TOKEN_MINUSEQ);
+        addToken(TOKEN_MINUSBECOMES);
       } else {
         addToken(TOKEN_MINUS);
       }
       break;
     case '+':
       if (match('=')) {
-        addToken(TOKEN_PLUSEQ);
+        addToken(TOKEN_PLUSBECOMES);
       } else {
         addToken(TOKEN_PLUS);
       }
@@ -158,7 +158,7 @@ void Scanner::scanToken() {
       break;
     case '*':
       if (match('=')) {
-        addToken(TOKEN_STAREQ);
+        addToken(TOKEN_STARBECOMES);
       } else {
         addToken(TOKEN_STAR);
       }
@@ -189,8 +189,19 @@ void Scanner::scanToken() {
         while (peek() != '\n' && !isAtEnd()) {
           nextChar();
         }
+      } else if (match('*')) {
+        while ((peek() != '*' || lookAhead() != '/') && !isAtEnd()) {
+          if (peek() == '\n') {
+            line++;
+          }
+          nextChar();
+        }
+        if (!isAtEnd()) {
+          nextChar();
+          nextChar();
+        }
       } else if (match('=')) {
-        addToken(TOKEN_SLASHEQ);
+        addToken(TOKEN_SLASHBECOMES);
       } else {
         addToken(TOKEN_SLASH);
       }
