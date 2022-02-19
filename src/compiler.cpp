@@ -522,7 +522,7 @@ void Compiler::referenceOp(bool canAssign) {
   bool binaryEq = matchBinaryEq(binaryType);
   if ((binaryEq || match(TOKEN_BECOMES)) && canAssign) {
     if (binaryEq) {
-      emitByte(OP_ARRAY_GET);
+      emitByte(OP_ARRAY_GET_NOPOP);
     }
     expression();
     if (binaryEq) {
