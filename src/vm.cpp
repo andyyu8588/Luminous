@@ -187,6 +187,8 @@ void VM::runtimeError(const char* format, ...) {
 
     std::cerr << "[line "
               << function.getChunk().getBytecodeAt(frame.PC - 1).line
+              << " in file "
+              << function.getChunk().getBytecodeAt(frame.PC - 1).filename
               << "] in ";
 
     if (function.getName() == nullptr) {
@@ -510,7 +512,7 @@ void VM::run() {
         }
         memory.pop();
         std::shared_ptr<ObjectList> arr = AS_OBJECTLIST(memory.top());
-        if (indexVal > arr->size()) {
+        if (indexVal >= arr->size()) {
           runtimeError("Index out of bounds.");
         }
         memory.pop();
@@ -533,7 +535,7 @@ void VM::run() {
         }
         memory.pop();
         std::shared_ptr<ObjectList> arr = AS_OBJECTLIST(memory.top());
-        if (indexVal > arr->size()) {
+        if (indexVal >= arr->size()) {
           runtimeError("Index out of bounds.");
         }
         arr->set(value, indexVal);

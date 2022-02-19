@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "value.hpp"
@@ -51,8 +52,9 @@ enum OpCode {
 struct ByteCode {
   uint8_t code;
   const unsigned int line;
+  std::string filename;
 
-  ByteCode(uint8_t code, unsigned int line);
+  ByteCode(uint8_t code, unsigned int line, std::string filename);
 };
 
 class Chunk {
@@ -64,7 +66,7 @@ class Chunk {
   // bytecode vector getters and setters:
   size_t getBytecodeSize() const;
   ByteCode getBytecodeAt(size_t index) const;
-  void addBytecode(uint8_t byte, unsigned int line);
+  void addBytecode(uint8_t byte, unsigned int line, std::string filename);
   void modifyCodeAt(uint8_t newCode, int index);
 
   // constants vector getters and setters:

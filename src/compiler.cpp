@@ -181,7 +181,7 @@ void Compiler::advance() {
 }
 
 void Compiler::emitByte(uint8_t byte) {
-  currentChunk().addBytecode(byte, parser.prev->line);
+  currentChunk().addBytecode(byte, parser.prev->line, parser.prev->file);
 #ifdef DEBUG
   if (byte == OP_RETURN)
     printChunk(currentChunk(),
@@ -231,9 +231,9 @@ void Compiler::parsePrecedence(Precedence precedence) {
     infixRule(canAssign);
   }
 
-
   if (canAssign && (match(TOKEN_BECOMES) || matchBinaryEq())) {
-    error(parser.current->line, "Invalid assignment target.", parser.current->file);
+    error(parser.current->line, "Invalid assignment target.",
+          parser.current->file);
   }
 }
 
