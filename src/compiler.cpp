@@ -128,12 +128,12 @@ Chunk& Compiler::currentChunk() {
 
 void Compiler::expression() { parsePrecedence(PREC_ASSIGNMENT); }
 
-void Compiler::compile(const std::string& code) {
+void Compiler::compile(const std::string& code, std::string currentFile) {
   // reset scope information:
   scopeDepth = 0;
 
   // init scanner and tokenize
-  scanner.reset(code);
+  scanner.reset(code, currentFile);
   scanner.tokenize();
   if (errorOccured) {
     throw CompilerException();
@@ -145,7 +145,7 @@ void Compiler::compile(const std::string& code) {
   localVars.push_back(LocalVariables());
 
   std::shared_ptr<Local> script =
-      std::make_shared<Local>(Token(TOKEN_ID, "", 0), 0);
+      std::make_shared<Local>(Token(TOKEN_ID, "", 0, currentFile), 0);
   localVars.back().insert(script);
 
   // advance by 1 to get current and then parse
@@ -171,7 +171,7 @@ void Compiler::consume(TokenType type, const std::string& message) {
     return;
   }
 
-  error(parser.current->line, message);
+  error(parser.current->line, message, parser.current->file);
 }
 
 void Compiler::advance() {
@@ -181,7 +181,7 @@ void Compiler::advance() {
 }
 
 void Compiler::emitByte(uint8_t byte) {
-  currentChunk().addBytecode(byte, parser.prev->line);
+  currentChunk().addBytecode(byte, parser.prev->line, parser.prev->file);
 #ifdef DEBUG
   if (byte == OP_RETURN)
     printChunk(currentChunk(),
@@ -217,7 +217,8 @@ void Compiler::parsePrecedence(Precedence precedence) {
   advance();
   ParseFunction prefixRule = getRule(parser.prev->type)->prefix;
   if (prefixRule == nullptr) {
-    error(parser.prev->line, "Expect expression. Found none.");
+    error(parser.prev->line, "Expect expression. Found none.",
+          parser.prev->file);
     return;
   }
 
@@ -231,7 +232,8 @@ void Compiler::parsePrecedence(Precedence precedence) {
   }
 
   if (canAssign && (match(TOKEN_BECOMES) || matchBinaryEq())) {
-    error(parser.current->line, "Invalid assignment target.");
+    error(parser.current->line, "Invalid assignment target.",
+          parser.current->file);
   }
 }
 
@@ -391,8 +393,10 @@ void Compiler::functionDeclaration() {
           "Expect function name after 'function' declaration keyword.");
 
   if (globalVars.contains(parser.prev->lexeme)) {
-    error(parser.prev->line, "Illegal function name '" + parser.prev->lexeme +
-                                 "'. Variable already exists.");
+    error(parser.prev->line,
+          "Illegal function name '" + parser.prev->lexeme +
+              "'. Variable already exists.",
+          parser.prev->file);
   }
 
   uint8_t global = identifierConstant(parser.prev);
@@ -416,8 +420,9 @@ void Compiler::function(FunctionType type) {
 
   // use first position on stack if it's a method
   localVars.back().insert(std::make_shared<Local>(
-      type != TYPE_FUNCTION ? Token(TOKEN_THIS, "this", parser.prev->line)
-                            : *(parser.prev),
+      type != TYPE_FUNCTION
+          ? Token(TOKEN_THIS, "this", parser.prev->line, parser.prev->file)
+          : *(parser.prev),
       scopeDepth));
 
   // parameters:
@@ -428,9 +433,10 @@ void Compiler::function(FunctionType type) {
 
       consume(TOKEN_ID, "Expect function parameter name.");
       if (globalVars.contains(parser.prev->lexeme)) {
-        error(parser.prev->line, "Illegal function parameter name '" +
-                                     parser.prev->lexeme +
-                                     "'. Variable already exists.");
+        error(parser.prev->line,
+              "Illegal function parameter name '" + parser.prev->lexeme +
+                  "'. Variable already exists.",
+              parser.prev->file);
       }
       std::shared_ptr<Local> param =
           std::make_shared<Local>(*(parser.prev), scopeDepth);
@@ -761,10 +767,12 @@ void Compiler::forStatement() {
 
 void Compiler::returnStatement() {
   if (functions.back().type == TYPE_SCRIPT) {
-    error(parser.current->line, "Can't return from top-level code.");
+    error(parser.current->line, "Can't return from top-level code.",
+          parser.current->file);
   }
   if (functions.back().type == TYPE_CONSTRUCTOR) {
-    error(parser.current->line, "Can't return a value from a constructor.");
+    error(parser.current->line, "Can't return a value from a constructor.",
+          parser.current->file);
   }
 
   while (localVars.back().size() > 0 &&
@@ -791,7 +799,8 @@ void Compiler::emitLoop(int loopStart) {
   emitByte(OP_LOOP);
 
   int index = currentChunk().getBytecodeSize() - loopStart + 2;
-  if (index > UINT16_MAX) error(parser.prev->line, "Loop body too large.");
+  if (index > UINT16_MAX)
+    error(parser.prev->line, "Loop body too large.", parser.prev->file);
 
   emitByte((index >> 8) & 0xff);
   emitByte(index & 0xff);
@@ -801,7 +810,7 @@ void Compiler::patchJump(int index) {
   int jump = currentChunk().getBytecodeSize() - index - 2;
 
   if (jump > UINT16_MAX) {
-    error(parser.prev->line, "Too much code to jump over.");
+    error(parser.prev->line, "Too much code to jump over.", parser.prev->file);
   }
   uint8_t code1 = (jump >> 8) & 0xff;
   uint8_t code2 = jump & 0xff;
@@ -935,7 +944,8 @@ void Compiler::namedVariable(const Token* name, bool canAssign) {
   if (canAssign && (binaryOpCode || match(TOKEN_BECOMES))) {
     if (binaryOpCode) {
       if (getOp == OP_GET_LOCAL && localVars.back().at(arg)->depth == -1) {
-        error(name->line, "Can't read local variable in its own initializer.");
+        error(name->line, "Can't read local variable in its own initializer.",
+              name->file);
       }
       emitByte(getOp);
       emitByte((uint8_t)arg);
@@ -952,7 +962,8 @@ void Compiler::namedVariable(const Token* name, bool canAssign) {
   } else {
     // if local var and not initialized (self-use initialization):
     if (getOp == OP_GET_LOCAL && localVars.back().at(arg)->depth == -1) {
-      error(name->line, "Can't read local variable in its own initializer.");
+      error(name->line, "Can't read local variable in its own initializer.",
+            name->file);
     }
     emitByte(getOp);
   }
@@ -1069,8 +1080,10 @@ void Compiler::classDeclaration() {
   consume(TOKEN_ID, "Expect class name.");
 
   if (globalVars.contains(parser.prev->lexeme)) {
-    error(parser.prev->line, "Illegal class name '" + parser.prev->lexeme +
-                                 "'. Class already exists.");
+    error(parser.prev->line,
+          "Illegal class name '" + parser.prev->lexeme +
+              "'. Class already exists.",
+          parser.prev->file);
   }
 
   // add to stack of classes
@@ -1090,12 +1103,14 @@ void Compiler::classDeclaration() {
     variable(false);
 
     if (className->lexeme == parser.prev->lexeme) {
-      error(parser.prev->line, "A class cannot inherit from itself.");
+      error(parser.prev->line, "A class cannot inherit from itself.",
+            parser.prev->file);
     }
 
     beginScope();
     localVars.back().insert(std::make_shared<Local>(
-        Token(TOKEN_ID, "super", parser.prev->line), scopeDepth));
+        Token(TOKEN_ID, "super", parser.prev->line, parser.prev->file),
+        scopeDepth));
 
     namedVariable(className, false);
     emitByte(OP_INHERIT);
@@ -1121,7 +1136,8 @@ void Compiler::classDeclaration() {
 }
 
 std::shared_ptr<Token> Compiler::syntheticToken(const std::string lexeme) {
-  return std::make_shared<Token>(TOKEN_ID, lexeme, parser.prev->line);
+  return std::make_shared<Token>(TOKEN_ID, lexeme, parser.prev->line,
+                                 parser.prev->file);
 }
 
 void Compiler::method() {
@@ -1170,17 +1186,19 @@ void Compiler::dot(bool canAssign) {
 void Compiler::this_(bool canAssign) {
   (void)canAssign;
   if (classes.empty())
-    error(parser.current->line, "Can't use 'this' outside of a class.");
+    error(parser.current->line, "Can't use 'this' outside of a class.",
+          parser.current->file);
   variable(false);
 }
 
 void Compiler::super_(bool canAssign) {
   (void)canAssign;
   if (classes.empty()) {
-    error(parser.prev->line, "Can't use 'super' outside of a class.");
+    error(parser.prev->line, "Can't use 'super' outside of a class.",
+          parser.prev->file);
   } else if (!classes.back().hasSuperclass) {
-    error(parser.prev->line,
-          "Can't use 'super' in a class without superclass.");
+    error(parser.prev->line, "Can't use 'super' in a class without superclass.",
+          parser.prev->file);
   }
   consume(TOKEN_DOT, "Expect '.' after 'super'.");
   consume(TOKEN_ID, "Expect superclass method name.");

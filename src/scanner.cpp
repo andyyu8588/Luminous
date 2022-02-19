@@ -1,6 +1,7 @@
 #include "scanner.hpp"
 
 #include <exception>
+#include <fstream>
 #include <iostream>
 #include <map>
 
@@ -27,11 +28,11 @@ char Scanner::nextChar() {
 
 void Scanner::addToken(TokenType type) {
   std::string lexeme = code->substr(start, current - start);
-  tokens.emplace_back(type, lexeme, line);
+  tokens.emplace_back(type, lexeme, line, currentFile);
 }
 
 void Scanner::addToken(TokenType type, std::string lexeme) {
-  tokens.emplace_back(type, lexeme, line);
+  tokens.emplace_back(type, lexeme, line, currentFile);
 }
 
 bool Scanner::match(char expected) {
@@ -61,7 +62,7 @@ void Scanner::string() {
   }
 
   if (isAtEnd()) {
-    error(line, "Missing end of string");
+    error(line, "Missing end of string", currentFile);
     return;
   }
 
@@ -89,7 +90,7 @@ void Scanner::number() {
 
   // case where variable name starts with a number
   if (isAlphabet(peek())) {
-    error(line, "Variable names cannot start with a number");
+    error(line, "Variable names cannot start with a number", currentFile);
   }
 
   addToken(TOKEN_NUM, code->substr(start, current - start));
@@ -104,11 +105,37 @@ void Scanner::id() {
   }
 
   std::string id = code->substr(start, current - start);
-  auto typeIter = keywords.find(id);
-  if (typeIter != keywords.end()) {
-    addToken(typeIter->second);
+  // dealing with imports
+  if (id == "import") {
+    nextChar();
+    std::string target = "";
+    while (peek() != ' ' && peek() != '\n' && peek() != '\0') {
+      target += nextChar();
+    }
+    std::ifstream importFile;
+    // TODO standard libs
+    importFile.open(target);
+    if (!importFile.is_open()) {
+      error(line,
+            "LINKER ERROR: Cannot open Luminous source file '" + target + "'.",
+            currentFile);
+    } else {
+      Scanner newScanner;
+      std::string code((std::istreambuf_iterator<char>(importFile)),
+                       std::istreambuf_iterator<char>());
+      newScanner.reset(code, target);
+      newScanner.tokenize();
+      for (Token token : newScanner.tokens) {
+        tokens.push_back(token);
+      }
+    }
   } else {
-    addToken(TOKEN_ID);
+    auto typeIter = keywords.find(id);
+    if (typeIter != keywords.end()) {
+      addToken(typeIter->second);
+    } else {
+      addToken(TOKEN_ID);
+    }
   }
 }
 
@@ -234,7 +261,7 @@ void Scanner::scanToken() {
         std::string message = "Unexpected character \'";
         message.push_back(c);
         message += "\'";
-        error(line, message);
+        error(line, message, currentFile);
         break;
       }
   }
@@ -252,7 +279,8 @@ void Scanner::tokenize() {
 #endif
 }
 
-void Scanner::reset(const std::string& code) {
+void Scanner::reset(const std::string& code, std::string currentFile) {
+  this->currentFile = currentFile;
   start = 0;
   current = 0;
   curToken = 0;
@@ -267,7 +295,7 @@ const Token& Scanner::getNextToken() {
   try {
     return tokens.at(curToken++);
   } catch (const std::out_of_range& e) {
-    tokens.emplace_back(TOKEN_EOF, "", line);
+    tokens.emplace_back(TOKEN_EOF, "", line, currentFile);
     return tokens.at(curToken - 1);
   }
 }

@@ -1,0 +1,6 @@
+import tests/hard.in
+import tests/methods.in
+
+andyAction();
+andyAction2();
+print(job1.title);

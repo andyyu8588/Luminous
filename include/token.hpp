@@ -68,7 +68,8 @@ struct Token {
   const TokenType type;
   const std::string lexeme;
   const int line;
+  const std::string file;
 
-  Token(TokenType type, std::string lexeme, int line)
-      : type{type}, lexeme{lexeme}, line{line} {}
+  Token(TokenType type, std::string lexeme, int line, std::string file)
+      : type{type}, lexeme{lexeme}, line{line}, file{file} {}
 };

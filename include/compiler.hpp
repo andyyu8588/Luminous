@@ -218,7 +218,7 @@ class Compiler {
   void synchronize();
 
  public:
-  void compile(const std::string& code);
+  void compile(const std::string& code, std::string currentFile);
   std::shared_ptr<ObjectFunction> getFunction();
 
   Compiler();

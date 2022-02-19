@@ -15,6 +15,7 @@ Created by Yun Ze Zhou and Andy Yu.
 class Scanner {
   const std::string* code;
   std::vector<Token> tokens;
+  std::string currentFile;
   std::unordered_map<std::string, TokenType> keywords = {
       {"equals", TOKEN_EQ},
       {"and", TOKEN_AND},
@@ -90,7 +91,7 @@ class Scanner {
   void tokenize();
 
   // reset the scanner:
-  void reset(const std::string& code);
+  void reset(const std::string& code, std::string currentFile);
 
   const Token& getNextToken();
 };
