@@ -198,7 +198,9 @@ void Scanner::scanToken() {
         }
         if (!isAtEnd()) {
           nextChar();
-          nextChar();
+          if (!isAtEnd()) {
+            nextChar();
+          }
         }
       } else if (match('=')) {
         addToken(TOKEN_SLASHBECOMES);

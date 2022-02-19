@@ -196,8 +196,9 @@ std::shared_ptr<ObjectFunction> Compiler::getFunction() {
   Chunk& topFuncChunk = topFunc->getChunk();
 
   // if the function doesn't have a return statement at the end
-  if (topFuncChunk.getBytecodeAt(topFuncChunk.getBytecodeSize() - 1).code !=
-      OP_RETURN) {
+  if (topFuncChunk.getBytecodeSize() > 0 &&
+      topFuncChunk.getBytecodeAt(topFuncChunk.getBytecodeSize() - 1).code !=
+          OP_RETURN) {
     if (functions.back().type == TYPE_CONSTRUCTOR) {
       emitByte(OP_GET_LOCAL);
       emitByte(0);
