@@ -19,6 +19,10 @@ enum TokenType {
   TOKEN_SLASH,
   TOKEN_SEMI,
   TOKEN_PERC,
+  TOKEN_PLUSBECOMES,
+  TOKEN_MINUSBECOMES,
+  TOKEN_STARBECOMES,
+  TOKEN_SLASHBECOMES,
 
   // Single and double symbol tokens:
   TOKEN_LT,

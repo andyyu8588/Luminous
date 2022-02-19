@@ -9,16 +9,13 @@
 static void run(Compiler& compiler, VM& vm, const std::string& code) {
   try {
     compiler.compile(code);
+    auto function = compiler.getFunction();
+    if (function->empty()) return;
+    vm.interpret(function);
   } catch (const CompilerException& e) {
     return;
-  }
-  InterpretResult interpretResult = vm.interpret(compiler.getFunction());
-  switch (interpretResult) {
-    case INTERPRET_OK:
-    case INTERPRET_COMPILE_ERROR:
-    case INTERPRET_RUNTIME_ERROR:
-    default:
-      return;
+  } catch (const VMException& e) {
+    return;
   }
 }
 

@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <ctime>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 #include "chunk.hpp"
@@ -14,7 +15,15 @@
 #include "debug.hpp"
 #endif
 
-VM::VM() { defineNative("clock", VM::clockNative); }
+VM::VM() {
+  defineNative("clock", std::bind(&VM::clockNative, this, std::placeholders::_1,
+                                  std::placeholders::_2));
+  defineNative("substring",
+               std::bind(&VM::substringNative, this, std::placeholders::_1,
+                         std::placeholders::_2));
+  defineNative("size", std::bind(&VM::sizeNative, this, std::placeholders::_1,
+                                 std::placeholders::_2));
+}
 
 Value MemoryStack::getValueAt(size_t index) const { return c[index]; }
 
@@ -24,7 +33,7 @@ Value* MemoryStack::getValuePtrAt(size_t index) const {
 
 void MemoryStack::setValueAt(Value value, size_t index) { c[index] = value; }
 
-InterpretResult VM::binaryOperation(char operation) {
+void VM::binaryOperation(char operation) {
   Value a = memory.top();
   memory.pop();
   Value b = memory.top();
@@ -57,7 +66,7 @@ InterpretResult VM::binaryOperation(char operation) {
         memory.push(NUM_VAL(fmod(d, c)));
         break;
       default:
-        return INTERPRET_RUNTIME_ERROR;  // unreachable
+        throw VMException();  // unreachable
     }
   } else if (IS_STRING(a) && IS_STRING(b)) {
     const std::string& c = AS_STRING(a);
@@ -67,16 +76,97 @@ InterpretResult VM::binaryOperation(char operation) {
       case '+':
         concatenate(c, d);
         break;
+      case '>':
+        memory.push(BOOL_VAL(d > c));
+        break;
+      case '<':
+        memory.push(BOOL_VAL(d < c));
+        break;
       default:
         std::string symbol(1, operation);
         runtimeError("Invalid operation '%s' on strings.", symbol.c_str());
-        return INTERPRET_RUNTIME_ERROR;
+    }
+  } else if (IS_STRING(b) && IS_NUM(a)) {
+    const std::string& c = AS_STRING(b);
+    double d = AS_NUM(a);
+    switch (operation) {
+      case '+':
+        concatenate(c, d);
+        break;
+      default:
+        std::string symbol(1, operation);
+        runtimeError("Invalid operation '%s' on string and number.",
+                     symbol.c_str());
+    }
+  } else if (IS_LIST(b)) {
+    switch (operation) {
+      case '+': {
+        std::shared_ptr<ObjectList> curList = AS_OBJECTLIST(b);
+        std::vector<Value> newList;
+        for (unsigned i = 0; i < curList->size(); i++) {
+          newList.push_back(curList->get(i));
+        }
+        newList.push_back(a);
+        memory.push(OBJECT_VAL(std::make_shared<ObjectList>(newList)));
+        break;
+      }
+      case '-': {
+        if (!IS_NUM(a)) {
+          runtimeError("Index must be a positive integer.");
+        }
+        double index = AS_NUM(a);
+        if (index < 0) {
+          runtimeError("Index must be a positive integer");
+        }
+        if (std::floor(index) != std::ceil(index)) {
+          runtimeError("Index must be a positive integer");
+        }
+        std::shared_ptr<ObjectList> curList = AS_OBJECTLIST(b);
+        if (index >= curList->size()) {
+          runtimeError("Index out of bounds.");
+        }
+        std::vector<Value> newList;
+        for (unsigned i = 0; i < curList->size(); i++) {
+          newList.push_back(curList->get(i));
+        }
+        newList.erase(newList.begin() + (unsigned)index);
+        memory.push(OBJECT_VAL(std::make_shared<ObjectList>(newList)));
+        break;
+      }
+      case '*': {
+        if (!IS_NUM(a)) {
+          runtimeError("Multiplier must be a positive integer.");
+        }
+        double mult = AS_NUM(a);
+        if (mult < 0) {
+          runtimeError("Multiplier must be a positive integer");
+        }
+        if (std::floor(mult) != std::ceil(mult)) {
+          runtimeError("Multiplier must be a positive integer");
+        }
+        std::shared_ptr<ObjectList> curList = AS_OBJECTLIST(b);
+        std::vector<Value> newList;
+        for (unsigned i = 0; i < curList->size(); i++) {
+          newList.push_back(curList->get(i));
+        }
+        std::vector<Value> newDuplicatedList;
+        for (unsigned i = 0; i < (unsigned)mult; i++) {
+          newDuplicatedList.insert(newDuplicatedList.end(), newList.begin(),
+                                   newList.end());
+        }
+        memory.push(
+            OBJECT_VAL(std::make_shared<ObjectList>(newDuplicatedList)));
+        break;
+      }
+      default: {
+        std::string symbol(1, operation);
+        runtimeError("Invalid operation '%s' on array and value type.",
+                     symbol.c_str());
+      }
     }
   } else {
-    runtimeError("Operands must be numbers or strings.");
-    return INTERPRET_RUNTIME_ERROR;
+    runtimeError("Invalid operands.");
   }
-  return INTERPRET_OK;
 }
 
 void VM::resetMemory() { memory = MemoryStack(); }
@@ -109,17 +199,18 @@ void VM::runtimeError(const char* format, ...) {
 
   std::cerr << "(Runtime Error)" << std::endl;
   resetMemory();
+  throw VMException();
 }
 
-InterpretResult VM::interpret(std::shared_ptr<ObjectFunction> function) {
+void VM::interpret(std::shared_ptr<ObjectFunction> function) {
   std::shared_ptr<ObjectClosure> closure =
       std::make_shared<ObjectClosure>(function);
   memory.push(OBJECT_VAL(closure));
   callValue(OBJECT_VAL(closure), 0);
-  return run();
+  run();
 }
 
-InterpretResult VM::run() {
+void VM::run() {
   CallFrame* frame = &(frames.top());
   while (true) {
     switch (readByte()) {
@@ -160,7 +251,6 @@ InterpretResult VM::run() {
         auto it = globals.find(name);
         if (it == globals.end()) {
           runtimeError("Undefined variable '%s'.", name->getString().c_str());
-          return INTERPRET_RUNTIME_ERROR;
         }
         memory.push(it->second);
         break;
@@ -168,14 +258,12 @@ InterpretResult VM::run() {
       case OP_SET_GLOBAL: {
         Value constantName = readConstant();
         std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(constantName);
-        // std::cout << name->getString() << std::endl;
         globals.insert_or_assign(name, memory.top());
         break;
       }
       case OP_GET_PROPERTY: {
         if (!IS_INSTANCE(memory.top())) {
           runtimeError("Only instances have properties.");
-          return INTERPRET_RUNTIME_ERROR;
         }
 
         ObjectInstance& instance = *(AS_INSTANCE(memory.top()));
@@ -187,10 +275,7 @@ InterpretResult VM::run() {
           memory.push(*value);
           break;
         }
-
-        if (!bindMethod(instance.getInstanceOf(), name)) {
-          return INTERPRET_RUNTIME_ERROR;
-        }
+        bindMethod(instance.getInstanceOf(), name);
         break;
       }
       case OP_SET_PROPERTY: {
@@ -199,7 +284,6 @@ InterpretResult VM::run() {
 
         if (!IS_INSTANCE(memory.top())) {
           runtimeError("Only instances have fields.");
-          return INTERPRET_RUNTIME_ERROR;
         }
 
         ObjectInstance* instance = AS_INSTANCE(memory.top()).get();
@@ -213,9 +297,7 @@ InterpretResult VM::run() {
         std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(readConstant());
         std::shared_ptr<ObjectClass> superclass = AS_CLASS(memory.top());
         memory.pop();
-        if (!bindMethod(*superclass, name)) {
-          return INTERPRET_RUNTIME_ERROR;
-        }
+        bindMethod(*superclass, name);
         break;
       }
       case OP_EQUAL: {
@@ -227,38 +309,31 @@ InterpretResult VM::run() {
         break;
       }
       case OP_GREATER: {
-        if (binaryOperation('>') == INTERPRET_RUNTIME_ERROR)
-          return INTERPRET_RUNTIME_ERROR;
+        binaryOperation('>');
         break;
       }
       case OP_LESS: {
-        if (binaryOperation('<') == INTERPRET_RUNTIME_ERROR)
-          return INTERPRET_RUNTIME_ERROR;
+        binaryOperation('<');
         break;
       }
       case OP_ADD: {
-        if (binaryOperation('+') == INTERPRET_RUNTIME_ERROR)
-          return INTERPRET_RUNTIME_ERROR;
+        binaryOperation('+');
         break;
       }
       case OP_SUBSTRACT: {
-        if (binaryOperation('-') == INTERPRET_RUNTIME_ERROR)
-          return INTERPRET_RUNTIME_ERROR;
+        binaryOperation('-');
         break;
       }
       case OP_MULTIPLY: {
-        if (binaryOperation('*') == INTERPRET_RUNTIME_ERROR)
-          return INTERPRET_RUNTIME_ERROR;
+        binaryOperation('*');
         break;
       }
       case OP_DIVIDE: {
-        if (binaryOperation('/') == INTERPRET_RUNTIME_ERROR)
-          return INTERPRET_RUNTIME_ERROR;
+        binaryOperation('/');
         break;
       }
       case OP_MODULO: {
-        if (binaryOperation('%') == INTERPRET_RUNTIME_ERROR)
-          return INTERPRET_RUNTIME_ERROR;
+        binaryOperation('%');
         break;
       }
       case OP_NOT: {
@@ -270,7 +345,6 @@ InterpretResult VM::run() {
       case OP_NEGATE: {
         if (!IS_NUM(memory.top())) {
           runtimeError("Operand must be a number.");
-          return INTERPRET_RUNTIME_ERROR;
         }
         double a = AS_NUM(memory.top());
         memory.pop();
@@ -300,18 +374,14 @@ InterpretResult VM::run() {
       case OP_CALL: {
         const int argCount = readByte();
         const size_t argStart = memory.size() - 1 - argCount;
-        if (!callValue(memory.getValueAt(argStart), argCount)) {
-          return INTERPRET_RUNTIME_ERROR;
-        }
+        callValue(memory.getValueAt(argStart), argCount);
         frame = &(frames.top());
         break;
       }
       case OP_INVOKE: {
         std::shared_ptr<ObjectString> method = AS_OBJECTSTRING(readConstant());
         int argCount = readByte();
-        if (!invoke(method, argCount)) {
-          return INTERPRET_RUNTIME_ERROR;
-        }
+        invoke(method, argCount);
         frame = &(frames.top());
         break;
       }
@@ -320,9 +390,7 @@ InterpretResult VM::run() {
         int argCount = readByte();
         std::shared_ptr<ObjectClass> superclass = AS_CLASS(memory.top());
         memory.pop();
-        if (!invokeFromClass(*superclass, method, argCount)) {
-          return INTERPRET_RUNTIME_ERROR;
-        }
+        invokeFromClass(*superclass, method, argCount);
         frame = &(frames.top());
         break;
       }
@@ -348,7 +416,6 @@ InterpretResult VM::run() {
         Value parent = memory.getValueAt(memory.size() - 2);
         if (!IS_CLASS(parent)) {
           runtimeError("Must inherit from a class.");
-          return INTERPRET_RUNTIME_ERROR;
         }
         std::shared_ptr<ObjectClass> child = AS_CLASS(memory.top());
         child->copyMethodsFrom(*(AS_CLASS(parent)));
@@ -403,9 +470,8 @@ InterpretResult VM::run() {
 #endif
           if (memory.size() != 0) {
             runtimeError("Stack is not empty.");
-            return INTERPRET_RUNTIME_ERROR;
           }
-          return INTERPRET_OK;
+          return;
         }
 
         // push return value on stack (for outer scope) and set next frame
@@ -418,35 +484,95 @@ InterpretResult VM::run() {
             std::make_shared<ObjectClass>(AS_STRING(readConstant()))));
         break;
       }
+      case OP_ARRAY: {
+        uint8_t itemNum = readByte();
+        std::shared_ptr<ObjectList> arr = std::make_shared<ObjectList>();
+        for (unsigned i = memory.size() - itemNum; i < memory.size(); i++) {
+          arr->add(memory.getValueAt(i));
+        }
+        for (unsigned i = 0; i < itemNum; i++) {
+          memory.pop();
+        }
+        memory.push(OBJECT_VAL(arr));
+        break;
+      }
+      case OP_ARRAY_GET: {
+        Value& index = memory.top();
+        if (!IS_NUM(index)) {
+          runtimeError("Index must be a positive integer.");
+        }
+        double indexVal = AS_NUM(index);
+        if (indexVal < 0) {
+          runtimeError("Index must be a positive integer.");
+        }
+        if (ceil(indexVal) != floor(indexVal)) {
+          runtimeError("Index must be a positive integer.");
+        }
+        memory.pop();
+        std::shared_ptr<ObjectList> arr = AS_OBJECTLIST(memory.top());
+        if (indexVal > arr->size()) {
+          runtimeError("Index out of bounds.");
+        }
+        memory.pop();
+        memory.push(arr->get(indexVal));
+        break;
+      }
+      case OP_ARRAY_SET: {
+        Value value = memory.top();
+        memory.pop();
+        Value& index = memory.top();
+        if (!IS_NUM(index)) {
+          runtimeError("Index must be a postive integer.");
+        }
+        double indexVal = AS_NUM(index);
+        if (indexVal < 0) {
+          runtimeError("Index must be a positive integer.");
+        }
+        if (ceil(indexVal) != floor(indexVal)) {
+          runtimeError("Index must be a positive integer.");
+        }
+        memory.pop();
+        std::shared_ptr<ObjectList> arr = AS_OBJECTLIST(memory.top());
+        if (indexVal > arr->size()) {
+          runtimeError("Index out of bounds.");
+        }
+        arr->set(value, indexVal);
+        break;
+      }
+      case OP_DUPLICATE: {
+        uint8_t repeat = readByte();
+        size_t initialMemorySize = memory.size();
+        for (unsigned i = memory.size() - repeat; i < initialMemorySize; ++i) {
+          memory.push(memory.getValueAt(i));
+        }
+        break;
+      }
     }
   }
-  return INTERPRET_OK;
 }
 
-bool VM::call(std::shared_ptr<ObjectClosure> closure, int argCount) {
+void VM::call(std::shared_ptr<ObjectClosure> closure, int argCount) {
   if (argCount != closure->getFunction()->getArity()) {
     runtimeError("Expected %d arguments but found %d.",
                  closure->getFunction()->getArity(), argCount);
-    return false;
   }
 
   if (frames.size() == FRAMES_MAX) {
     runtimeError("Stack overflow.");
-    return false;
   }
 
   CallFrame newFrame{*closure, memory.size() - argCount - 1, 0};
   frames.push(newFrame);
-  return true;
 }
 
-bool VM::callValue(Value callee, int argCount) {
+void VM::callValue(Value callee, int argCount) {
   if (IS_OBJECT(callee)) {
     switch (OBJECT_TYPE(callee)) {
       case OBJECT_BOUND_METHOD: {
         ObjectBoundMethod* bound = AS_BOUND_METHOD(callee).get();
         memory.setValueAt(bound->getReceiver(), memory.size() - 1 - argCount);
-        return call(bound->getMethod(), argCount);
+        call(bound->getMethod(), argCount);
+        return;
       }
       case OBJECT_CLASS: {
         ObjectClass* instanceOf = AS_CLASS(callee).get();
@@ -458,12 +584,12 @@ bool VM::callValue(Value callee, int argCount) {
           return call(AS_CLOSURE(*initializer), argCount);
         } else if (argCount != 0) {
           runtimeError("Expected 0 arguments but got %d.", argCount);
-          return false;
         }
-        return true;
+        return;
       }
       case OBJECT_CLOSURE:
-        return call(AS_CLOSURE(callee), argCount);
+        call(AS_CLOSURE(callee), argCount);
+        return;
       case OBJECT_NATIVE: {
         NativeFn native = AS_NATIVE(callee)->getFunction();
         Value result = native(argCount, memory.size() - argCount);
@@ -471,7 +597,7 @@ bool VM::callValue(Value callee, int argCount) {
           memory.pop();
         }
         memory.push(result);
-        return true;
+        return;
       }
       default:
         break;
@@ -479,7 +605,6 @@ bool VM::callValue(Value callee, int argCount) {
   }
 
   runtimeError("Can only call functions and classes.");
-  return false;
 }
 
 bool VM::isFalsey(Value value) const {
@@ -489,6 +614,14 @@ bool VM::isFalsey(Value value) const {
 
 void VM::concatenate(const std::string& c, const std::string& d) {
   memory.push(OBJECT_VAL(std::make_shared<ObjectString>(d + c)));
+}
+
+void VM::concatenate(const std::string& c, double d) {
+  std::stringstream num;
+  num << d;
+  std::string numStr;
+  num >> numStr;
+  memory.push(OBJECT_VAL(std::make_shared<ObjectString>(c + numStr)));
 }
 
 Chunk& VM::getTopChunk() {
@@ -517,9 +650,63 @@ void VM::defineNative(std::string name, NativeFn function) {
 }
 
 Value VM::clockNative(int argCount, size_t index) {
-  (void)argCount;
+  if (argCount != 0) {
+    runtimeError("Expect 0 argument for 'clock', but found %d.", argCount);
+  }
   (void)index;
   return NUM_VAL((double)clock() / CLOCKS_PER_SEC);
+}
+
+Value VM::substringNative(int argCount, size_t start) {
+  if (argCount != 3) {
+    runtimeError("Expect 3 arguments for 'substring', but found %d.", argCount);
+  }
+  Value string = memory.getValueAt(start);
+  if (!IS_STRING(string)) {
+    runtimeError("Expect a string as first argument for 'substring'.");
+  }
+  Value startIndex = memory.getValueAt(start + 1);
+  Value endIndex = memory.getValueAt(start + 2);
+  if (!IS_NUM(startIndex) || !IS_NUM(endIndex)) {
+    runtimeError("Indices must be non-negative integers for 'substring'.");
+  }
+  std::string strVal = AS_STRING(string);
+  double startIndexVal = AS_NUM(startIndex);
+  double endIndexVal = AS_NUM(endIndex);
+  if (floor(startIndexVal) != ceil(startIndexVal) ||
+      floor(endIndexVal) != ceil(endIndexVal) || startIndexVal < 0 ||
+      endIndexVal < 0) {
+    runtimeError("Indices must be non-negative integers for 'substring'.");
+  }
+  if ((unsigned)startIndexVal >= strVal.size() ||
+      startIndexVal >= endIndexVal) {
+    return OBJECT_VAL(std::make_shared<ObjectString>(""));
+  } else if ((unsigned)endIndexVal >= strVal.size()) {
+    return OBJECT_VAL(
+        std::make_shared<ObjectString>(strVal.substr((unsigned)startIndexVal)));
+  } else {
+    double substrSize = endIndexVal - startIndexVal;
+    return OBJECT_VAL(std::make_shared<ObjectString>(
+        strVal.substr((unsigned)startIndexVal, (unsigned)substrSize)));
+  }
+}
+
+Value VM::sizeNative(int argCount, size_t start) {
+  if (argCount != 1) {
+    runtimeError("Expect 1 argument for 'size', but found %d.", argCount);
+  }
+  Value val = memory.getValueAt(start);
+
+  if (!IS_STRING(val) && !IS_LIST(val))
+    runtimeError("Invalid argument for 'size'.");
+
+  if (IS_STRING(val)) {
+    unsigned strSize = AS_STRING(val).size();
+    return NUM_VAL((double)strSize);
+  } else {
+    unsigned listSize = AS_OBJECTLIST(val)->size();
+    return NUM_VAL((double)listSize);
+  }
 }
 
 std::shared_ptr<ObjectUpvalue> VM::captureUpvalue(Value* local,
@@ -580,12 +767,11 @@ bool VM::bindMethod(const ObjectClass& instanceOf,
   return true;
 }
 
-bool VM::invoke(std::shared_ptr<ObjectString> name, int argCount) {
+void VM::invoke(std::shared_ptr<ObjectString> name, int argCount) {
   Value receiver = memory.getValueAt(memory.size() - 1 - argCount);
 
   if (!IS_INSTANCE(receiver)) {
     runtimeError("Only instances have methods.");
-    return false;
   }
 
   std::shared_ptr<ObjectInstance> instance = AS_INSTANCE(receiver);
@@ -594,20 +780,19 @@ bool VM::invoke(std::shared_ptr<ObjectString> name, int argCount) {
 
   if (field != nullptr) {
     memory.setValueAt(*field, memory.size() - 1 - argCount);
-    return callValue(*field, argCount);
+    callValue(*field, argCount);
   }
 
-  return invokeFromClass(instance->getInstanceOf(), name, argCount);
+  invokeFromClass(instance->getInstanceOf(), name, argCount);
 }
 
-bool VM::invokeFromClass(const ObjectClass& instanceOf,
+void VM::invokeFromClass(const ObjectClass& instanceOf,
                          std::shared_ptr<ObjectString> name, int argCount) {
   const Value* method = instanceOf.getMethod(name);
 
   if (method == nullptr) {
     runtimeError("Undefined property '%s'.", name->getString().c_str());
-    return false;
   }
 
-  return call(AS_CLOSURE(*method), argCount);
+  call(AS_CLOSURE(*method), argCount);
 }

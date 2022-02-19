@@ -135,6 +135,10 @@ class Compiler {
   // returns true if the current token matches the given type and advances
   bool match(TokenType type);
 
+  // returns the associated OpCode if the current token matches any, otherwise
+  // returns 0
+  OpCode matchBinaryEq();
+
   // returns the current chunk:
   Chunk& currentChunk();
 
@@ -163,6 +167,8 @@ class Compiler {
   void dot(bool canAssign);
   void this_(bool canAssign);
   void super_(bool canAssign);
+  void array(bool canAssign);
+  void index(bool canAssign);
 
   ParseRule* getRule(TokenType type);
 

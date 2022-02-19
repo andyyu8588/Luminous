@@ -62,6 +62,9 @@ void Object::printObject() const {
       std::cout << "upvalue" << std::endl;
       break;
     }
+    case OBJECT_LIST: {
+      ((ObjectList*)this)->printList();
+    }
   }
 }
 
@@ -86,6 +89,8 @@ const std::shared_ptr<ObjectString> ObjectFunction::getName() const {
 Chunk& ObjectFunction::getChunk() { return chunk; }
 
 void ObjectFunction::increaseArity() { arity++; }
+
+bool ObjectFunction::empty() const { return chunk.getBytecodeSize() == 0; }
 
 int ObjectFunction::getArity() const { return arity; }
 
@@ -188,3 +193,24 @@ Value ObjectBoundMethod::getReceiver() const { return receiver; }
 std::shared_ptr<ObjectClosure> ObjectBoundMethod::getMethod() const {
   return method;
 }
+
+ObjectList::ObjectList() : Object(OBJECT_LIST) {}
+ObjectList::ObjectList(std::vector<Value> list)
+    : Object{OBJECT_LIST}, list{list} {}
+void ObjectList::add(Value v) { list.push_back(v); }
+Value ObjectList::get(int i) const { return list[i]; }
+
+void ObjectList::printList() const {
+  std::cout << "[";
+  for (unsigned i = 0; i < list.size(); i++) {
+    list.at(i).printValue();
+    if (i + 1 != list.size()) {
+      std::cout << ", ";
+    }
+  }
+  std::cout << "]";
+}
+
+size_t ObjectList::size() const { return list.size(); }
+
+void ObjectList::set(Value v, int i) { list[i] = v; }

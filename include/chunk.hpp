@@ -41,7 +41,11 @@ enum OpCode {
   OP_RETURN,
   OP_METHOD,
   OP_CLASS,
-  OP_INHERIT
+  OP_INHERIT,
+  OP_ARRAY,
+  OP_ARRAY_SET,
+  OP_ARRAY_GET,
+  OP_DUPLICATE,
 };
 
 struct ByteCode {

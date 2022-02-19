@@ -111,6 +111,11 @@ Compiler::Compiler() : parser{Parser()}, scanner{Scanner()} {
         ruleMap[TOKEN_SUPER] = {std::bind(&Compiler::super_, this, _1), nullptr,
                                 PREC_NONE};
         break;
+      case TOKEN_LBRACK:
+        ruleMap[TOKEN_LBRACK] = {std::bind(&Compiler::array, this, _1),
+                                 std::bind(&Compiler::index, this, _1),
+                                 PREC_CALL};
+        break;
       default:
         ruleMap[curToken] = {nullptr, nullptr, PREC_NONE};
     }
@@ -191,8 +196,9 @@ std::shared_ptr<ObjectFunction> Compiler::getFunction() {
   Chunk& topFuncChunk = topFunc->getChunk();
 
   // if the function doesn't have a return statement at the end
-  if (topFuncChunk.getBytecodeAt(topFuncChunk.getBytecodeSize() - 1).code !=
-      OP_RETURN) {
+  if (topFuncChunk.getBytecodeSize() > 0 &&
+      topFuncChunk.getBytecodeAt(topFuncChunk.getBytecodeSize() - 1).code !=
+          OP_RETURN) {
     if (functions.back().type == TYPE_CONSTRUCTOR) {
       emitByte(OP_GET_LOCAL);
       emitByte(0);
@@ -224,9 +230,22 @@ void Compiler::parsePrecedence(Precedence precedence) {
     infixRule(canAssign);
   }
 
-  if (canAssign && match(TOKEN_BECOMES)) {
+  if (canAssign && (match(TOKEN_BECOMES) || matchBinaryEq())) {
     error(parser.current->line, "Invalid assignment target.");
   }
+}
+
+OpCode Compiler::matchBinaryEq() {
+  if (match(TOKEN_PLUSBECOMES)) {
+    return OP_ADD;
+  } else if (match(TOKEN_MINUSBECOMES)) {
+    return OP_SUBSTRACT;
+  } else if (match(TOKEN_STARBECOMES)) {
+    return OP_MULTIPLY;
+  } else if (match(TOKEN_SLASHBECOMES)) {
+    return OP_DIVIDE;
+  }
+  return (OpCode)0;
 }
 
 uint8_t Compiler::makeConstant(Value value) {
@@ -490,6 +509,41 @@ void Compiler::statement() {
   } else {
     expressionStatement();
   }
+}
+
+void Compiler::index(bool canAssign) {
+  expression();
+  consume(TOKEN_RBRACK, "Expect ']' to close reference operator.");
+  OpCode binaryOpCode = matchBinaryEq();
+  if ((binaryOpCode || match(TOKEN_BECOMES)) && canAssign) {
+    if (binaryOpCode) {
+      emitByte(OP_DUPLICATE);
+      emitByte(2);
+      emitByte(OP_ARRAY_GET);
+    }
+    expression();
+    if (binaryOpCode) {
+      emitByte(binaryOpCode);
+    }
+    emitByte(OP_ARRAY_SET);
+  } else {
+    emitByte(OP_ARRAY_GET);
+  }
+}
+
+void Compiler::array(bool canAssign) {
+  (void)canAssign;
+  uint8_t itemCount = 0;
+  if (parser.current->type != TOKEN_RBRACK) {
+    do {
+      expression();
+      itemCount++;
+    } while (match(TOKEN_COMMA));
+  }
+
+  consume(TOKEN_RBRACK, "Expect ']' to close array.");
+  emitByte(OP_ARRAY);
+  emitByte(itemCount);
 }
 
 void Compiler::block() {
@@ -837,7 +891,12 @@ void Compiler::declareLocal() {
 }
 
 void Compiler::variable(bool canAssign) {
-  if (scopeDepth > 0 && canAssign && parser.current->type == TOKEN_BECOMES) {
+  if (scopeDepth > 0 && canAssign &&
+      (parser.current->type == TOKEN_BECOMES ||
+       parser.current->type == TOKEN_PLUSBECOMES ||
+       parser.current->type == TOKEN_MINUSBECOMES ||
+       parser.current->type == TOKEN_STARBECOMES ||
+       parser.current->type == TOKEN_SLASHBECOMES)) {
     declareLocal();
   }
   namedVariable(parser.prev, canAssign);
@@ -872,8 +931,19 @@ void Compiler::namedVariable(const Token* name, bool canAssign) {
     setOp = OP_SET_GLOBAL;
   }
 
-  if (canAssign && match(TOKEN_BECOMES)) {
+  OpCode binaryOpCode = matchBinaryEq();
+  if (canAssign && (binaryOpCode || match(TOKEN_BECOMES))) {
+    if (binaryOpCode) {
+      if (getOp == OP_GET_LOCAL && localVars.back().at(arg)->depth == -1) {
+        error(name->line, "Can't read local variable in its own initializer.");
+      }
+      emitByte(getOp);
+      emitByte((uint8_t)arg);
+    }
     expression();
+    if (binaryOpCode) {
+      emitByte(binaryOpCode);
+    }
     // initialize new local var
     if (localVars.back().size() > 0 && localVars.back().back()->depth == -1) {
       markInitialized();
@@ -1072,8 +1142,18 @@ void Compiler::dot(bool canAssign) {
   uint8_t name = makeConstant(
       OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
 
-  if (canAssign && match(TOKEN_BECOMES)) {
+  OpCode binaryOpCode = matchBinaryEq();
+  if (canAssign && (binaryOpCode || match(TOKEN_BECOMES))) {
+    if (binaryOpCode) {
+      emitByte(OP_DUPLICATE);
+      emitByte(1);
+      emitByte(OP_GET_PROPERTY);
+      emitByte(name);
+    }
     expression();
+    if (binaryOpCode) {
+      emitByte(binaryOpCode);
+    }
     emitByte(OP_SET_PROPERTY);
     emitByte(name);
   } else if (match(TOKEN_LPAREN)) {
