@@ -1,22 +1,18 @@
-program      -> declaration*
+program      -> declaration* EOF
 
-declaration  -> classDecl | functionDecl | variableDecl | statement
-classDecl    -> "class" ID "{" (variableDecl | functionDecl)* "}" ";"
-functionDecl -> ID 
-variableDecl -> ID "=" expression ";"
+declaration  -> classDecl | functionDecl | statement
+classDecl    -> "class" ID ("inherits" ID )? "{" (function)* "}"
+functionDecl -> "function" function 
 
 statement    -> exprStmt | forStmt | ifStmt | printStmt | returnStmt |
                 whileStmt | addrStmt | atStmt | block
 exprStmt     -> expression ";"
-forStmt      -> "for" "(" (variableDecl | exprStmt)
+forStmt      -> "for" "(" ID "from" term to term) statement
 ifStmt       -> "if" "(" expression ")" statement
-                ("else if" "(" expression ")" statement)*
 				("else" statement)? ";"
 printStmt    -> "print" "(" expression ")" ";"
 returnStmt   -> "return" expression? ";"
 whileStmt    -> "while" "(" expression ")" statement ";"
-addrStmt     -> "addr" "(" ID ")" ";"
-atStmt       -> "at" "(" ID ")" ";"
 block        -> "{" declaration* "}"
 
 expression   -> assignment
@@ -25,11 +21,15 @@ assignment   -> (call ".")? ID "=" assignment | logic_or
 
 logic_or     -> logic_and ("or" logic_and)*
 logic_and    -> equality ("and" equality)*
-equality     -> comparison (("not" "equals" | "equals") comparison)*
+equality     -> comparison ("equals" comparison)*
 comparison   -> term ((">" | ">=" | "<" | "<=") term)*
-term         -> factor (("-" | "+") factor)*
+term         -> factor (("-" | "+" | "%") factor)*
 factor       -> unary (("/" | "*") unary)*
 
 unary        -> ("not" | "-") unary | call;
 call         -> primary ("(" arguments? ")" | "." ID)*
-primary      -> "true" | "false" | "null" | "this" | NUMBER | STRING | ID | "(" expression ")"
+primary      -> "true" | "false" | "null" | "this" | NUM | STRING | ID | "(" expression ")"
+
+function     -> ID "(" parameters? ")" block
+parameters   -> ID ("," ID)* 
+arguments    -> expression ("," expression)*
