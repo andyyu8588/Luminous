@@ -163,18 +163,27 @@ class ObjectClass : public Object {
   std::unordered_map<std::shared_ptr<ObjectString>, Value, ObjectString::Hash,
                      ObjectString::Comparator>
       methods;
+  std::unordered_map<std::shared_ptr<ObjectString>, AccessModifier,
+                     ObjectString::Hash, ObjectString::Comparator>
+      fields;
 
  public:
   ObjectClass(const std::string& name);
 
   // getters
   const ObjectString& getName() const;
+  const AccessModifier* getAccessModifier(std::shared_ptr<ObjectString>) const;
   const Value* getMethod(std::shared_ptr<ObjectString>) const;
+  const std::unordered_map<std::shared_ptr<ObjectString>, AccessModifier,
+                           ObjectString::Hash, ObjectString::Comparator>&
+  getFields() const;
 
+  void setField(std::shared_ptr<ObjectString>, AccessModifier);
   void setMethod(std::shared_ptr<ObjectString>, Value);
 
   // for inheritance
   void copyMethodsFrom(const ObjectClass& parent);
+  void copyFieldsFrom(const ObjectClass& parent);
 };
 
 class ObjectInstance : public Object {

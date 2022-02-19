@@ -39,7 +39,10 @@ class Scanner {
       {"class", TOKEN_CLASS},
       {"this", TOKEN_THIS},
       {"inherits", TOKEN_INHERITS},
-      {"super", TOKEN_SUPER}};
+      {"super", TOKEN_SUPER},
+      {"private", TOKEN_PRIVATE},
+      {"protected", TOKEN_PROTECTED},
+      {"public", TOKEN_PUBLIC}};
   int start = 0;
   int current = 0;
   int line = 1;

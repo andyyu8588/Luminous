@@ -1,0 +1,49 @@
+class A {
+	private a;
+	protected b;
+	public c;
+	
+	constructor() {
+		this.a = "A's a";
+		this.b = "A's b";
+		this.c = "A's c";
+	}
+
+	printA() {
+		print(this.a);
+	}
+
+    printB() {
+        print(this.b);
+    }
+}
+
+class B inherits A {
+    private d;
+    public e;
+
+    constructor(d) {
+        this.b = "B's b";
+        this.c = "B's c";
+        this.d = d;
+    }
+
+    printD() {
+        print(this.d);
+    }
+
+    printB() {
+        print(this.b);
+    }
+}
+
+instanceA = A();
+instanceB = B("d");
+instanceA.printA();
+instanceA.printB();
+instanceB.printB();
+print(instanceA.c);
+print(instanceB.c);
+instanceB.printD();
+print(instanceB.e);
+

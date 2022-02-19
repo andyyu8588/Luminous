@@ -66,6 +66,7 @@ class VM {
   void closeUpvalues(int lastIndex);
 
   // for classes:
+  void defineField(std::shared_ptr<ObjectString> name);
   void defineMethod(std::shared_ptr<ObjectString> name);
   bool bindMethod(const ObjectClass& instanceOf,
                   std::shared_ptr<ObjectString> name);

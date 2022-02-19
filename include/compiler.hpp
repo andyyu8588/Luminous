@@ -211,6 +211,7 @@ class Compiler {
 
   // classes:
   void classDeclaration();
+  void field();
   void method();
   std::shared_ptr<Token> syntheticToken(const std::string lexeme);
 

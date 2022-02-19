@@ -1,4 +1,7 @@
 class Yunze {
+    public x;
+    public ok;
+
     playGames() {
         this.x = "Yunze played some games.";
         print(this.x);

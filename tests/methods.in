@@ -1,4 +1,11 @@
 class Andy {
+   public age;
+   public height;
+   public weight;
+   public job;
+   public myself;
+   public myself2; 
+
     constructor(age, height, weight, job) {
         this.age = age;
         this.height = height;
@@ -34,6 +41,10 @@ class Andy {
 }
 
 class Job {
+    public title;
+    public salary;
+    public myself;
+    
     constructor(title, salary) {
         this.title = title;
         this.salary = salary;

@@ -146,9 +146,26 @@ ObjectClass::ObjectClass(const std::string& name)
 
 const ObjectString& ObjectClass::getName() const { return name; }
 
+const AccessModifier* ObjectClass::getAccessModifier(
+    std::shared_ptr<ObjectString> name) const {
+  if (fields.find(name) == fields.end()) return nullptr;
+  return &(fields.find(name)->second);
+}
+
 const Value* ObjectClass::getMethod(std::shared_ptr<ObjectString> name) const {
   if (methods.find(name) == methods.end()) return nullptr;
   return &(methods.find(name)->second);
+}
+
+const std::unordered_map<std::shared_ptr<ObjectString>, AccessModifier,
+                         ObjectString::Hash, ObjectString::Comparator>&
+ObjectClass::getFields() const {
+  return fields;
+}
+
+void ObjectClass::setField(std::shared_ptr<ObjectString> name,
+                           AccessModifier accessModifier) {
+  fields.insert_or_assign(name, accessModifier);
 }
 
 void ObjectClass::setMethod(std::shared_ptr<ObjectString> name, Value method) {
@@ -161,8 +178,20 @@ void ObjectClass::copyMethodsFrom(const ObjectClass& parent) {
   }
 }
 
+void ObjectClass::copyFieldsFrom(const ObjectClass& parent) {
+  for (auto& it : parent.fields) {
+    if (it.second != AccessModifier::ACCESS_PRIVATE) {
+      fields.insert_or_assign(it.first, it.second);
+    }
+  }
+}
+
 ObjectInstance::ObjectInstance(const ObjectClass& instanceOf)
-    : Object(OBJECT_INSTANCE), instanceOf{instanceOf} {}
+    : Object(OBJECT_INSTANCE), instanceOf{instanceOf} {
+  for (auto& it : instanceOf.getFields()) {
+    setField(it.first, NULL_VAL);
+  }
+}
 
 const ObjectClass& ObjectInstance::getInstanceOf() const { return instanceOf; }
 

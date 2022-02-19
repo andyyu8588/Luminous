@@ -270,6 +270,32 @@ void VM::run() {
 
         ObjectInstance& instance = *(AS_INSTANCE(memory.top()));
         std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(readConstant());
+        std::shared_ptr<ObjectString> className =
+            AS_OBJECTSTRING(readConstant());
+        const AccessModifier* am =
+            instance.getInstanceOf().getAccessModifier(name);
+        bool isMethod = instance.getInstanceOf().getMethod(name) != nullptr;
+        if (!isMethod) {
+          if (am == nullptr) {
+            runtimeError(
+                "Field %s is not declared in class %s.",
+                name->getString().c_str(),
+                instance.getInstanceOf().getName().getString().c_str());
+          }
+
+          if (instance.getInstanceOf().getName().getString() !=
+                  className->getString() &&
+              *(am) != AccessModifier::ACCESS_PUBLIC) {
+            if (*(am) == AccessModifier::ACCESS_PROTECTED) {
+              runtimeError(
+                  "Cannot access a protected field outside of a non-inherited "
+                  "class.");
+            } else {
+              runtimeError(
+                  "Cannot access a private field outside of the owner class.");
+            }
+          }
+        }
 
         const Value* value = instance.getField(name);
         if (value != nullptr) {
@@ -291,7 +317,31 @@ void VM::run() {
         ObjectInstance* instance = AS_INSTANCE(memory.top()).get();
         memory.pop();
 
-        instance->setField(AS_OBJECTSTRING(readConstant()), value);
+        std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(readConstant());
+        std::shared_ptr<ObjectString> className =
+            AS_OBJECTSTRING(readConstant());
+        const AccessModifier* am =
+            instance->getInstanceOf().getAccessModifier(name);
+        if (am == nullptr) {
+          runtimeError("Field %s is not declared in class %s.",
+                       name->getString().c_str(),
+                       instance->getInstanceOf().getName().getString().c_str());
+        }
+
+        if (instance->getInstanceOf().getName().getString() !=
+                className->getString() &&
+            *(am) != AccessModifier::ACCESS_PUBLIC) {
+          if (*(am) == AccessModifier::ACCESS_PROTECTED) {
+            runtimeError(
+                "Cannot access a protected field outside of a non-inherited "
+                "class.");
+          } else {
+            runtimeError(
+                "Cannot access a private field outside of the owner class.");
+          }
+        }
+
+        instance->setField(name, value);
         memory.push(value);
         break;
       }
@@ -421,6 +471,7 @@ void VM::run() {
         }
         std::shared_ptr<ObjectClass> child = AS_CLASS(memory.top());
         child->copyMethodsFrom(*(AS_CLASS(parent)));
+        child->copyFieldsFrom(*(AS_CLASS(parent)));
         memory.pop();  // Pop the child class
         break;
       }
@@ -437,6 +488,10 @@ void VM::run() {
       case OP_CLOSE_UPVALUE: {
         closeUpvalues(memory.size() - 1);
         memory.pop();
+        break;
+      }
+      case OP_FIELD: {
+        defineField(AS_OBJECTSTRING(readConstant()));
         break;
       }
       case OP_METHOD: {
@@ -744,6 +799,11 @@ void VM::closeUpvalues(int lastIndex) {
     upvalue->location = &(upvalue->closed.value());
     openUpvalues = upvalue->next;
   }
+}
+
+void VM::defineField(std::shared_ptr<ObjectString> name) {
+  std::shared_ptr<ObjectClass> objClass = AS_CLASS(memory.top());
+  objClass->setField(name, (AccessModifier)readByte());
 }
 
 void VM::defineMethod(std::shared_ptr<ObjectString> name) {

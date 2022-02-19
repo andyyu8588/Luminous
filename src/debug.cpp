@@ -153,9 +153,9 @@ size_t printInstruction(Chunk& chunk, size_t index) {
     case OP_CLASS:
       return constantInstruction("OP_CLASS", chunk, index);
     case OP_GET_PROPERTY:
-      return constantInstruction("OP_GET_PROPERTY", chunk, index);
+      return invokeInstruction("OP_GET_PROPERTY", chunk, index);
     case OP_SET_PROPERTY:
-      return constantInstruction("OP_SET_PROPERTY", chunk, index);
+      return invokeInstruction("OP_SET_PROPERTY", chunk, index);
     case OP_METHOD:
       return constantInstruction("OP_METHOD", chunk, index);
     case OP_INVOKE:
@@ -355,16 +355,25 @@ void printTokens(const std::vector<Token>& tokens) {
         std::cout << "SUPER" << std::endl;
         break;
       case TOKEN_PLUSBECOMES:
-        std::cout << "PLUSEQ" << std::endl;
+        std::cout << "PLUSBECOMES" << std::endl;
         break;
       case TOKEN_MINUSBECOMES:
-        std::cout << "MINUSEQ" << std::endl;
+        std::cout << "MINUSBECOMES" << std::endl;
         break;
       case TOKEN_STARBECOMES:
-        std::cout << "STAREQ" << std::endl;
+        std::cout << "STARBECOMES" << std::endl;
         break;
       case TOKEN_SLASHBECOMES:
-        std::cout << "SLASHEQ" << std::endl;
+        std::cout << "SLASHBECOMES" << std::endl;
+        break;
+      case TOKEN_PRIVATE:
+        std::cout << "PRIVATE" << std::endl;
+        break;
+      case TOKEN_PROTECTED:
+        std::cout << "PROTECTED" << std::endl;
+        break;
+      case TOKEN_PUBLIC:
+        std::cout << "PUBLIC" << std::endl;
         break;
     }
   }

@@ -1,4 +1,5 @@
 class Object1 {
+    public x;
     constructor() {
         this.x = "pogg";
     }
@@ -8,6 +9,7 @@ class Object1 {
 }
 
 class Object2 inherits Object1 {
+    public x;
     constructor() {
         this.x = "Not pogg";
     }
@@ -17,6 +19,7 @@ class Object2 inherits Object1 {
 }
 
 class Container {
+    public arr;
     constructor() {
         this.arr = [Object1(), Object2()];
     }

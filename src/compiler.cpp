@@ -1117,12 +1117,19 @@ void Compiler::classDeclaration() {
     classes.back().hasSuperclass = true;
   }
 
-  // parse the methods
   namedVariable(className, false);
   consume(TOKEN_LBRACE, "Expect '{' before class body.");
+
+  // parse the methods
   while (!(TOKEN_RBRACE == parser.current->type) &&
          !(TOKEN_EOF == parser.current->type)) {
-    method();
+    if (parser.current->type == TOKEN_PUBLIC ||
+        parser.current->type == TOKEN_PROTECTED ||
+        parser.current->type == TOKEN_PRIVATE) {
+      field();
+    } else {
+      method();
+    }
   }
   consume(TOKEN_RBRACE, "Expect '}' after class body.");
   emitByte(OP_POP);
@@ -1138,6 +1145,33 @@ void Compiler::classDeclaration() {
 std::shared_ptr<Token> Compiler::syntheticToken(const std::string lexeme) {
   return std::make_shared<Token>(TOKEN_ID, lexeme, parser.prev->line,
                                  parser.prev->file);
+}
+
+void Compiler::field() {
+  AccessModifier accessModifier;
+  switch (parser.current->type) {
+    case TOKEN_PRIVATE:
+      accessModifier = ACCESS_PRIVATE;
+      break;
+    case TOKEN_PROTECTED:
+      accessModifier = ACCESS_PROTECTED;
+      break;
+    case TOKEN_PUBLIC:
+      accessModifier = ACCESS_PUBLIC;
+      break;
+    default:
+      return;  // unreachable
+  }
+
+  advance();
+  consume(TOKEN_ID, "Expect field name in field declaration.");
+  uint8_t constant = makeConstant(
+      OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
+  consume(TOKEN_SEMI, "Expect ';' after field declaration.");
+
+  emitByte(OP_FIELD);
+  emitByte(constant);
+  emitByte(accessModifier);
 }
 
 void Compiler::method() {
@@ -1158,6 +1192,15 @@ void Compiler::dot(bool canAssign) {
   uint8_t name = makeConstant(
       OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
 
+  uint8_t className = 0;
+
+  if (classes.empty()) {
+    className = makeConstant(OBJECT_VAL(std::make_shared<ObjectString>("")));
+  } else {
+    className = makeConstant(OBJECT_VAL(
+        std::make_shared<ObjectString>(classes.back().name->lexeme)));
+  }
+
   OpCode binaryOpCode = matchBinaryEq();
   if (canAssign && (binaryOpCode || match(TOKEN_BECOMES))) {
     if (binaryOpCode) {
@@ -1165,6 +1208,7 @@ void Compiler::dot(bool canAssign) {
       emitByte(1);
       emitByte(OP_GET_PROPERTY);
       emitByte(name);
+      emitByte(className);
     }
     expression();
     if (binaryOpCode) {
@@ -1172,6 +1216,7 @@ void Compiler::dot(bool canAssign) {
     }
     emitByte(OP_SET_PROPERTY);
     emitByte(name);
+    emitByte(className);
   } else if (match(TOKEN_LPAREN)) {
     uint8_t argCount = argumentList();
     emitByte(OP_INVOKE);
@@ -1180,6 +1225,7 @@ void Compiler::dot(bool canAssign) {
   } else {
     emitByte(OP_GET_PROPERTY);
     emitByte(name);
+    emitByte(className);
   }
 }
 
