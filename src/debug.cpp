@@ -173,7 +173,7 @@ size_t printInstruction(Chunk& chunk, size_t index) {
     case OP_ARRAY_GET:
       return simpleInstruction("OP_ARRAY_GET", index);
     case OP_DUPLICATE:
-      return constantInstruction("OP_DUPLICATE", index);
+      return constantInstruction("OP_DUPLICATE", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
