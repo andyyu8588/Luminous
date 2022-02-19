@@ -108,6 +108,7 @@ class ObjectFunction : public Object {
 
   void increaseArity();
   void increateUpvalueCount();
+  bool empty() const;
 };
 
 using NativeFn = std::function<Value(int, size_t)>;

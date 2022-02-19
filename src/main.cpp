@@ -9,33 +9,14 @@
 static void run(Compiler& compiler, VM& vm, const std::string& code) {
   try {
     compiler.compile(code);
-  } catch (const CompilerException& e) {
-    return;
-  }
-  auto function = compiler.getFunction();
-  if (function->getChunk().getBytecodeSize() > 0) {
-    InterpretResult interpretResult = vm.interpret(function);
-    switch (interpretResult) {
-      case INTERPRET_OK:
-      case INTERPRET_COMPILE_ERROR:
-      case INTERPRET_RUNTIME_ERROR:
-      default:
-        return;
-    }
-  }
-  return;
-  /*
-  try {
-    compiler.compile(code);
     auto function = compiler.getFunction();
-    if (function.empty()) return;
+    if (function->empty()) return;
     vm.interpret(function);
   } catch (const CompilerException& e) {
     return;
   } catch (const VMException& e) {
     return;
   }
-  */
 }
 
 static void repl(Compiler& compiler, VM& vm) {

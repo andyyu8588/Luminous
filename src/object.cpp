@@ -90,6 +90,8 @@ Chunk& ObjectFunction::getChunk() { return chunk; }
 
 void ObjectFunction::increaseArity() { arity++; }
 
+bool ObjectFunction::empty() const { return chunk.getBytecodeSize() == 0; }
+
 int ObjectFunction::getArity() const { return arity; }
 
 ObjectNative::ObjectNative(const NativeFn function,

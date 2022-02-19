@@ -167,6 +167,8 @@ class Compiler {
   void dot(bool canAssign);
   void this_(bool canAssign);
   void super_(bool canAssign);
+  void array(bool canAssign);
+  void index(bool canAssign);
 
   ParseRule* getRule(TokenType type);
 
@@ -211,10 +213,6 @@ class Compiler {
   void classDeclaration();
   void method();
   std::shared_ptr<Token> syntheticToken(const std::string lexeme);
-
-  // native array:
-  void array(bool);
-  void index(bool);
 
   // for error synchronization:
   void synchronize();
