@@ -233,7 +233,7 @@ void Compiler::parsePrecedence(Precedence precedence) {
 
 
   if (canAssign && (match(TOKEN_BECOMES) || matchBinaryEq())) {
-    error(parser.current->line, "Invalid assignment target.");
+    error(parser.current->line, "Invalid assignment target.", parser.current->file);
   }
 }
 
