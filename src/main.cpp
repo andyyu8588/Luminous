@@ -9,7 +9,7 @@
 static void run(Compiler& compiler, VM& vm, const std::string& code,
                 std::string currentFile) {
   try {
-    compiler.compile(code);
+    compiler.compile(code, currentFile);
     auto function = compiler.getFunction();
     if (function->empty()) return;
     vm.interpret(function);
