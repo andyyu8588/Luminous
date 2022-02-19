@@ -11,11 +11,7 @@
 class Chunk;
 class ObjectString;
 
-enum InterpretResult {
-  INTERPRET_OK,
-  INTERPRET_COMPILE_ERROR,
-  INTERPRET_RUNTIME_ERROR
-};
+class VMException {};
 
 class MemoryStack : public std::stack<Value> {
  public:
@@ -41,8 +37,8 @@ class VM {
   const std::shared_ptr<ObjectString> constructorString =
       std::make_shared<ObjectString>("constructor");
 
-  InterpretResult binaryOperation(char operation);
-  InterpretResult run();
+  void binaryOperation(char operation);
+  void run();
   void runtimeError(const char* format, ...);
   void resetMemory();
   bool isFalsey(Value value) const;
@@ -56,15 +52,14 @@ class VM {
   uint16_t readShort();
 
   // for calling functions:
-  bool callValue(Value callee, int argCount);
-  bool call(std::shared_ptr<ObjectClosure> closure, int argCount);
+  void callValue(Value callee, int argCount);
+  void call(std::shared_ptr<ObjectClosure> closure, int argCount);
 
   // for native functions:
   void defineNative(std::string name, NativeFn function);
   Value clockNative(int argCount, size_t start);
   Value substringNative(int argCount, size_t start);
-  Value strSizeNative(int argCount, size_t start);
-  bool nativeError = false;
+  Value sizeNative(int argCount, size_t start);
 
   // for upvalues:
   std::shared_ptr<ObjectUpvalue> captureUpvalue(Value* local, int localIndex);
@@ -74,11 +69,11 @@ class VM {
   void defineMethod(std::shared_ptr<ObjectString> name);
   bool bindMethod(const ObjectClass& instanceOf,
                   std::shared_ptr<ObjectString> name);
-  bool invoke(std::shared_ptr<ObjectString> name, int argCount);
-  bool invokeFromClass(const ObjectClass& instanceOf,
+  void invoke(std::shared_ptr<ObjectString> name, int argCount);
+  void invokeFromClass(const ObjectClass& instanceOf,
                        std::shared_ptr<ObjectString> name, int argCount);
 
  public:
-  InterpretResult interpret(std::shared_ptr<ObjectFunction> function);
+  void interpret(std::shared_ptr<ObjectFunction> function);
   VM();
 };

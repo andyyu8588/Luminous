@@ -45,8 +45,7 @@ enum OpCode {
   OP_ARRAY,
   OP_ARRAY_SET,
   OP_ARRAY_GET,
-  OP_ARRAY_GET_NOPOP,
-  OP_GET_PROPERTY_NOPOP
+  OP_DUPLICATE,
 };
 
 struct ByteCode {

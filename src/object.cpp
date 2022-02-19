@@ -62,8 +62,8 @@ void Object::printObject() const {
       std::cout << "upvalue" << std::endl;
       break;
     }
-    case OBJECT_ARRAY: {
-      ((ObjectArray*)this)->printArray();
+    case OBJECT_LIST: {
+      ((ObjectList*)this)->printList();
     }
   }
 }
@@ -89,6 +89,8 @@ const std::shared_ptr<ObjectString> ObjectFunction::getName() const {
 Chunk& ObjectFunction::getChunk() { return chunk; }
 
 void ObjectFunction::increaseArity() { arity++; }
+
+bool ObjectFunction::empty() const { return chunk.getBytecodeSize() == 0; }
 
 int ObjectFunction::getArity() const { return arity; }
 
@@ -192,21 +194,23 @@ std::shared_ptr<ObjectClosure> ObjectBoundMethod::getMethod() const {
   return method;
 }
 
-ObjectArray::ObjectArray() : Object(OBJECT_ARRAY) {}
-void ObjectArray::add(Value v) { array.push_back(v); }
-Value ObjectArray::get(int i) { return array[i]; }
+ObjectList::ObjectList() : Object(OBJECT_LIST) {}
+ObjectList::ObjectList(std::vector<Value> list)
+    : Object{OBJECT_LIST}, list{list} {}
+void ObjectList::add(Value v) { list.push_back(v); }
+Value ObjectList::get(int i) const { return list[i]; }
 
-void ObjectArray::printArray() {
+void ObjectList::printList() const {
   std::cout << "[";
-  for (unsigned i = 0; i < array.size(); i++) {
-    array.at(i).printValue();
-    if (i + 1 != array.size()) {
+  for (unsigned i = 0; i < list.size(); i++) {
+    list.at(i).printValue();
+    if (i + 1 != list.size()) {
       std::cout << ", ";
     }
   }
   std::cout << "]";
 }
 
-size_t ObjectArray::size() const { return array.size(); }
+size_t ObjectList::size() const { return list.size(); }
 
-void ObjectArray::set(Value v, int i) { array[i] = v; }
+void ObjectList::set(Value v, int i) { list[i] = v; }
