@@ -8,14 +8,20 @@ class A {
 		this.b = "A's b";
 		this.c = "A's c";
 	}
-
-	public printA() {
+	
+	private printA() {
 		print(this.a);
 	}
 
-    public printB() {
-        print(this.b);
-    }
+	protected printB() {
+		print(this.b);
+        print("From class A");
+	}
+
+	public printC() {
+		this.printA();
+		print(this.c);
+	}
 }
 
 class B inherits A {
@@ -29,21 +35,18 @@ class B inherits A {
     }
 
     public printD() {
+        this.printB();
+        super.printB();
         print(this.d);
     }
 
-    public printB() {
+    private printB() {
         print(this.b);
+        print("From class B");
     }
 }
 
 instanceA = A();
 instanceB = B("d");
-instanceA.printA();
-instanceA.printB();
-instanceB.printB();
-print(instanceA.c);
-print(instanceB.c);
 instanceB.printD();
-print(instanceB.e);
-
+instanceA.printC();

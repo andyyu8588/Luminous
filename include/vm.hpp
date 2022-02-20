@@ -73,6 +73,10 @@ class VM {
   void invoke(std::shared_ptr<ObjectString> name, int argCount);
   void invokeFromClass(const ObjectClass& instanceOf,
                        std::shared_ptr<ObjectString> name, int argCount);
+  void validateAccessModifier(std::shared_ptr<ObjectString> name,
+                              ObjectClass& superclass);
+  void validateAccessModifier(std::shared_ptr<ObjectString> name,
+                              ObjectInstance& instance);
 
  public:
   void interpret(std::shared_ptr<ObjectFunction> function);

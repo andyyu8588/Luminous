@@ -85,6 +85,15 @@ size_t invokeInstruction(std::string name, Chunk& chunk, size_t index) {
   return index + 3;
 }
 
+size_t superInvokeInstruction(std::string name, Chunk& chunk, size_t index) {
+  uint8_t constant = chunk.getBytecodeAt(index + 1).code;
+  uint8_t argCount = chunk.getBytecodeAt(index + 2).code;
+  uint8_t xd = chunk.getBytecodeAt(index + 3).code;
+  std::cout << name << " " << constant << " " << argCount << " " << xd
+            << std::endl;
+  return index + 4;
+}
+
 size_t printInstruction(Chunk& chunk, size_t index) {
   std::cout << std::setfill('0') << std::setw(5) << index << " ";
   std::cout << std::setfill(' ') << std::setw(5)
@@ -157,9 +166,9 @@ size_t printInstruction(Chunk& chunk, size_t index) {
     case OP_SET_PROPERTY:
       return invokeInstruction("OP_SET_PROPERTY", chunk, index);
     case OP_METHOD:
-      return constantInstruction("OP_METHOD", chunk, index);
+      return invokeInstruction("OP_METHOD", chunk, index);
     case OP_INVOKE:
-      return invokeInstruction("OP_INVOKE", chunk, index);
+      return superInvokeInstruction("OP_INVOKE", chunk, index);
     case OP_INHERIT:
       return simpleInstruction("OP_INHERIT", index);
     case OP_GET_SUPER:
@@ -174,6 +183,8 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return simpleInstruction("OP_ARRAY_GET", index);
     case OP_DUPLICATE:
       return constantInstruction("OP_DUPLICATE", chunk, index);
+    case OP_FIELD:
+      return invokeInstruction("OP_FIELD", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;

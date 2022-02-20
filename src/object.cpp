@@ -146,15 +146,32 @@ ObjectClass::ObjectClass(const std::string& name)
 
 const ObjectString& ObjectClass::getName() const { return name; }
 
-const AccessModifier* ObjectClass::getAccessModifier(
+const AccessModifier* ObjectClass::getFieldAccessModifier(
     std::shared_ptr<ObjectString> name) const {
   if (fields.find(name) == fields.end()) return nullptr;
   return &(fields.find(name)->second);
 }
 
+const AccessModifier* ObjectClass::getMethodAccessModifier(
+    std::shared_ptr<ObjectString> name) const {
+  if (methods.find(name) == methods.end()) return nullptr;
+  return &(methods.find(name)->second.second);
+}
+
+const AccessModifier* ObjectClass::getAccessModifier(
+    std::shared_ptr<ObjectString> name) const {
+  if (fields.find(name) == fields.end()) {
+    if (methods.find(name) == methods.end()) {
+      return nullptr;
+    }
+    return &(methods.find(name)->second.second);
+  }
+  return &(fields.find(name)->second);
+}
+
 const Value* ObjectClass::getMethod(std::shared_ptr<ObjectString> name) const {
   if (methods.find(name) == methods.end()) return nullptr;
-  return &(methods.find(name)->second);
+  return &(methods.find(name)->second.first);
 }
 
 const std::unordered_map<std::shared_ptr<ObjectString>, AccessModifier,
@@ -168,13 +185,16 @@ void ObjectClass::setField(std::shared_ptr<ObjectString> name,
   fields.insert_or_assign(name, accessModifier);
 }
 
-void ObjectClass::setMethod(std::shared_ptr<ObjectString> name, Value method) {
-  methods.insert_or_assign(name, method);
+void ObjectClass::setMethod(std::shared_ptr<ObjectString> name, Value method,
+                            AccessModifier am) {
+  methods.insert_or_assign(name, std::make_pair(method, am));
 }
 
 void ObjectClass::copyMethodsFrom(const ObjectClass& parent) {
   for (auto& it : parent.methods) {
-    methods.insert_or_assign(it.first, it.second);
+    if (it.second.second != AccessModifier::ACCESS_PRIVATE) {
+      methods.insert_or_assign(it.first, it.second);
+    }
   }
 }
 

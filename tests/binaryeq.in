@@ -1,25 +1,25 @@
 class Test {
     public x;
-    constructor(x) {
+    public constructor(x) {
         this.x = x;
     }
 
-    increment() {
+    public increment() {
         this.x += 1;
         print(this.x);
     }
 
-    decrement() {
+    public decrement() {
         this.x -= 1;
         print(this.x);
     }
 
-    double() {
+    public double() {
         this.x *= 2;
         print(this.x);
     }
 
-    negate() {
+    public negate() {
         this.x /= -1;
         print(this.x);
     }

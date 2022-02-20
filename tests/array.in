@@ -1,29 +1,29 @@
 class Object1 {
     public x;
-    constructor() {
+    public constructor() {
         this.x = "pogg";
     }
-    printPogg() {
+    public printPogg() {
         print(this.x);
     }
 }
 
 class Object2 inherits Object1 {
     public x;
-    constructor() {
+    public constructor() {
         this.x = "Not pogg";
     }
-    printPogg() {
+    public printPogg() {
         print(this.x);
     }
 }
 
 class Container {
     public arr;
-    constructor() {
+    public constructor() {
         this.arr = [Object1(), Object2()];
     }
-    printContainer() {
+    public printContainer() {
         print(this.arr);
         for(i from 0 to 2 by 1) {
             this.arr[i].printPogg();
