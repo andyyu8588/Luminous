@@ -47,6 +47,13 @@ enum OpCode {
   OP_ARRAY_SET,
   OP_ARRAY_GET,
   OP_DUPLICATE,
+  OP_FIELD,
+};
+
+enum AccessModifier {
+  ACCESS_PRIVATE,
+  ACCESS_PROTECTED,
+  ACCESS_PUBLIC,
 };
 
 struct ByteCode {

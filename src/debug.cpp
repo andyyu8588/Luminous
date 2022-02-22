@@ -85,6 +85,15 @@ size_t invokeInstruction(std::string name, Chunk& chunk, size_t index) {
   return index + 3;
 }
 
+size_t superInvokeInstruction(std::string name, Chunk& chunk, size_t index) {
+  uint8_t constant = chunk.getBytecodeAt(index + 1).code;
+  uint8_t argCount = chunk.getBytecodeAt(index + 2).code;
+  uint8_t xd = chunk.getBytecodeAt(index + 3).code;
+  std::cout << name << " " << constant << " " << argCount << " " << xd
+            << std::endl;
+  return index + 4;
+}
+
 size_t printInstruction(Chunk& chunk, size_t index) {
   std::cout << std::setfill('0') << std::setw(5) << index << " ";
   std::cout << std::setfill(' ') << std::setw(5)
@@ -153,13 +162,13 @@ size_t printInstruction(Chunk& chunk, size_t index) {
     case OP_CLASS:
       return constantInstruction("OP_CLASS", chunk, index);
     case OP_GET_PROPERTY:
-      return constantInstruction("OP_GET_PROPERTY", chunk, index);
+      return invokeInstruction("OP_GET_PROPERTY", chunk, index);
     case OP_SET_PROPERTY:
-      return constantInstruction("OP_SET_PROPERTY", chunk, index);
+      return invokeInstruction("OP_SET_PROPERTY", chunk, index);
     case OP_METHOD:
-      return constantInstruction("OP_METHOD", chunk, index);
+      return invokeInstruction("OP_METHOD", chunk, index);
     case OP_INVOKE:
-      return invokeInstruction("OP_INVOKE", chunk, index);
+      return superInvokeInstruction("OP_INVOKE", chunk, index);
     case OP_INHERIT:
       return simpleInstruction("OP_INHERIT", index);
     case OP_GET_SUPER:
@@ -174,6 +183,8 @@ size_t printInstruction(Chunk& chunk, size_t index) {
       return simpleInstruction("OP_ARRAY_GET", index);
     case OP_DUPLICATE:
       return constantInstruction("OP_DUPLICATE", chunk, index);
+    case OP_FIELD:
+      return invokeInstruction("OP_FIELD", chunk, index);
     default: {
       std::cout << "Unknown opcode " << code << std::endl;
       return index + 1;
@@ -355,16 +366,25 @@ void printTokens(const std::vector<Token>& tokens) {
         std::cout << "SUPER" << std::endl;
         break;
       case TOKEN_PLUSBECOMES:
-        std::cout << "PLUSEQ" << std::endl;
+        std::cout << "PLUSBECOMES" << std::endl;
         break;
       case TOKEN_MINUSBECOMES:
-        std::cout << "MINUSEQ" << std::endl;
+        std::cout << "MINUSBECOMES" << std::endl;
         break;
       case TOKEN_STARBECOMES:
-        std::cout << "STAREQ" << std::endl;
+        std::cout << "STARBECOMES" << std::endl;
         break;
       case TOKEN_SLASHBECOMES:
-        std::cout << "SLASHEQ" << std::endl;
+        std::cout << "SLASHBECOMES" << std::endl;
+        break;
+      case TOKEN_PRIVATE:
+        std::cout << "PRIVATE" << std::endl;
+        break;
+      case TOKEN_PROTECTED:
+        std::cout << "PROTECTED" << std::endl;
+        break;
+      case TOKEN_PUBLIC:
+        std::cout << "PUBLIC" << std::endl;
         break;
     }
   }

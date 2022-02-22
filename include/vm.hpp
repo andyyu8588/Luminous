@@ -66,12 +66,17 @@ class VM {
   void closeUpvalues(int lastIndex);
 
   // for classes:
+  void defineField(std::shared_ptr<ObjectString> name);
   void defineMethod(std::shared_ptr<ObjectString> name);
   bool bindMethod(const ObjectClass& instanceOf,
                   std::shared_ptr<ObjectString> name);
   void invoke(std::shared_ptr<ObjectString> name, int argCount);
   void invokeFromClass(const ObjectClass& instanceOf,
                        std::shared_ptr<ObjectString> name, int argCount);
+  void validateAccessModifier(std::shared_ptr<ObjectString> name,
+                              ObjectClass& superclass);
+  void validateAccessModifier(std::shared_ptr<ObjectString> name,
+                              ObjectInstance& instance);
 
  public:
   void interpret(std::shared_ptr<ObjectFunction> function);

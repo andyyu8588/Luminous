@@ -1,5 +1,12 @@
 class Andy {
-    constructor(age, height, weight, job) {
+   public age;
+   public height;
+   public weight;
+   public job;
+   public myself;
+   public myself2; 
+
+    public constructor(age, height, weight, job) {
         this.age = age;
         this.height = height;
         this.weight = weight;
@@ -8,14 +15,14 @@ class Andy {
         this.myself2 = this;
     }
 
-    workout() {
+    public workout() {
         print("Andy did some workout.");
         this.weight = this.weight - 0.2;
         print("Current weight: ");
         print(this.weight);
     }
 
-    grow() {
+    public grow() {
         print("Andy aged.");
         this.height = this.height + 2;
         this.age = this.age + 1;
@@ -25,7 +32,7 @@ class Andy {
         print(this.height);
     }
 
-    printAndy() {
+    public printAndy() {
         print(this.age);
         print(this.height);
         print(this.weight);
@@ -34,13 +41,17 @@ class Andy {
 }
 
 class Job {
-    constructor(title, salary) {
+    public title;
+    public salary;
+    public myself;
+    
+    public constructor(title, salary) {
         this.title = title;
         this.salary = salary;
         this.myself = this;
     }
 
-    makeMoney() {
+    public makeMoney() {
         if(this.title equals "software developer") {
             this.salary = this.salary + 100000;
         } else {
@@ -50,12 +61,12 @@ class Job {
         print(this.salary);
     }
 
-    changeJob(newJob) {
+    public changeJob(newJob) {
         this.title = newJob;
         print("New job is: " + this.title);
     }
 
-    printJob() {
+    public printJob() {
         print(this.title);
         print(this.salary);
     }

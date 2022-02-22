@@ -1117,12 +1117,42 @@ void Compiler::classDeclaration() {
     classes.back().hasSuperclass = true;
   }
 
-  // parse the methods
   namedVariable(className, false);
   consume(TOKEN_LBRACE, "Expect '{' before class body.");
+
+  // parse the methods
   while (!(TOKEN_RBRACE == parser.current->type) &&
          !(TOKEN_EOF == parser.current->type)) {
-    method();
+    // get corresponding access modifier
+    AccessModifier accessModifier;
+    switch (parser.current->type) {
+      case TOKEN_PRIVATE:
+        accessModifier = ACCESS_PRIVATE;
+        break;
+      case TOKEN_PROTECTED:
+        accessModifier = ACCESS_PROTECTED;
+        break;
+      case TOKEN_PUBLIC:
+        accessModifier = ACCESS_PUBLIC;
+        break;
+      default:
+        error(parser.current->line,
+              "Expect access modifier for class field or method",
+              parser.current->file);
+        break;
+    }
+    advance();
+
+    consume(TOKEN_ID, "Expect class field or method name.");
+    switch (parser.current->type) {
+      case TOKEN_SEMI: {
+        field(parser.prev, accessModifier);
+        break;
+      }
+      default:
+        method(parser.prev, accessModifier);
+        break;
+    }
   }
   consume(TOKEN_RBRACE, "Expect '}' after class body.");
   emitByte(OP_POP);
@@ -1140,10 +1170,20 @@ std::shared_ptr<Token> Compiler::syntheticToken(const std::string lexeme) {
                                  parser.prev->file);
 }
 
-void Compiler::method() {
-  consume(TOKEN_ID, "Expect method name.");
-  uint8_t constant = makeConstant(
-      OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
+void Compiler::field(const Token* name, AccessModifier am) {
+  // already checked for semi in classDeclaration
+  advance();
+  uint8_t constant =
+      makeConstant(OBJECT_VAL(std::make_shared<ObjectString>(name->lexeme)));
+
+  emitByte(OP_FIELD);
+  emitByte(constant);
+  emitByte(am);
+}
+
+void Compiler::method(const Token* name, AccessModifier am) {
+  uint8_t constant =
+      makeConstant(OBJECT_VAL(std::make_shared<ObjectString>(name->lexeme)));
   FunctionType type = TYPE_METHOD;
   if (parser.prev->lexeme == "constructor") {
     type = TYPE_CONSTRUCTOR;
@@ -1151,12 +1191,22 @@ void Compiler::method() {
   function(type);
   emitByte(OP_METHOD);
   emitByte(constant);
+  emitByte(am);
 }
 
 void Compiler::dot(bool canAssign) {
   consume(TOKEN_ID, "Expect property name after '.'.");
   uint8_t name = makeConstant(
       OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
+
+  uint8_t className = 0;
+
+  if (classes.empty()) {
+    className = makeConstant(OBJECT_VAL(std::make_shared<ObjectString>("")));
+  } else {
+    className = makeConstant(OBJECT_VAL(
+        std::make_shared<ObjectString>(classes.back().name->lexeme)));
+  }
 
   OpCode binaryOpCode = matchBinaryEq();
   if (canAssign && (binaryOpCode || match(TOKEN_BECOMES))) {
@@ -1165,6 +1215,7 @@ void Compiler::dot(bool canAssign) {
       emitByte(1);
       emitByte(OP_GET_PROPERTY);
       emitByte(name);
+      emitByte(className);
     }
     expression();
     if (binaryOpCode) {
@@ -1172,14 +1223,17 @@ void Compiler::dot(bool canAssign) {
     }
     emitByte(OP_SET_PROPERTY);
     emitByte(name);
+    emitByte(className);
   } else if (match(TOKEN_LPAREN)) {
     uint8_t argCount = argumentList();
     emitByte(OP_INVOKE);
     emitByte(name);
     emitByte(argCount);
+    emitByte(className);
   } else {
     emitByte(OP_GET_PROPERTY);
     emitByte(name);
+    emitByte(className);
   }
 }
 
@@ -1205,6 +1259,15 @@ void Compiler::super_(bool canAssign) {
   uint8_t name = makeConstant(
       OBJECT_VAL(std::make_shared<ObjectString>(parser.prev->lexeme)));
 
+  uint8_t className = 0;
+
+  if (classes.empty()) {
+    className = makeConstant(OBJECT_VAL(std::make_shared<ObjectString>("")));
+  } else {
+    className = makeConstant(OBJECT_VAL(
+        std::make_shared<ObjectString>(classes.back().name->lexeme)));
+  }
+
   namedVariable(syntheticToken("this").get(), false);
   if (match(TOKEN_LPAREN)) {
     uint8_t argCount = argumentList();
@@ -1212,10 +1275,12 @@ void Compiler::super_(bool canAssign) {
     emitByte(OP_SUPER_INVOKE);
     emitByte(name);
     emitByte(argCount);
+    emitByte(className);
   } else {
     namedVariable(syntheticToken("super").get(), false);
     emitByte(OP_GET_SUPER);
     emitByte(name);
+    emitByte(className);
   }
 }
 

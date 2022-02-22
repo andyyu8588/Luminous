@@ -1,9 +1,12 @@
 class Yunze {
-    playGames() {
+    public x;
+    public ok;
+
+    public playGames() {
         this.x = "Yunze played some games.";
         print(this.x);
     }
-    okkk() {
+    public okkk() {
         this.ok = 1;
         print(this.ok);
         print(this.x);
@@ -11,11 +14,11 @@ class Yunze {
 }
 
 class Andy inherits Yunze {
-    playGames() {
+    public playGames() {
         this.x = "Andy played some games.";
         print(this.x);
     }
-    yunzePlayGames() {
+    public yunzePlayGames() {
         super.playGames();
     }
 }

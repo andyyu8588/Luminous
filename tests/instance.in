@@ -1,8 +1,8 @@
-class A {}
+class A { public a; }
 
-class B {}
+class B { public a; }
 
-class C {}
+class C { public a; }
 
 a = A();
 b = B();

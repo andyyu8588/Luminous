@@ -160,21 +160,31 @@ class ObjectClosure : public Object {
 
 class ObjectClass : public Object {
   ObjectString name;
-  std::unordered_map<std::shared_ptr<ObjectString>, Value, ObjectString::Hash,
+  std::unordered_map<std::shared_ptr<ObjectString>,
+                     std::pair<Value, AccessModifier>, ObjectString::Hash,
                      ObjectString::Comparator>
       methods;
+  std::unordered_map<std::shared_ptr<ObjectString>, AccessModifier,
+                     ObjectString::Hash, ObjectString::Comparator>
+      fields;
 
  public:
   ObjectClass(const std::string& name);
 
   // getters
   const ObjectString& getName() const;
+  const AccessModifier* getAccessModifier(std::shared_ptr<ObjectString>) const;
   const Value* getMethod(std::shared_ptr<ObjectString>) const;
+  const std::unordered_map<std::shared_ptr<ObjectString>, AccessModifier,
+                           ObjectString::Hash, ObjectString::Comparator>&
+  getFields() const;
 
-  void setMethod(std::shared_ptr<ObjectString>, Value);
+  void setField(std::shared_ptr<ObjectString>, AccessModifier);
+  void setMethod(std::shared_ptr<ObjectString>, Value, AccessModifier);
 
   // for inheritance
   void copyMethodsFrom(const ObjectClass& parent);
+  void copyFieldsFrom(const ObjectClass& parent);
 };
 
 class ObjectInstance : public Object {

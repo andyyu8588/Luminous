@@ -270,7 +270,7 @@ void VM::run() {
 
         ObjectInstance& instance = *(AS_INSTANCE(memory.top()));
         std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(readConstant());
-
+        validateAccessModifier(name, instance);
         const Value* value = instance.getField(name);
         if (value != nullptr) {
           memory.pop();
@@ -291,7 +291,10 @@ void VM::run() {
         ObjectInstance* instance = AS_INSTANCE(memory.top()).get();
         memory.pop();
 
-        instance->setField(AS_OBJECTSTRING(readConstant()), value);
+        std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(readConstant());
+        validateAccessModifier(name, *instance);
+
+        instance->setField(name, value);
         memory.push(value);
         break;
       }
@@ -299,6 +302,7 @@ void VM::run() {
         std::shared_ptr<ObjectString> name = AS_OBJECTSTRING(readConstant());
         std::shared_ptr<ObjectClass> superclass = AS_CLASS(memory.top());
         memory.pop();
+        validateAccessModifier(name, *superclass);
         bindMethod(*superclass, name);
         break;
       }
@@ -392,6 +396,7 @@ void VM::run() {
         int argCount = readByte();
         std::shared_ptr<ObjectClass> superclass = AS_CLASS(memory.top());
         memory.pop();
+        validateAccessModifier(method, *superclass);
         invokeFromClass(*superclass, method, argCount);
         frame = &(frames.top());
         break;
@@ -421,6 +426,7 @@ void VM::run() {
         }
         std::shared_ptr<ObjectClass> child = AS_CLASS(memory.top());
         child->copyMethodsFrom(*(AS_CLASS(parent)));
+        child->copyFieldsFrom(*(AS_CLASS(parent)));
         memory.pop();  // Pop the child class
         break;
       }
@@ -437,6 +443,10 @@ void VM::run() {
       case OP_CLOSE_UPVALUE: {
         closeUpvalues(memory.size() - 1);
         memory.pop();
+        break;
+      }
+      case OP_FIELD: {
+        defineField(AS_OBJECTSTRING(readConstant()));
         break;
       }
       case OP_METHOD: {
@@ -549,6 +559,49 @@ void VM::run() {
         }
         break;
       }
+    }
+  }
+}
+
+void VM::validateAccessModifier(std::shared_ptr<ObjectString> name,
+                                ObjectClass& superclass) {
+  std::shared_ptr<ObjectString> className = AS_OBJECTSTRING(readConstant());
+  const AccessModifier* am = superclass.getAccessModifier(name);
+  if (am == nullptr) {
+    runtimeError("Method %s is not declared in class %s.",
+                 name->getString().c_str(),
+                 superclass.getName().getString().c_str());
+  }
+
+  if (*(am) == AccessModifier::ACCESS_PRIVATE) {
+    runtimeError("Cannot access a private method outside of the owner class.");
+  }
+}
+
+void VM::validateAccessModifier(std::shared_ptr<ObjectString> name,
+                                ObjectInstance& instance) {
+  std::shared_ptr<ObjectString> className = AS_OBJECTSTRING(readConstant());
+  const AccessModifier* am = instance.getInstanceOf().getAccessModifier(name);
+  std::string typeStr =
+      instance.getInstanceOf().getMethod(name) != nullptr ? "Method" : "Field";
+  if (am == nullptr) {
+    runtimeError("%s %s is not declared in class %s.", typeStr.c_str(),
+                 name->getString().c_str(),
+                 instance.getInstanceOf().getName().getString().c_str());
+  }
+
+  typeStr[0] += ('a' - 'A');
+
+  if (className->getString().empty() &&
+      *(am) != AccessModifier::ACCESS_PUBLIC) {
+    if (*(am) == AccessModifier::ACCESS_PROTECTED) {
+      runtimeError(
+          "Cannot access a protected %s outside of a non-inherited "
+          "class.",
+          typeStr.c_str());
+    } else {
+      runtimeError("Cannot access a private %s outside of the owner class.",
+                   typeStr.c_str());
     }
   }
 }
@@ -746,11 +799,16 @@ void VM::closeUpvalues(int lastIndex) {
   }
 }
 
+void VM::defineField(std::shared_ptr<ObjectString> name) {
+  std::shared_ptr<ObjectClass> objClass = AS_CLASS(memory.top());
+  objClass->setField(name, (AccessModifier)readByte());
+}
+
 void VM::defineMethod(std::shared_ptr<ObjectString> name) {
   Value method = memory.top();
   std::shared_ptr<ObjectClass> classObj =
       AS_CLASS(memory.getValueAt(memory.size() - 2));
-  classObj->setMethod(name, method);
+  classObj->setMethod(name, method, (AccessModifier)readByte());
   memory.pop();
 }
 
@@ -777,6 +835,7 @@ void VM::invoke(std::shared_ptr<ObjectString> name, int argCount) {
   }
 
   std::shared_ptr<ObjectInstance> instance = AS_INSTANCE(receiver);
+  validateAccessModifier(name, *instance);
 
   const Value* field = instance->getField(name);
 

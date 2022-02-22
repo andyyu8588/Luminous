@@ -211,7 +211,8 @@ class Compiler {
 
   // classes:
   void classDeclaration();
-  void method();
+  void field(const Token*, AccessModifier);
+  void method(const Token*, AccessModifier);
   std::shared_ptr<Token> syntheticToken(const std::string lexeme);
 
   // for error synchronization:
