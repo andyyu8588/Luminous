@@ -173,10 +173,6 @@ class ObjectClass : public Object {
 
   // getters
   const ObjectString& getName() const;
-  const AccessModifier* getFieldAccessModifier(
-      std::shared_ptr<ObjectString>) const;
-  const AccessModifier* getMethodAccessModifier(
-      std::shared_ptr<ObjectString>) const;
   const AccessModifier* getAccessModifier(std::shared_ptr<ObjectString>) const;
   const Value* getMethod(std::shared_ptr<ObjectString>) const;
   const std::unordered_map<std::shared_ptr<ObjectString>, AccessModifier,

@@ -146,18 +146,6 @@ ObjectClass::ObjectClass(const std::string& name)
 
 const ObjectString& ObjectClass::getName() const { return name; }
 
-const AccessModifier* ObjectClass::getFieldAccessModifier(
-    std::shared_ptr<ObjectString> name) const {
-  if (fields.find(name) == fields.end()) return nullptr;
-  return &(fields.find(name)->second);
-}
-
-const AccessModifier* ObjectClass::getMethodAccessModifier(
-    std::shared_ptr<ObjectString> name) const {
-  if (methods.find(name) == methods.end()) return nullptr;
-  return &(methods.find(name)->second.second);
-}
-
 const AccessModifier* ObjectClass::getAccessModifier(
     std::shared_ptr<ObjectString> name) const {
   if (fields.find(name) == fields.end()) {
