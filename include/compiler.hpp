@@ -222,5 +222,8 @@ class Compiler {
   void compile(const std::string& code, std::string currentFile);
   std::shared_ptr<ObjectFunction> getFunction();
 
+  void migrate();
+  void tempClear();
+
   Compiler();
 };

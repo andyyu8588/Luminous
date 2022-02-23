@@ -13,9 +13,11 @@ static void run(Compiler& compiler, VM& vm, const std::string& code,
     auto function = compiler.getFunction();
     if (function->empty()) return;
     vm.interpret(function);
+    compiler.migrate();
   } catch (const CompilerException& e) {
     return;
   } catch (const VMException& e) {
+    compiler.tempClear();
     return;
   }
 }

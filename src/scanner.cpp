@@ -1,5 +1,6 @@
 #include "scanner.hpp"
 
+#include <algorithm>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -10,6 +11,8 @@
 #ifdef DEBUG
 #include "debug.hpp"
 #endif
+
+std::unordered_set<std::string> Scanner::importedFiles;
 
 Scanner::Scanner() {}
 
@@ -112,14 +115,25 @@ void Scanner::id() {
     while (peek() != ' ' && peek() != '\n' && peek() != '\0') {
       target += nextChar();
     }
+    if (importedFiles.contains(target)) return;
     std::ifstream importFile;
-    // TODO standard libs
-    importFile.open(target);
+    const std::string stdPathPrefix = "lib/src/";
+    const std::unordered_map<std::string, std::string> stdLibs = {
+        {"Queue", "queue.lum"},
+        {"Stack", "stack.lum"},
+        {"Math", "math.lum"},
+        {"Random", "random.lum"}};
+    if (stdLibs.contains(target)) {
+      importFile.open(stdPathPrefix + stdLibs.find(target)->second);
+    } else {
+      importFile.open(target);
+    }
     if (!importFile.is_open()) {
       error(line,
             "LINKER ERROR: Cannot open Luminous source file '" + target + "'.",
             currentFile);
     } else {
+      importedFiles.insert(target);
       Scanner newScanner;
       std::string code((std::istreambuf_iterator<char>(importFile)),
                        std::istreambuf_iterator<char>());

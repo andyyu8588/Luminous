@@ -1,0 +1,28 @@
+// Implementeds as a Linear Congruential Generator
+import Math
+
+class Random {
+    private math;
+    private a;
+    private c;
+    private m;
+    private seed;
+
+    public constructor(seed) {
+        this.math = Math();
+        this.a = 1103515245;
+        this.c = 12345;
+        this.m = this.math.power(2, 31);
+        this.seed = seed;
+    }
+
+    public generate() {
+        this.seed = (this.a * this.seed + this.c) % this.m;
+        return this.seed;
+    }
+
+    public generateDecimal() {
+        this.seed = (this.a * this.seed + this.c) % this.m;
+        return this.seed / this.m;
+    }
+}

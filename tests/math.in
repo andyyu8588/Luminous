@@ -1,0 +1,23 @@
+import Math
+
+math = Math();
+
+print(math.abs(0));
+print(math.abs(1));
+print(math.abs(-1));
+
+print(math.factorial(0));
+print(math.factorial(1));
+print(math.factorial(5));
+
+print(math.isEven(0));
+print(math.isEven(1000));
+print(math.isEven(859));
+
+print(math.isOdd(0));
+print(math.isOdd(1000));
+print(math.isOdd(859));
+
+print(math.power(0, 1));
+print(math.power(2, 3));
+print(math.power(10, 5));

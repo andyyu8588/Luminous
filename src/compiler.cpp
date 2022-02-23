@@ -161,9 +161,10 @@ void Compiler::compile(const std::string& code, std::string currentFile) {
     functions.clear();
     throw CompilerException();
   }
-
-  globalVars.migrate();
 }
+
+void Compiler::migrate() { globalVars.migrate(); }
+void Compiler::tempClear() { globalVars.tempClear(); }
 
 void Compiler::consume(TokenType type, const std::string& message) {
   if (parser.current->type == type) {

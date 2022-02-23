@@ -8,12 +8,14 @@ Created by Yun Ze Zhou and Andy Yu.
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "token.hpp"
 
 class Scanner {
   const std::string* code;
+  static std::unordered_set<std::string> importedFiles;
   std::vector<Token> tokens;
   std::string currentFile;
   std::unordered_map<std::string, TokenType> keywords = {

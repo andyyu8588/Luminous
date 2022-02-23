@@ -1,0 +1,22 @@
+import Queue
+
+class Object {
+    public constructor() {
+        print("Object constructed");
+    }
+}
+
+queue = Queue();
+queue.push(Object());
+queue.push("Hello world!");
+queue.push(3.1415926);
+print(queue.isEmpty());
+print(queue.size());
+print(queue.pop());
+print(queue.size());
+print(queue.front());
+queue.pop();
+print(queue.size());
+print(queue.pop());
+print(queue.isEmpty());
+print(queue.size());

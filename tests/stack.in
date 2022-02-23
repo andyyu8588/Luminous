@@ -1,0 +1,22 @@
+import Stack
+
+class Object {
+    public constructor() {
+        print("Object constructed");
+    }
+}
+
+stack = Stack();
+stack.push(Object());
+stack.push("Hello world!");
+stack.push(3.1415926);
+print(stack.isEmpty());
+print(stack.size());
+print(stack.pop());
+print(stack.size());
+print(stack.top());
+stack.pop();
+print(stack.size());
+print(stack.pop());
+print(stack.isEmpty());
+print(stack.size());
