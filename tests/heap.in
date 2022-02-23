@@ -1,0 +1,20 @@
+import Heap
+
+function simpleNumberHash(x) {
+	return x;	
+}
+
+numHeap = Heap(simpleNumberHash);
+
+numHeap.add(1);
+numHeap.add(17);
+numHeap.add(11);
+numHeap.add(0);
+numHeap.add(8);
+
+print(numHeap.size());
+print(numHeap.deleteMin());
+print(numHeap.deleteMin());
+print(numHeap.deleteMin());
+print(numHeap.deleteMin());
+print(numHeap.deleteMin());

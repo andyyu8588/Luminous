@@ -1,0 +1,43 @@
+print(floor(1) equals ceil(1));
+print(floor(3.12398432749827349872394879238) equals 3);
+print(ceil(1.9832579283745982374932) equals 2);
+
+print(type("poggers"));
+print(type(12.1283123));
+print(type(null));
+print(type(true equals false));
+
+function func() {
+    return null;
+}
+
+b = 3;
+
+function lmao() {
+	c = 1;
+	function XD2() {
+		b = c;
+        print(type(b));
+	}
+	XD2();
+}
+
+a = func;
+
+print(type(type));
+print(type(a));
+print(type(a()));
+
+class A {
+	public XD() {
+		return "XD";
+	}
+}
+instanceA = A();
+
+print(type(A));
+print(type(instanceA));
+print(type(instanceA.XD));
+
+print(type(b));
+lmao();

@@ -122,7 +122,8 @@ void Scanner::id() {
         {"Queue", "queue.lum"},
         {"Stack", "stack.lum"},
         {"Math", "math.lum"},
-        {"Random", "random.lum"}};
+        {"Random", "random.lum"},
+        {"Heap", "heap.lum"}};
     if (stdLibs.contains(target)) {
       importFile.open(stdPathPrefix + stdLibs.find(target)->second);
     } else {

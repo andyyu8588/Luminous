@@ -9,6 +9,9 @@ class Random {
     private seed;
 
     public constructor(seed) {
+        if(not(type(seed) equals "number")) throw("ERROR: Seed must be a positive integer.");
+        if(not(floor(seed) equals ceil(seed))) throw("ERROR: Seed must be a positive integer.");
+        if(seed <= 0) throw("ERROR: Seed must be a positive integer.");
         this.math = Math();
         this.a = 1103515245;
         this.c = 12345;

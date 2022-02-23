@@ -1,0 +1,101 @@
+// Hashmap implemented using Robin Hood Hashing
+class Value {
+    public psl;
+    private key;
+    private value;
+    public constructor(key, value) {
+        this.psl = 0;
+        this.key = key;
+        this.value = value;
+    }
+    public getKey() {
+        return this.key;
+    }
+    public getValue() {
+        return this.value;
+    }
+}
+
+class HashMap {
+    private hashFunction;
+    private container;
+
+    public constructor(hashFunction) {
+        if(not(type(hashFunction) equals "function")) {
+            throw("ERROR: Expects a function as argument, but found " + type(hashFunction) + ".");
+        }
+        this.hashFunction = hashFunction;
+        this.container = [];
+    }
+
+    public insert(key, value) {
+        hashValue = this.hashFunction(key);
+        if(hashValue >= size(this.container)) {
+            for(i from size(this.container) to (hashValue + 1) by 1) {
+                container += null;
+            }
+        }
+        toAdd = Value(key, value);
+        curIndex = hashValue;
+        while(not(this.container[curIndex] equals null)) {
+            // PSL check and swap
+            if(this.container[curIndex].psl < toAdd) {
+                temp = this.container[curIndex];
+                this.container[curIndex] = toAdd;
+                toAdd = temp;
+            }
+            toAdd.psl += 1;
+            curIndex += 1;
+        }
+        this.container[curIndex] = toAdd;
+    }
+
+    public find(key) {
+        hashValue = this.hashFunction(key);
+        if(hashValue >= size(this.container)) return null;
+        curIndex = hashValue;
+        while(curIndex < size(container) and not(this.container[curIndex] equals null)) {
+            if(curIndex > hashValue) return null;
+            if(this.container[curIndex].getKey() equals key) return this.container[curIndex].getValue();
+            curIndex += 1;
+        }
+        return null;
+    }
+
+    public delete(key) {
+        hashValue = this.hashFunction(key);
+        if(hashValue >= size(this.container)) return null;
+        curIndex = hashValue;
+        condition = curIndex < size(this.container) and not(this.container[curIndex] equals null);
+        found = false;
+        while(condition) {
+            if(curIndex > hashValue) return null;
+            if(this.container[curIndex].getKey() equals key) {
+                condition = false;
+                found = true;
+            }
+            if(not(condition)) {
+                curIndex += 1;
+                condition = curIndex < size(this.container) and not(this.container[curIndex] equals null);
+            }
+        }
+        if(not found) return null;
+        toReturn = this.container[curIndex].getValue();
+        this.container[curIndex] = null;
+        this.condition = curIndex + 1 < size(this.container);
+        // Move back process:
+        for(i from curIndex + 1 to size(this.container) by 1) {
+            if((this.container[i] equals null) or (this.container[i].psl equals 0)) return toReturn;
+            moveBackIndex = i;
+            while(moveBackIndex > 0 and this.container[i].psl > 0 and this.container[moveBackIndex] equals null) {
+                if(moveBackIndex - 1 >= 0 and this.container[i].psl - 1 >= 0 and this.container[moveBackIndex - 1] equals null) {
+                    moveBackIndex -= 1;
+                    this.container[i].psl -= 1;
+                }
+            }
+            this.container[moveBackIndex] = this.container[i];
+            this.container[i] = nullptr;
+        }
+        return toReturn;
+    }
+}
