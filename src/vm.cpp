@@ -923,9 +923,9 @@ void VM::invoke(std::shared_ptr<ObjectString> name, int argCount) {
   if (field != nullptr) {
     memory.setValueAt(*field, memory.size() - 1 - argCount);
     callValue(*field, argCount);
+  } else {
+    invokeFromClass(instance->getInstanceOf(), name, argCount);
   }
-
-  invokeFromClass(instance->getInstanceOf(), name, argCount);
 }
 
 void VM::invokeFromClass(const ObjectClass& instanceOf,

@@ -1,0 +1,19 @@
+class Test {
+    private test;
+
+    public constructor(func) {
+        this.test = func;
+    }
+
+    public callTest() {
+        this.test();
+    }
+}
+
+function printRandom() {
+    print("random");
+}
+
+newTest = Test(printRandom);
+newTest.callTest();
+newTest.callTest();
