@@ -32,14 +32,17 @@ class HashMap {
         hashValue = this.hashFunction(key);
         if(hashValue >= size(this.container)) {
             for(i from size(this.container) to (hashValue + 1) by 1) {
-                container += null;
+                this.container += null;
             }
         }
         toAdd = Value(key, value);
         curIndex = hashValue;
         while(not(this.container[curIndex] equals null)) {
+            if(curIndex + 1 equals size(this.container)) {
+                this.container += null;
+            }
             // PSL check and swap
-            if(this.container[curIndex].psl < toAdd) {
+            if(this.container[curIndex].psl < toAdd.psl) {
                 temp = this.container[curIndex];
                 this.container[curIndex] = toAdd;
                 toAdd = temp;
@@ -54,8 +57,8 @@ class HashMap {
         hashValue = this.hashFunction(key);
         if(hashValue >= size(this.container)) return null;
         curIndex = hashValue;
-        while(curIndex < size(container) and not(this.container[curIndex] equals null)) {
-            if(curIndex > hashValue) return null;
+        while(curIndex < size(this.container) and not(this.container[curIndex] equals null)) {
+            if(this.container[hashValue].psl > this.container[curIndex].psl) return null;
             if(this.container[curIndex].getKey() equals key) return this.container[curIndex].getValue();
             curIndex += 1;
         }
@@ -74,7 +77,7 @@ class HashMap {
                 condition = false;
                 found = true;
             }
-            if(not(condition)) {
+            if(condition) {
                 curIndex += 1;
                 condition = curIndex < size(this.container) and not(this.container[curIndex] equals null);
             }
@@ -82,7 +85,7 @@ class HashMap {
         if(not found) return null;
         toReturn = this.container[curIndex].getValue();
         this.container[curIndex] = null;
-        this.condition = curIndex + 1 < size(this.container);
+        condition = curIndex + 1 < size(this.container);
         // Move back process:
         for(i from curIndex + 1 to size(this.container) by 1) {
             if((this.container[i] equals null) or (this.container[i].psl equals 0)) return toReturn;
@@ -94,7 +97,7 @@ class HashMap {
                 }
             }
             this.container[moveBackIndex] = this.container[i];
-            this.container[i] = nullptr;
+            this.container[i] = null;
         }
         return toReturn;
     }

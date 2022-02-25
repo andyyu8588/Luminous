@@ -119,11 +119,9 @@ void Scanner::id() {
     std::ifstream importFile;
     const std::string stdPathPrefix = "lib/src/";
     const std::unordered_map<std::string, std::string> stdLibs = {
-        {"Queue", "queue.lum"},
-        {"Stack", "stack.lum"},
-        {"Math", "math.lum"},
-        {"Random", "random.lum"},
-        {"Heap", "heap.lum"}};
+        {"Queue", "queue.lum"}, {"Stack", "stack.lum"},
+        {"Math", "math.lum"},   {"Random", "random.lum"},
+        {"Heap", "heap.lum"},   {"HashMap", "hashmap.lum"}};
     if (stdLibs.contains(target)) {
       importFile.open(stdPathPrefix + stdLibs.find(target)->second);
     } else {

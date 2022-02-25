@@ -3,7 +3,7 @@ class Heap {
 	private hashFunction;
 
 	private parent(i) {
-		return (i - 1) / 2;
+		return floor((i - 1) / 2);
 	}
 
 	private left(i) {
@@ -42,7 +42,7 @@ class Heap {
 			smallest = r;
 		}
 		if (not(smallest equals i)) {
-			swap(i, smallest);
+			this.swap(i, smallest);
 			this.heapify(smallest);	
 		}
 	}
@@ -53,8 +53,6 @@ class Heap {
 	}
 
 	public size() {
-		print("XD");
-		print(this.hashFunction);
 		return size(this.container);
 	}
 

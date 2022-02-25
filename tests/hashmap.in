@@ -1,0 +1,31 @@
+import HashMap
+
+class Object {
+    public id;
+    public message;
+
+    public constructor(id, message) {
+        this.id = id;
+        this.message = message;
+    }
+}
+
+function simpleHash(num) {
+    return (num * 31) % 11;
+}
+
+map = HashMap(simpleHash);
+
+for(i from 0 to 100 by 1) {
+    map.insert(i, Object(i, "This object has id " + i));
+}
+
+for(i from 0 to 100 by 1) {
+    object = map.find(i);
+    print(object.message);
+}
+
+for(i from 0 to 100 by 1) {
+    map.delete(i);
+    print(map.find(i));
+}
