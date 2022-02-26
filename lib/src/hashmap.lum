@@ -29,6 +29,9 @@ class HashMap {
     }
 
     public insert(key, value) {
+        if(not(type(key) equals "string" or type(key) equals "number")) {
+            throw("Map keys can only be number or string.");
+        }
         hashValue = this.hashFunction(key);
         if(hashValue >= size(this.container)) {
             for(i from size(this.container) to (hashValue + 1) by 1) {
@@ -54,6 +57,9 @@ class HashMap {
     }
 
     public find(key) {
+        if(not(type(key) equals "string" or type(key) equals "number")) {
+            throw("Map keys can only be number or string.");
+        }
         hashValue = this.hashFunction(key);
         if(hashValue >= size(this.container)) return null;
         curIndex = hashValue;
@@ -66,26 +72,24 @@ class HashMap {
     }
 
     public delete(key) {
+        if(not(type(key) equals "string" or type(key) equals "number")) {
+            throw("Map keys can only be number or string.");
+        }
         hashValue = this.hashFunction(key);
         if(hashValue >= size(this.container)) return null;
         curIndex = hashValue;
-        condition = curIndex < size(this.container) and not(this.container[curIndex] equals null);
         found = false;
-        while(condition) {
+        while(curIndex < size(this.container) and not(this.container[curIndex] equals null)) {
             if(curIndex > hashValue) return null;
             if(this.container[curIndex].getKey() equals key) {
-                condition = false;
                 found = true;
+                break;
             }
-            if(condition) {
-                curIndex += 1;
-                condition = curIndex < size(this.container) and not(this.container[curIndex] equals null);
-            }
+            curIndex += 1;
         }
         if(not found) return null;
         toReturn = this.container[curIndex].getValue();
         this.container[curIndex] = null;
-        condition = curIndex + 1 < size(this.container);
         // Move back process:
         for(i from curIndex + 1 to size(this.container) by 1) {
             if((this.container[i] equals null) or (this.container[i].psl equals 0)) return toReturn;

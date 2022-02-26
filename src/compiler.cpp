@@ -524,7 +524,7 @@ void Compiler::statement() {
 
 void Compiler::continueStatement() {
   const Token* continueToken = parser.prev;
-  consume(TOKEN_SEMI, "Expect ';' after 'break' keyword.");
+  consume(TOKEN_SEMI, "Expect ';' after 'continue' keyword.");
   if (loopStarts.empty()) {
     error(continueToken->line, "Cannot continue outside of a loop.",
           continueToken->file);
