@@ -28,8 +28,6 @@ class Scanner {
       {"while", TOKEN_WHILE},
       {"return", TOKEN_RETURN},
       {"print", TOKEN_PRINT},
-      {"addr", TOKEN_ADDR},
-      {"at", TOKEN_AT},
       {"true", TOKEN_TRUE},
       {"false", TOKEN_FALSE},
       {"null", TOKEN_NULL},

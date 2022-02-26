@@ -1,0 +1,6 @@
+==1024== Memcheck, a memory error detector
+==1024== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==1024== Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info
+==1024== Command: bin/luminous tests/boolean.in
+==1024== Parent PID: 1007
+==1024== 

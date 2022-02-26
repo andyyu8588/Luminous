@@ -317,12 +317,6 @@ void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
       case TOKEN_PRINT:
         std::cout << "PRINT" << std::endl;
         break;
-      case TOKEN_ADDR:
-        std::cout << "ADDR" << std::endl;
-        break;
-      case TOKEN_AT:
-        std::cout << "AT" << std::endl;
-        break;
       case TOKEN_TRUE:
         std::cout << "TRUE" << std::endl;
         break;

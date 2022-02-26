@@ -857,10 +857,11 @@ void Compiler::synchronize() {
       case TOKEN_IF:
       case TOKEN_WHILE:
       case TOKEN_PRINT:
-      case TOKEN_ADDR:
-      case TOKEN_AT:
       case TOKEN_RETURN:
       case TOKEN_ID:
+      case TOKEN_CLASS:
+      case TOKEN_FUNCTION:
+      case TOKEN_FOR:
         return;
       default:;
     }
