@@ -1,8 +1,3 @@
-/*
-This is the scanner header file used to tokenize Luminous code.
-Created by Yun Ze Zhou and Andy Yu.
-*/
-
 #pragma once
 #include <iostream>
 #include <memory>
@@ -15,10 +10,12 @@ Created by Yun Ze Zhou and Andy Yu.
 
 class Scanner {
   const std::string* code;
-  static std::unordered_set<std::string> importedFiles;
   std::vector<std::shared_ptr<Token>> tokens;
   std::string currentFile;
+
+  // for imports:
   const std::string stdPathPrefix = "lib/src/";
+  static std::unordered_set<std::string> importedFiles;
   const std::unordered_map<std::string, std::string> stdLibs = {
       {"Queue", "queue.lum"}, {"Stack", "stack.lum"},
       {"Math", "math.lum"},   {"Random", "random.lum"},
@@ -48,6 +45,8 @@ class Scanner {
       {"private", TOKEN_PRIVATE},
       {"protected", TOKEN_PROTECTED},
       {"public", TOKEN_PUBLIC}};
+
+  // for scanning chars
   int start = 0;
   int current = 0;
   int line = 1;
