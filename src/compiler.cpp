@@ -971,7 +971,7 @@ void Compiler::namedVariable(const Token* name, bool canAssign) {
   emitByte((uint8_t)arg);
 }
 
-Local::Local(const Token& name, int depth) : name{name}, depth{depth} {}
+Local::Local(const Token name, int depth) : name{name}, depth{depth} {}
 
 size_t Local::Hash::operator()(const std::shared_ptr<Local>& local) const {
   return std::hash<std::string>{}(local->name.lexeme);

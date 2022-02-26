@@ -42,11 +42,16 @@ struct ParseRule {
 };
 
 struct Local {
-  const Token& name;
+  const Token name;
   int depth;
   bool isCaptured = false;
 
-  Local(const Token& name, int depth);
+  // Using reference for Token here could cause memory corruption in some cases.
+  //  This could lead to a Butterfly effect in which functions that relies on
+  //  hashing and comparing token name would delete the incorrect iterator (that
+  //  are not even part of its set), thus leading to segmentation fault.
+  // - Yun Ze Zhou
+  Local(const Token name, int depth);
 
   struct Hash {
     size_t operator()(const std::shared_ptr<Local>& local) const;
@@ -88,8 +93,8 @@ class LocalVariables {
   std::shared_ptr<Local> at(size_t index);
   std::shared_ptr<Local> back();
   void clear();
-  bool contains(std::shared_ptr<Local>) const;
-  void insert(std::shared_ptr<Local>);
+  bool contains(const std::shared_ptr<Local>) const;
+  void insert(const std::shared_ptr<Local>);
   void pop_back();
   size_t size() const;
 };
