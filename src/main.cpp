@@ -30,7 +30,7 @@ static void repl(Compiler& compiler, VM& vm) {
 
   std::cout << "Luminous " + version + " REPL" << std::endl;
   while (true) {
-    std::cout << "☀️  ";
+    std::cout << "* ";
 
     if (!std::getline(std::cin, input)) {
       std::cout << std::endl;
