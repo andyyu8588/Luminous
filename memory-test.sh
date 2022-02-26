@@ -8,6 +8,7 @@ done
 
 for f in tests/*.in ; do
 	valgrind --log-file="file.tmp" bin/luminous "$f" > /dev/null 
+	if grep -Rq "Invalid read of size" file.tmp ; then
 	if grep -Rq "All heap blocks were freed -- no leaks are possible" file.tmp ; then
 		echo Test $(basename $f) passed.
 	else
