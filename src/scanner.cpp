@@ -31,11 +31,11 @@ char Scanner::nextChar() {
 
 void Scanner::addToken(TokenType type) {
   std::string lexeme = code->substr(start, current - start);
-  tokens.push_back(std::make_unique<Token>(type, lexeme, line, currentFile));
+  tokens.push_back(std::make_shared<Token>(type, lexeme, line, currentFile));
 }
 
 void Scanner::addToken(TokenType type, std::string lexeme) {
-  tokens.push_back(std::make_unique<Token>(type, lexeme, line, currentFile));
+  tokens.push_back(std::make_shared<Token>(type, lexeme, line, currentFile));
 }
 
 bool Scanner::match(char expected) {
@@ -117,11 +117,6 @@ void Scanner::id() {
     }
     if (importedFiles.contains(target)) return;
     std::ifstream importFile;
-    const std::string stdPathPrefix = "lib/src/";
-    const std::unordered_map<std::string, std::string> stdLibs = {
-        {"Queue", "queue.lum"}, {"Stack", "stack.lum"},
-        {"Math", "math.lum"},   {"Random", "random.lum"},
-        {"Heap", "heap.lum"},   {"HashMap", "hashmap.lum"}};
     if (stdLibs.contains(target)) {
       importFile.open(stdPathPrefix + stdLibs.find(target)->second);
     } else {
@@ -308,6 +303,6 @@ const Token* Scanner::getNextToken() {
   if (curToken < tokens.size()) {
     return tokens.at(curToken++).get();
   }
-  tokens.push_back(std::make_unique<Token>(TOKEN_EOF, "", line, currentFile));
+  tokens.push_back(std::make_shared<Token>(TOKEN_EOF, "", line, currentFile));
   return tokens.back().get();
 }
