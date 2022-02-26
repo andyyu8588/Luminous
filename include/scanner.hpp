@@ -16,7 +16,7 @@ Created by Yun Ze Zhou and Andy Yu.
 class Scanner {
   const std::string* code;
   static std::unordered_set<std::string> importedFiles;
-  std::vector<Token> tokens;
+  std::vector<std::shared_ptr<Token>> tokens;
   std::string currentFile;
   std::unordered_map<std::string, TokenType> keywords = {
       {"equals", TOKEN_EQ},
@@ -98,5 +98,5 @@ class Scanner {
   // reset the scanner:
   void reset(const std::string& code, std::string currentFile);
 
-  const Token& getNextToken();
+  const Token* getNextToken();
 };

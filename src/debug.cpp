@@ -221,11 +221,11 @@ void printChunk(Chunk& chunk, const std::string& name) {
   // }
 }
 
-void printTokens(const std::vector<Token>& tokens) {
+void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
   std::cout << std::endl;
   std::cout << "== TOKENS ==" << std::endl;
   for (const auto& token : tokens) {
-    TokenType type = token.type;
+    TokenType type = token->type;
     switch (type) {
       case TOKEN_LPAREN:
         std::cout << "LPAREN" << std::endl;
@@ -282,13 +282,13 @@ void printTokens(const std::vector<Token>& tokens) {
         std::cout << "GE" << std::endl;
         break;
       case TOKEN_ID:
-        std::cout << "ID: " + token.lexeme << std::endl;
+        std::cout << "ID: " + token->lexeme << std::endl;
         break;
       case TOKEN_NUM:
-        std::cout << "NUM: " + token.lexeme << std::endl;
+        std::cout << "NUM: " + token->lexeme << std::endl;
         break;
       case TOKEN_STRING:
-        std::cout << "STRING: " + token.lexeme << std::endl;
+        std::cout << "STRING: " + token->lexeme << std::endl;
         break;
       case TOKEN_EQ:
         std::cout << "EQ" << std::endl;

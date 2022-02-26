@@ -176,9 +176,9 @@ void Compiler::consume(TokenType type, const std::string& message) {
 }
 
 void Compiler::advance() {
-  const Token& nextToken = scanner.getNextToken();
+  const Token* nextToken = scanner.getNextToken();
   parser.prev = parser.current;
-  parser.current = &nextToken;
+  parser.current = nextToken;
 }
 
 void Compiler::emitByte(uint8_t byte) {
@@ -1166,9 +1166,8 @@ void Compiler::classDeclaration() {
   classes.pop_back();
 }
 
-std::shared_ptr<Token> Compiler::syntheticToken(const std::string lexeme) {
-  return std::make_shared<Token>(TOKEN_ID, lexeme, parser.prev->line,
-                                 parser.prev->file);
+Token Compiler::syntheticToken(const std::string lexeme) {
+  return Token(TOKEN_ID, lexeme, parser.prev->line, parser.prev->file);
 }
 
 void Compiler::field(const Token* name, AccessModifier am) {
@@ -1269,16 +1268,18 @@ void Compiler::super_(bool canAssign) {
         std::make_shared<ObjectString>(classes.back().name->lexeme)));
   }
 
-  namedVariable(syntheticToken("this").get(), false);
+  const Token tokenThis = syntheticToken("this");
+  const Token tokenSuper = syntheticToken("super");
+  namedVariable(&tokenThis, false);
   if (match(TOKEN_LPAREN)) {
     uint8_t argCount = argumentList();
-    namedVariable(syntheticToken("super").get(), false);
+    namedVariable(&tokenSuper, false);
     emitByte(OP_SUPER_INVOKE);
     emitByte(name);
     emitByte(argCount);
     emitByte(className);
   } else {
-    namedVariable(syntheticToken("super").get(), false);
+    namedVariable(&tokenSuper, false);
     emitByte(OP_GET_SUPER);
     emitByte(name);
     emitByte(className);
