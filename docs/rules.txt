@@ -1,23 +1,25 @@
 program      -> declaration* EOF
 
 declaration  -> classDecl | functionDecl | statement
-classDecl    -> "class" ID ("inherits" ID )? "{" (function)* "}"
+classDecl    -> "class" ID ("inherits" ID )? "{" (accessMod ((ID ";") | function))* "}"
 functionDecl -> "function" function 
 
 statement    -> exprStmt | forStmt | ifStmt | printStmt | returnStmt |
-                whileStmt | addrStmt | atStmt | block
+                whileStmt | breakStmt | continueStmt | block 
 exprStmt     -> expression ";"
-forStmt      -> "for" "(" ID "from" term to term) statement
+forStmt      -> "for" "(" ID "from" expression to expression by expression) statement
 ifStmt       -> "if" "(" expression ")" statement
-				("else" statement)? ";"
+				("else" statement)?
 printStmt    -> "print" "(" expression ")" ";"
 returnStmt   -> "return" expression? ";"
-whileStmt    -> "while" "(" expression ")" statement ";"
+whileStmt    -> "while" "(" expression ")" statement 
+breakStmt    -> "break" ";"
+continueStmt -> "continue" ";"
 block        -> "{" declaration* "}"
 
 expression   -> assignment
 
-assignment   -> (call ".")? ID "=" assignment | logic_or
+assignment   -> (call ("." | ("[" expression "]"))* ID becomes assignment | logic_or
 
 logic_or     -> logic_and ("or" logic_and)*
 logic_and    -> equality ("and" equality)*
@@ -28,8 +30,10 @@ factor       -> unary (("/" | "*") unary)*
 
 unary        -> ("not" | "-") unary | call;
 call         -> primary ("(" arguments? ")" | "." ID)*
-primary      -> "true" | "false" | "null" | "this" | NUM | STRING | ID | "(" expression ")"
+primary      -> "true" | "false" | "null" | "this" | "super" | NUM | STRING | ID | "(" expression ")"
 
 function     -> ID "(" parameters? ")" block
 parameters   -> ID ("," ID)* 
 arguments    -> expression ("," expression)*
+becomes      -> "=" | "+=" | "-=" | "*=" | "/="
+accessMod    -> "private" | "protected" | "public"
