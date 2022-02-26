@@ -1010,11 +1010,11 @@ void GlobalVariables::migrate() {
 
 void GlobalVariables::tempClear() { tempStrings.clear(); }
 
-std::shared_ptr<Local> LocalVariables::at(size_t index) {
+std::shared_ptr<Local> LocalVariables::at(size_t index) const {
   return list.at(index);
 }
 
-std::shared_ptr<Local> LocalVariables::back() { return list.back(); }
+std::shared_ptr<Local> LocalVariables::back() const { return list.back(); }
 
 void LocalVariables::clear() {
   hash.clear();
