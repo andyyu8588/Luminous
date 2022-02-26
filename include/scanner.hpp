@@ -48,7 +48,8 @@ class Scanner {
       {"private", TOKEN_PRIVATE},
       {"protected", TOKEN_PROTECTED},
       {"public", TOKEN_PUBLIC},
-      {"break", TOKEN_BREAK}};
+      {"break", TOKEN_BREAK},
+      {"continue", TOKEN_CONTINUE}};
   int start = 0;
   int current = 0;
   int line = 1;

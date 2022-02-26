@@ -129,6 +129,7 @@ class Compiler {
 
   std::stack<int> breakNum;
   std::stack<int> breakJumps;
+  std::stack<int> loopStarts;
 
   // parser token management:
   // advance to the next token in the stream
@@ -202,6 +203,7 @@ class Compiler {
   void emitLoop(int);
   void forStatement();
   void breakStatement();
+  void continueStatement();
 
   // functions:
   void functionDeclaration();

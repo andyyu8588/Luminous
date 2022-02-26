@@ -515,9 +515,23 @@ void Compiler::statement() {
     forStatement();
   } else if (match(TOKEN_BREAK)) {
     breakStatement();
+  } else if (match(TOKEN_CONTINUE)) {
+    continueStatement();
   } else {
     expressionStatement();
   }
+}
+
+void Compiler::continueStatement() {
+  const Token* continueToken = parser.prev;
+  consume(TOKEN_SEMI, "Expect ';' after 'break' keyword.");
+  if (loopStarts.empty()) {
+    error(continueToken->line, "Cannot continue outside of a loop.",
+          continueToken->file);
+    return;
+  }
+
+  emitLoop(loopStarts.top());
 }
 
 void Compiler::breakStatement() {
@@ -620,7 +634,7 @@ int Compiler::emitJump(uint8_t inst) {
 }
 
 void Compiler::whileStatement() {
-  int loopStart = currentChunk().getBytecodeSize();
+  loopStarts.push(currentChunk().getBytecodeSize());
   breakNum.push(0);
   consume(TOKEN_LPAREN, "Expect '(' after 'while' keyword.");
   expression();
@@ -631,7 +645,7 @@ void Compiler::whileStatement() {
   emitByte(OP_POP);
   statement();
 
-  emitLoop(loopStart);
+  emitLoop(loopStarts.top());
 
   patchJump(exitJump);
   emitByte(OP_POP);
@@ -643,6 +657,7 @@ void Compiler::whileStatement() {
     breakJumps.pop();
   }
   breakNum.pop();
+  loopStarts.pop();
 }
 
 void Compiler::forStatement() {
@@ -707,7 +722,7 @@ void Compiler::forStatement() {
 
   /* condition expression */
 
-  int loopStart = currentChunk().getBytecodeSize();
+  loopStarts.push(currentChunk().getBytecodeSize());
 
   consume(TOKEN_TO, "Expect 'to' delimiter in for loop declaration.");
 
@@ -777,13 +792,13 @@ void Compiler::forStatement() {
   emitByte(OP_POP);
   consume(TOKEN_RPAREN, "Expect ')' after for clauses.");
 
-  emitLoop(loopStart);
-  loopStart = incrementStart;
+  emitLoop(loopStarts.top());
+  loopStarts.push(incrementStart);
   patchJump(bodyJump);
 
   // Loop body:
   statement();
-  emitLoop(loopStart);
+  emitLoop(loopStarts.top());
 
   patchJump(exitJump);
   emitByte(OP_POP);
@@ -795,6 +810,8 @@ void Compiler::forStatement() {
     breakJumps.pop();
   }
   breakNum.pop();
+  loopStarts.pop();
+  loopStarts.pop();
 
   endScope();
 }
