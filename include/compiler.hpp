@@ -46,7 +46,8 @@ struct Local {
   int depth;
   bool isCaptured = false;
 
-  // Using reference for Token here could cause memory corruption in some rare cases.
+  // Using reference for Token here could cause memory corruption in some rare
+  // cases.
   //  This could lead to a Butterfly effect in which functions that relies on
   //  hashing and comparing token name would delete the incorrect iterator (that
   //  are not even part of its set), thus leading to segmentation fault.
