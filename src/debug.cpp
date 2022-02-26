@@ -384,6 +384,9 @@ void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
       case TOKEN_PUBLIC:
         std::cout << "PUBLIC" << std::endl;
         break;
+      case TOKEN_BREAK:
+        std::cout << "BREAK" << std::endl;
+        break;
     }
   }
   std::cout << std::endl;

@@ -567,6 +567,9 @@ void VM::run() {
         }
         break;
       }
+      case OP_NOP: {
+        break;
+      }
     }
   }
 }
