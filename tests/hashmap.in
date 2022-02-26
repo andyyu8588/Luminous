@@ -25,7 +25,12 @@ for(i from 0 to 100 by 1) {
     print(object.message);
 }
 
-for(i from 0 to 100 by 1) {
+for(i from 0 to 50 by 1) {
+    map.delete(i);
+    print(map.find(i));
+}
+
+for(i from 99 to 49 by -1) {
     map.delete(i);
     print(map.find(i));
 }
