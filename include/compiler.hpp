@@ -127,6 +127,7 @@ class Compiler {
   // for classes:
   std::vector<ClassInfo> classes;
 
+  // for loops:
   std::stack<int> breakNum;
   std::stack<int> breakJumps;
   std::stack<int> loopStarts;
