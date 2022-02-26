@@ -47,7 +47,8 @@ class Scanner {
       {"super", TOKEN_SUPER},
       {"private", TOKEN_PRIVATE},
       {"protected", TOKEN_PROTECTED},
-      {"public", TOKEN_PUBLIC}};
+      {"public", TOKEN_PUBLIC},
+      {"break", TOKEN_BREAK}};
   int start = 0;
   int current = 0;
   int line = 1;

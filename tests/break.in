@@ -1,0 +1,14 @@
+for(i from 0 to 5 by 1) {
+    if(i equals 3) break;
+    print(i);
+}
+
+a = 0;
+while(a < 10) {
+    if(a equals 5) {
+        print("Broke out of while loop!");
+        break;
+    }
+    print(a);
+    a += 1;
+}

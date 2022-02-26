@@ -513,9 +513,24 @@ void Compiler::statement() {
     whileStatement();
   } else if (match(TOKEN_FOR)) {
     forStatement();
+  } else if (match(TOKEN_BREAK)) {
+    breakStatement();
   } else {
     expressionStatement();
   }
+}
+
+void Compiler::breakStatement() {
+  const Token* breakToken = parser.prev;
+  consume(TOKEN_SEMI, "Expect ';' after 'break' keyword.");
+  if (breakNum.empty()) {
+    error(breakToken->line, "Cannot break outside of a loop.",
+          breakToken->file);
+    return;
+  }
+
+  breakJumps.push(emitJump(OP_JUMP));
+  breakNum.top()++;
 }
 
 void Compiler::index(bool canAssign) {
@@ -606,6 +621,7 @@ int Compiler::emitJump(uint8_t inst) {
 
 void Compiler::whileStatement() {
   int loopStart = currentChunk().getBytecodeSize();
+  breakNum.push(0);
   consume(TOKEN_LPAREN, "Expect '(' after 'while' keyword.");
   expression();
   consume(TOKEN_RPAREN, "Expect ')' to close condition statement.");
@@ -619,11 +635,20 @@ void Compiler::whileStatement() {
 
   patchJump(exitJump);
   emitByte(OP_POP);
+  if (breakNum.top() > 0) {
+    emitByte(OP_NOP);
+  }
+  for (int i = 0; i < breakNum.top(); i++) {
+    patchJump(breakJumps.top());
+    breakJumps.pop();
+  }
+  breakNum.pop();
 }
 
 void Compiler::forStatement() {
   // each for loop is a new scope
   beginScope();
+  breakNum.push(0);
 
   consume(TOKEN_LPAREN, "Expect '(' after 'for' keyword.");
   consume(TOKEN_ID, "Expect a variable for loop initializer.");
@@ -762,6 +787,14 @@ void Compiler::forStatement() {
 
   patchJump(exitJump);
   emitByte(OP_POP);
+  if (breakNum.top() > 0) {
+    emitByte(OP_NOP);
+  }
+  for (int i = 0; i < breakNum.top(); i++) {
+    patchJump(breakJumps.top());
+    breakJumps.pop();
+  }
+  breakNum.pop();
 
   endScope();
 }

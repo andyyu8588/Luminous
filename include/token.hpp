@@ -60,6 +60,7 @@ enum TokenType {
   TOKEN_PRIVATE,
   TOKEN_PROTECTED,
   TOKEN_PUBLIC,
+  TOKEN_BREAK,
 
   // Misc:
   TOKEN_EOF

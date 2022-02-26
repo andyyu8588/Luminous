@@ -48,6 +48,7 @@ enum OpCode {
   OP_ARRAY_GET,
   OP_DUPLICATE,
   OP_FIELD,
+  OP_NOP
 };
 
 enum AccessModifier {
