@@ -24,9 +24,13 @@ static void run(Compiler& compiler, VM& vm, const std::string& code,
 
 static void repl(Compiler& compiler, VM& vm) {
   std::string input;
+  std::ifstream versionFile("VERSION");
+  std::string version((std::istreambuf_iterator<char>(versionFile)),
+                      std::istreambuf_iterator<char>());
 
+  std::cout << "Luminous " + version + " REPL" << std::endl;
   while (true) {
-    std::cout << "> ";
+    std::cout << "☀️  ";
 
     if (!std::getline(std::cin, input)) {
       std::cout << std::endl;
