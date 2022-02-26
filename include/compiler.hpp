@@ -88,8 +88,8 @@ class LocalVariables {
   std::shared_ptr<Local> at(size_t index);
   std::shared_ptr<Local> back();
   void clear();
-  bool contains(const std::shared_ptr<Local>) const;
-  void insert(const std::shared_ptr<Local>);
+  bool contains(std::shared_ptr<Local>) const;
+  void insert(std::shared_ptr<Local>);
   void pop_back();
   size_t size() const;
 };
