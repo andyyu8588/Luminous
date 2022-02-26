@@ -85,8 +85,8 @@ class LocalVariables {
       hash;
 
  public:
-  std::shared_ptr<Local> at(size_t index);
-  std::shared_ptr<Local> back();
+  std::shared_ptr<Local> at(size_t index) const;
+  std::shared_ptr<Local> back() const;
   void clear();
   bool contains(const std::shared_ptr<Local>) const;
   void insert(const std::shared_ptr<Local>);

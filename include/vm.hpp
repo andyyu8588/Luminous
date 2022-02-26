@@ -22,7 +22,7 @@ class MemoryStack : public std::stack<Value> {
 
 struct CallFrame {
   ObjectClosure& closure;
-  size_t stackPos;
+  const size_t stackPos;
   size_t PC;
 };
 

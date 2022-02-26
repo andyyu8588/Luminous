@@ -53,12 +53,13 @@ void printValueType(Value value) {
   std::cout << std::endl;
 }
 
-size_t simpleInstruction(std::string name, size_t index) {
+size_t simpleInstruction(const std::string& name, size_t index) {
   std::cout << name << std::endl;
   return index + 1;
 }
 
-size_t constantInstruction(std::string name, Chunk& chunk, size_t index) {
+size_t constantInstruction(const std::string& name, const Chunk& chunk,
+                           size_t index) {
   uint8_t constantIndex = chunk.getBytecodeAt(index + 1).code;
   std::cout << name;
   // const Value& constant = chunk.getConstantAt(constantIndex);
@@ -70,7 +71,8 @@ size_t constantInstruction(std::string name, Chunk& chunk, size_t index) {
   return index + 2;
 }
 
-size_t jumpInstruction(std::string name, int sign, Chunk& chunk, size_t index) {
+size_t jumpInstruction(const std::string& name, int sign, const Chunk& chunk,
+                       size_t index) {
   uint8_t high = chunk.getBytecodeAt(index + 1).code;
   uint8_t lo = chunk.getBytecodeAt(index + 2).code;
   uint16_t jump = (uint16_t)((high << 8) | lo);
@@ -78,14 +80,16 @@ size_t jumpInstruction(std::string name, int sign, Chunk& chunk, size_t index) {
   return index + 3;
 }
 
-size_t invokeInstruction(std::string name, Chunk& chunk, size_t index) {
+size_t invokeInstruction(const std::string& name, const Chunk& chunk,
+                         size_t index) {
   uint8_t constant = chunk.getBytecodeAt(index + 1).code;
   uint8_t argCount = chunk.getBytecodeAt(index + 2).code;
   std::cout << name << " " << constant << " " << argCount << std::endl;
   return index + 3;
 }
 
-size_t superInvokeInstruction(std::string name, Chunk& chunk, size_t index) {
+size_t superInvokeInstruction(const std::string& name, const Chunk& chunk,
+                              size_t index) {
   uint8_t constant = chunk.getBytecodeAt(index + 1).code;
   uint8_t argCount = chunk.getBytecodeAt(index + 2).code;
   uint8_t xd = chunk.getBytecodeAt(index + 3).code;
@@ -94,7 +98,7 @@ size_t superInvokeInstruction(std::string name, Chunk& chunk, size_t index) {
   return index + 4;
 }
 
-size_t printInstruction(Chunk& chunk, size_t index) {
+size_t printInstruction(const Chunk& chunk, size_t index) {
   std::cout << std::setfill('0') << std::setw(5) << index << " ";
   std::cout << std::setfill(' ') << std::setw(5)
             << chunk.getBytecodeAt(index).line << " ";
@@ -192,7 +196,7 @@ size_t printInstruction(Chunk& chunk, size_t index) {
   }
 }
 
-void printChunk(Chunk& chunk, const std::string& name) {
+void printChunk(const Chunk& chunk, const std::string& name) {
   std::cout << "== BYTECODE FOR " << name << " ==" << std::endl;
 
   for (size_t i = 0; i < chunk.getBytecodeSize();) {

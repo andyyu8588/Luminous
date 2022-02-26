@@ -8,7 +8,7 @@
 class Chunk;
 struct Token;
 
-void printChunk(Chunk& chunk, const std::string& name);
-size_t printInstruction(Chunk& chunk, size_t index);
+void printChunk(const Chunk& chunk, const std::string& name);
+size_t printInstruction(const Chunk& chunk, size_t index);
 void printTokens(const std::vector<std::shared_ptr<Token>>& tokens);
 void printStack(MemoryStack& memory);

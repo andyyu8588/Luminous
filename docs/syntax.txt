@@ -1,45 +1,41 @@
 Lexical Syntax
 
 Variables
-ID     -> string
-NUM    -> string of 0-9
+ID           -> string
+NUM          -> string of 0-9
+STRING       -> string surrounded by QUOTE
 
-Parenthesis
-LPAREN -> (
-RPAREN -> )
-LBRACE -> {
-RBRACE -> }
-LBRACK -> [
-RBRACK -> ]
-QUOTE  -> "
+Surrounding
+LPAREN       -> (
+RPAREN       -> )
+LBRACE       -> {
+RBRACE       -> }
+LBRACK       -> [
+RBRACK       -> ]
+QUOTE        -> "
 
 Operators
-BECOMES-> =
-DOT    -> .
-COMMA  -> ,
-PLUS   -> +
-MINUS  -> -
-STAR   -> *
-SLASH  -> /
-SEMI   -> ;
+BECOMES      -> =
+PLUSBECOMES  -> +=
+MINUSBECOMES -> -=
+STARBECOMES  -> *=
+SLASHBECOMES -> /=
+PLUS         -> +
+MINUS        -> -
+STAR         -> *
+SLASH        -> /
+PERC         -> %
+COMMA        -> ,
+DOT          -> .
+LT           -> <
+GT           -> >
+LE           -> <=
+GE           -> >=
 
-Comparators
-EQ     -> equals
-AND    -> and
-OR     -> or
-NOT    -> not
-LT     -> <
-GT     -> >
-LE     -> <=
-GE     -> >=
+Keywords (lower case all characters)
+EQ           -> equals
+AND          -> and
+etc...
 
-Control flow
-IF     -> if
-ELSE   -> else
-WHILE  -> while
-RETURN -> return
-
-Built-in functions
-PRINT  -> print
-ADDR   -> addr
-AT     -> at
+Miscellaneous
+SEMI         -> ;

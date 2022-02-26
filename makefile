@@ -1,4 +1,4 @@
-default: debug
+default: main
 
 COMPILER = clang++ -std=c++2a
 
