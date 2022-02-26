@@ -159,7 +159,7 @@ class ObjectClosure : public Object {
 };
 
 class ObjectClass : public Object {
-  ObjectString name;
+  const ObjectString name;
   std::unordered_map<std::shared_ptr<ObjectString>,
                      std::pair<Value, AccessModifier>, ObjectString::Hash,
                      ObjectString::Comparator>
