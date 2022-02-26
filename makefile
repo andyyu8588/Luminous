@@ -1,6 +1,6 @@
 default: debug
 
-COMPILER = clang++ -std=c++2a
+COMPILER = clang++ -std=c++2a -lpthread
 
 BIN_DIR = bin
 INCLUDE_DIR = include
