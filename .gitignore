@@ -43,4 +43,4 @@ bugs.txt
 *.vimrc
 
 # vscode setting file
-settings.json
+/.vscode
