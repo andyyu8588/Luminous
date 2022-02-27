@@ -35,5 +35,5 @@ primary      -> "true" | "false" | "null" | "this" | "super" | NUM | STRING | ID
 function     -> ID "(" parameters? ")" block
 parameters   -> ID ("," ID)* 
 arguments    -> expression ("," expression)*
-becomes      -> "=" | "+=" | "-=" | "*=" | "/="
+becomes      -> "=" | "+=" | "-=" | "*=" | "/=" | "%="
 accessMod    -> "private" | "protected" | "public"

@@ -20,6 +20,7 @@ PLUSBECOMES  -> +=
 MINUSBECOMES -> -=
 STARBECOMES  -> *=
 SLASHBECOMES -> /=
+PERCBECOMES  -> %=
 PLUS         -> +
 MINUS        -> -
 STAR         -> *
