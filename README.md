@@ -6,6 +6,8 @@ The source code for the Luminous interpreter and the standard library is complet
 
 ## Documentation
 Feel free to take a look at the [official website](https://luminousproject.io/)!
+
+The Luminous syntax and production rules can be found in the `docs` folder.
 ## Setup
 
 To compile the source code, simply clone or download the repository and run make in the main directory.
