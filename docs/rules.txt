@@ -1,3 +1,5 @@
+Inspired from Robert Nystrom's Crafting Interpreters 
+
 program      -> declaration* EOF
 
 declaration  -> classDecl | functionDecl | statement
