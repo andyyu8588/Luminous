@@ -247,6 +247,8 @@ OpCode Compiler::matchBinaryEq() {
     return OP_MULTIPLY;
   } else if (match(TOKEN_SLASHBECOMES)) {
     return OP_DIVIDE;
+  } else if (match(TOKEN_PERCBECOMES)) {
+    return OP_MODULO;
   }
   return (OpCode)0;
 }
@@ -957,7 +959,8 @@ void Compiler::variable(bool canAssign) {
        parser.current->type == TOKEN_PLUSBECOMES ||
        parser.current->type == TOKEN_MINUSBECOMES ||
        parser.current->type == TOKEN_STARBECOMES ||
-       parser.current->type == TOKEN_SLASHBECOMES)) {
+       parser.current->type == TOKEN_SLASHBECOMES ||
+       parser.current->type == TOKEN_PERCBECOMES)) {
     declareLocal();
   }
   namedVariable(parser.prev, canAssign);

@@ -202,7 +202,11 @@ void Scanner::scanToken() {
       addToken(TOKEN_SEMI);
       break;
     case '%':
-      addToken(TOKEN_PERC);
+      if (match('=')) {
+        addToken(TOKEN_PERCBECOMES);
+      } else {
+        addToken(TOKEN_PERC);
+      }
       break;
     case '<':
       if (match('=')) {

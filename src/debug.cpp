@@ -375,6 +375,9 @@ void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
       case TOKEN_SLASHBECOMES:
         std::cout << "SLASHBECOMES" << std::endl;
         break;
+      case TOKEN_PERCBECOMES:
+        std::cout << "PERCBECOMES" << std::endl;
+        break;
       case TOKEN_PRIVATE:
         std::cout << "PRIVATE" << std::endl;
         break;
