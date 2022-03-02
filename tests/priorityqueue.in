@@ -1,0 +1,52 @@
+import PriorityQueue
+
+function simpleNumberHash(x) {
+	return x;	
+}
+
+numPriorityQueue = PriorityQueue(simpleNumberHash);
+
+numPriorityQueue.add(1);
+numPriorityQueue.add(17);
+numPriorityQueue.add(11);
+numPriorityQueue.add(0);
+numPriorityQueue.add(8);
+
+print(numPriorityQueue.size());
+print(numPriorityQueue.deleteMin());
+print(numPriorityQueue.deleteMin());
+print(numPriorityQueue.deleteMin());
+print(numPriorityQueue.deleteMin());
+print(numPriorityQueue.deleteMin());
+
+
+class Object {
+	public id;
+	public constructor(id) {
+		this.id = id;
+	}
+	public printId() {
+		print("Object ID is: " + this.id);
+	}
+}
+
+function idHash(object) {
+	return object.id;
+}
+
+objectPriorityQueue = PriorityQueue(idHash);
+
+objectPriorityQueue.add(Object(1));
+objectPriorityQueue.add(Object(17));
+objectPriorityQueue.add(Object(11));
+objectPriorityQueue.add(Object(0));
+objectPriorityQueue.add(Object(8));
+
+print(objectPriorityQueue.size());
+objectPriorityQueue.min().printId();
+objectPriorityQueue.deleteMin().printId();
+objectPriorityQueue.deleteMin().printId();
+objectPriorityQueue.deleteMin().printId();
+objectPriorityQueue.deleteMin().printId();
+objectPriorityQueue.min().printId();
+objectPriorityQueue.deleteMin().printId();
