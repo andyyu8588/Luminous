@@ -80,4 +80,8 @@ class PriorityQueue {
 	
 		return this.get(0);
 	}
+
+	public isEmpty() {
+		return this.size() equals 0;
+	}
 }
