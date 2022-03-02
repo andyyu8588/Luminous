@@ -1,22 +1,29 @@
-/*
-This is the scanner header file used to tokenize Luminous code.
-Created by Yun Ze Zhou and Andy Yu.
-*/
-
 #pragma once
 #include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "token.hpp"
 
 class Scanner {
   const std::string* code;
-  std::vector<Token> tokens;
+  std::vector<std::shared_ptr<Token>> tokens;
   std::string currentFile;
-  std::unordered_map<std::string, TokenType> keywords = {
+
+  // for imports:
+  const std::string stdPathPrefix = "lib/src/";
+  static std::unordered_set<std::string> importedFiles;
+  const std::unordered_map<std::string, std::string> stdLibs = {
+      {"Queue", "queue.lum"},
+      {"Stack", "stack.lum"},
+      {"Math", "math.lum"},
+      {"Random", "random.lum"},
+      {"PriorityQueue", "priorityqueue.lum"},
+      {"HashMap", "hashmap.lum"}};
+  const std::unordered_map<std::string, TokenType> keywords = {
       {"equals", TOKEN_EQ},
       {"and", TOKEN_AND},
       {"or", TOKEN_OR},
@@ -26,8 +33,6 @@ class Scanner {
       {"while", TOKEN_WHILE},
       {"return", TOKEN_RETURN},
       {"print", TOKEN_PRINT},
-      {"addr", TOKEN_ADDR},
-      {"at", TOKEN_AT},
       {"true", TOKEN_TRUE},
       {"false", TOKEN_FALSE},
       {"null", TOKEN_NULL},
@@ -42,7 +47,9 @@ class Scanner {
       {"super", TOKEN_SUPER},
       {"private", TOKEN_PRIVATE},
       {"protected", TOKEN_PROTECTED},
-      {"public", TOKEN_PUBLIC}};
+      {"public", TOKEN_PUBLIC},
+      {"break", TOKEN_BREAK},
+      {"continue", TOKEN_CONTINUE}};
   int start = 0;
   int current = 0;
   int line = 1;
@@ -96,5 +103,5 @@ class Scanner {
   // reset the scanner:
   void reset(const std::string& code, std::string currentFile);
 
-  const Token& getNextToken();
+  const Token* getNextToken();
 };

@@ -1,5 +1,6 @@
 #include "scanner.hpp"
 
+#include <algorithm>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -10,6 +11,8 @@
 #ifdef DEBUG
 #include "debug.hpp"
 #endif
+
+std::unordered_set<std::string> Scanner::importedFiles;
 
 Scanner::Scanner() {}
 
@@ -28,11 +31,11 @@ char Scanner::nextChar() {
 
 void Scanner::addToken(TokenType type) {
   std::string lexeme = code->substr(start, current - start);
-  tokens.emplace_back(type, lexeme, line, currentFile);
+  tokens.push_back(std::make_shared<Token>(type, lexeme, line, currentFile));
 }
 
 void Scanner::addToken(TokenType type, std::string lexeme) {
-  tokens.emplace_back(type, lexeme, line, currentFile);
+  tokens.push_back(std::make_shared<Token>(type, lexeme, line, currentFile));
 }
 
 bool Scanner::match(char expected) {
@@ -112,20 +115,25 @@ void Scanner::id() {
     while (peek() != ' ' && peek() != '\n' && peek() != '\0') {
       target += nextChar();
     }
+    if (importedFiles.contains(target)) return;
     std::ifstream importFile;
-    // TODO standard libs
-    importFile.open(target);
+    if (stdLibs.contains(target)) {
+      importFile.open(stdPathPrefix + stdLibs.find(target)->second);
+    } else {
+      importFile.open(target);
+    }
     if (!importFile.is_open()) {
       error(line,
             "LINKER ERROR: Cannot open Luminous source file '" + target + "'.",
             currentFile);
     } else {
+      importedFiles.insert(target);
       Scanner newScanner;
       std::string code((std::istreambuf_iterator<char>(importFile)),
                        std::istreambuf_iterator<char>());
       newScanner.reset(code, target);
       newScanner.tokenize();
-      for (Token token : newScanner.tokens) {
+      for (std::shared_ptr<Token> token : newScanner.tokens) {
         tokens.push_back(token);
       }
     }
@@ -194,7 +202,11 @@ void Scanner::scanToken() {
       addToken(TOKEN_SEMI);
       break;
     case '%':
-      addToken(TOKEN_PERC);
+      if (match('=')) {
+        addToken(TOKEN_PERCBECOMES);
+      } else {
+        addToken(TOKEN_PERC);
+      }
       break;
     case '<':
       if (match('=')) {
@@ -291,11 +303,10 @@ void Scanner::reset(const std::string& code, std::string currentFile) {
   tokens.clear();
 }
 
-const Token& Scanner::getNextToken() {
-  try {
-    return tokens.at(curToken++);
-  } catch (const std::out_of_range& e) {
-    tokens.emplace_back(TOKEN_EOF, "", line, currentFile);
-    return tokens.at(curToken - 1);
+const Token* Scanner::getNextToken() {
+  if (curToken < tokens.size()) {
+    return tokens.at(curToken++).get();
   }
+  tokens.push_back(std::make_shared<Token>(TOKEN_EOF, "", line, currentFile));
+  return tokens.back().get();
 }

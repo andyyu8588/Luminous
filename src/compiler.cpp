@@ -161,9 +161,10 @@ void Compiler::compile(const std::string& code, std::string currentFile) {
     functions.clear();
     throw CompilerException();
   }
-
-  globalVars.migrate();
 }
+
+void Compiler::migrate() { globalVars.migrate(); }
+void Compiler::tempClear() { globalVars.tempClear(); }
 
 void Compiler::consume(TokenType type, const std::string& message) {
   if (parser.current->type == type) {
@@ -175,9 +176,9 @@ void Compiler::consume(TokenType type, const std::string& message) {
 }
 
 void Compiler::advance() {
-  const Token& nextToken = scanner.getNextToken();
+  const Token* nextToken = scanner.getNextToken();
   parser.prev = parser.current;
-  parser.current = &nextToken;
+  parser.current = nextToken;
 }
 
 void Compiler::emitByte(uint8_t byte) {
@@ -246,6 +247,8 @@ OpCode Compiler::matchBinaryEq() {
     return OP_MULTIPLY;
   } else if (match(TOKEN_SLASHBECOMES)) {
     return OP_DIVIDE;
+  } else if (match(TOKEN_PERCBECOMES)) {
+    return OP_MODULO;
   }
   return (OpCode)0;
 }
@@ -512,9 +515,38 @@ void Compiler::statement() {
     whileStatement();
   } else if (match(TOKEN_FOR)) {
     forStatement();
+  } else if (match(TOKEN_BREAK)) {
+    breakStatement();
+  } else if (match(TOKEN_CONTINUE)) {
+    continueStatement();
   } else {
     expressionStatement();
   }
+}
+
+void Compiler::continueStatement() {
+  const Token* continueToken = parser.prev;
+  consume(TOKEN_SEMI, "Expect ';' after 'continue' keyword.");
+  if (loopStarts.empty()) {
+    error(continueToken->line, "Cannot continue outside of a loop.",
+          continueToken->file);
+    return;
+  }
+
+  emitLoop(loopStarts.top());
+}
+
+void Compiler::breakStatement() {
+  const Token* breakToken = parser.prev;
+  consume(TOKEN_SEMI, "Expect ';' after 'break' keyword.");
+  if (breakNum.empty()) {
+    error(breakToken->line, "Cannot break outside of a loop.",
+          breakToken->file);
+    return;
+  }
+
+  breakJumps.push(emitJump(OP_JUMP));
+  breakNum.top()++;
 }
 
 void Compiler::index(bool canAssign) {
@@ -604,7 +636,8 @@ int Compiler::emitJump(uint8_t inst) {
 }
 
 void Compiler::whileStatement() {
-  int loopStart = currentChunk().getBytecodeSize();
+  loopStarts.push(currentChunk().getBytecodeSize());
+  breakNum.push(0);
   consume(TOKEN_LPAREN, "Expect '(' after 'while' keyword.");
   expression();
   consume(TOKEN_RPAREN, "Expect ')' to close condition statement.");
@@ -614,15 +647,25 @@ void Compiler::whileStatement() {
   emitByte(OP_POP);
   statement();
 
-  emitLoop(loopStart);
+  emitLoop(loopStarts.top());
 
   patchJump(exitJump);
   emitByte(OP_POP);
+  if (breakNum.top() > 0) {
+    emitByte(OP_NOP);
+  }
+  for (int i = 0; i < breakNum.top(); i++) {
+    patchJump(breakJumps.top());
+    breakJumps.pop();
+  }
+  breakNum.pop();
+  loopStarts.pop();
 }
 
 void Compiler::forStatement() {
   // each for loop is a new scope
   beginScope();
+  breakNum.push(0);
 
   consume(TOKEN_LPAREN, "Expect '(' after 'for' keyword.");
   consume(TOKEN_ID, "Expect a variable for loop initializer.");
@@ -681,7 +724,7 @@ void Compiler::forStatement() {
 
   /* condition expression */
 
-  int loopStart = currentChunk().getBytecodeSize();
+  loopStarts.push(currentChunk().getBytecodeSize());
 
   consume(TOKEN_TO, "Expect 'to' delimiter in for loop declaration.");
 
@@ -751,16 +794,26 @@ void Compiler::forStatement() {
   emitByte(OP_POP);
   consume(TOKEN_RPAREN, "Expect ')' after for clauses.");
 
-  emitLoop(loopStart);
-  loopStart = incrementStart;
+  emitLoop(loopStarts.top());
+  loopStarts.push(incrementStart);
   patchJump(bodyJump);
 
   // Loop body:
   statement();
-  emitLoop(loopStart);
+  emitLoop(loopStarts.top());
 
   patchJump(exitJump);
   emitByte(OP_POP);
+  if (breakNum.top() > 0) {
+    emitByte(OP_NOP);
+  }
+  for (int i = 0; i < breakNum.top(); i++) {
+    patchJump(breakJumps.top());
+    breakJumps.pop();
+  }
+  breakNum.pop();
+  loopStarts.pop();
+  loopStarts.pop();
 
   endScope();
 }
@@ -856,10 +909,11 @@ void Compiler::synchronize() {
       case TOKEN_IF:
       case TOKEN_WHILE:
       case TOKEN_PRINT:
-      case TOKEN_ADDR:
-      case TOKEN_AT:
       case TOKEN_RETURN:
       case TOKEN_ID:
+      case TOKEN_CLASS:
+      case TOKEN_FUNCTION:
+      case TOKEN_FOR:
         return;
       default:;
     }
@@ -905,7 +959,8 @@ void Compiler::variable(bool canAssign) {
        parser.current->type == TOKEN_PLUSBECOMES ||
        parser.current->type == TOKEN_MINUSBECOMES ||
        parser.current->type == TOKEN_STARBECOMES ||
-       parser.current->type == TOKEN_SLASHBECOMES)) {
+       parser.current->type == TOKEN_SLASHBECOMES ||
+       parser.current->type == TOKEN_PERCBECOMES)) {
     declareLocal();
   }
   namedVariable(parser.prev, canAssign);
@@ -970,7 +1025,7 @@ void Compiler::namedVariable(const Token* name, bool canAssign) {
   emitByte((uint8_t)arg);
 }
 
-Local::Local(const Token& name, int depth) : name{name}, depth{depth} {}
+Local::Local(const Token name, int depth) : name{name}, depth{depth} {}
 
 size_t Local::Hash::operator()(const std::shared_ptr<Local>& local) const {
   return std::hash<std::string>{}(local->name.lexeme);
@@ -1008,11 +1063,11 @@ void GlobalVariables::migrate() {
 
 void GlobalVariables::tempClear() { tempStrings.clear(); }
 
-std::shared_ptr<Local> LocalVariables::at(size_t index) {
+std::shared_ptr<Local> LocalVariables::at(size_t index) const {
   return list.at(index);
 }
 
-std::shared_ptr<Local> LocalVariables::back() { return list.back(); }
+std::shared_ptr<Local> LocalVariables::back() const { return list.back(); }
 
 void LocalVariables::clear() {
   hash.clear();
@@ -1165,9 +1220,8 @@ void Compiler::classDeclaration() {
   classes.pop_back();
 }
 
-std::shared_ptr<Token> Compiler::syntheticToken(const std::string lexeme) {
-  return std::make_shared<Token>(TOKEN_ID, lexeme, parser.prev->line,
-                                 parser.prev->file);
+Token Compiler::syntheticToken(const std::string lexeme) {
+  return Token(TOKEN_ID, lexeme, parser.prev->line, parser.prev->file);
 }
 
 void Compiler::field(const Token* name, AccessModifier am) {
@@ -1268,16 +1322,18 @@ void Compiler::super_(bool canAssign) {
         std::make_shared<ObjectString>(classes.back().name->lexeme)));
   }
 
-  namedVariable(syntheticToken("this").get(), false);
+  const Token tokenThis = syntheticToken("this");
+  const Token tokenSuper = syntheticToken("super");
+  namedVariable(&tokenThis, false);
   if (match(TOKEN_LPAREN)) {
     uint8_t argCount = argumentList();
-    namedVariable(syntheticToken("super").get(), false);
+    namedVariable(&tokenSuper, false);
     emitByte(OP_SUPER_INVOKE);
     emitByte(name);
     emitByte(argCount);
     emitByte(className);
   } else {
-    namedVariable(syntheticToken("super").get(), false);
+    namedVariable(&tokenSuper, false);
     emitByte(OP_GET_SUPER);
     emitByte(name);
     emitByte(className);

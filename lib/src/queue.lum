@@ -1,0 +1,29 @@
+class Queue {
+    private container;
+
+    public constructor() {
+        this.container = [];
+    }
+
+    public push(item) {
+        this.container += item;
+    }
+
+    public size() {
+        return size(this.container);
+    }
+
+    public pop() {
+        toReturn = this.container[0];
+        this.container -= 0;
+        return toReturn;
+    }
+
+    public front() {
+        return this.container[0];
+    }
+
+    public isEmpty() {
+        return size(this.container) equals 0;
+    }
+}

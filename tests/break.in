@@ -1,0 +1,40 @@
+for(i from 0 to 5 by 1) {
+    if(i equals 3) break;
+    print(i);
+}
+
+a = 0;
+while(a < 10) {
+    if(a equals 5) {
+        print("Broke out of while loop!");
+        break;
+    }
+    print(a);
+    a += 1;
+}
+
+b = 10;
+while(b > 0) {
+    c = b;
+    while(c > 0) {
+        if(c > 3) break;
+        print(c);
+        c -= 1;
+    }
+    print(b);
+    b -= 1;
+}
+
+for(i from 0 to 5 by 1) {
+    for(j from i to 5 by 1) {
+        if(j > 0) break;
+        while(true) {
+            print("J is zero");
+            for(n from 0 to 4 by 2) {
+                print("Cur num is " + n);
+                if(n equals 2) break;
+            }
+            break;
+        }
+    }
+}

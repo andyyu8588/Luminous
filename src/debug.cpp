@@ -53,12 +53,13 @@ void printValueType(Value value) {
   std::cout << std::endl;
 }
 
-size_t simpleInstruction(std::string name, size_t index) {
+size_t simpleInstruction(const std::string& name, size_t index) {
   std::cout << name << std::endl;
   return index + 1;
 }
 
-size_t constantInstruction(std::string name, Chunk& chunk, size_t index) {
+size_t constantInstruction(const std::string& name, const Chunk& chunk,
+                           size_t index) {
   uint8_t constantIndex = chunk.getBytecodeAt(index + 1).code;
   std::cout << name;
   // const Value& constant = chunk.getConstantAt(constantIndex);
@@ -70,7 +71,8 @@ size_t constantInstruction(std::string name, Chunk& chunk, size_t index) {
   return index + 2;
 }
 
-size_t jumpInstruction(std::string name, int sign, Chunk& chunk, size_t index) {
+size_t jumpInstruction(const std::string& name, int sign, const Chunk& chunk,
+                       size_t index) {
   uint8_t high = chunk.getBytecodeAt(index + 1).code;
   uint8_t lo = chunk.getBytecodeAt(index + 2).code;
   uint16_t jump = (uint16_t)((high << 8) | lo);
@@ -78,14 +80,16 @@ size_t jumpInstruction(std::string name, int sign, Chunk& chunk, size_t index) {
   return index + 3;
 }
 
-size_t invokeInstruction(std::string name, Chunk& chunk, size_t index) {
+size_t invokeInstruction(const std::string& name, const Chunk& chunk,
+                         size_t index) {
   uint8_t constant = chunk.getBytecodeAt(index + 1).code;
   uint8_t argCount = chunk.getBytecodeAt(index + 2).code;
   std::cout << name << " " << constant << " " << argCount << std::endl;
   return index + 3;
 }
 
-size_t superInvokeInstruction(std::string name, Chunk& chunk, size_t index) {
+size_t superInvokeInstruction(const std::string& name, const Chunk& chunk,
+                              size_t index) {
   uint8_t constant = chunk.getBytecodeAt(index + 1).code;
   uint8_t argCount = chunk.getBytecodeAt(index + 2).code;
   uint8_t xd = chunk.getBytecodeAt(index + 3).code;
@@ -94,7 +98,7 @@ size_t superInvokeInstruction(std::string name, Chunk& chunk, size_t index) {
   return index + 4;
 }
 
-size_t printInstruction(Chunk& chunk, size_t index) {
+size_t printInstruction(const Chunk& chunk, size_t index) {
   std::cout << std::setfill('0') << std::setw(5) << index << " ";
   std::cout << std::setfill(' ') << std::setw(5)
             << chunk.getBytecodeAt(index).line << " ";
@@ -192,7 +196,7 @@ size_t printInstruction(Chunk& chunk, size_t index) {
   }
 }
 
-void printChunk(Chunk& chunk, const std::string& name) {
+void printChunk(const Chunk& chunk, const std::string& name) {
   std::cout << "== BYTECODE FOR " << name << " ==" << std::endl;
 
   for (size_t i = 0; i < chunk.getBytecodeSize();) {
@@ -221,11 +225,11 @@ void printChunk(Chunk& chunk, const std::string& name) {
   // }
 }
 
-void printTokens(const std::vector<Token>& tokens) {
+void printTokens(const std::vector<std::shared_ptr<Token>>& tokens) {
   std::cout << std::endl;
   std::cout << "== TOKENS ==" << std::endl;
   for (const auto& token : tokens) {
-    TokenType type = token.type;
+    TokenType type = token->type;
     switch (type) {
       case TOKEN_LPAREN:
         std::cout << "LPAREN" << std::endl;
@@ -282,13 +286,13 @@ void printTokens(const std::vector<Token>& tokens) {
         std::cout << "GE" << std::endl;
         break;
       case TOKEN_ID:
-        std::cout << "ID: " + token.lexeme << std::endl;
+        std::cout << "ID: " + token->lexeme << std::endl;
         break;
       case TOKEN_NUM:
-        std::cout << "NUM: " + token.lexeme << std::endl;
+        std::cout << "NUM: " + token->lexeme << std::endl;
         break;
       case TOKEN_STRING:
-        std::cout << "STRING: " + token.lexeme << std::endl;
+        std::cout << "STRING: " + token->lexeme << std::endl;
         break;
       case TOKEN_EQ:
         std::cout << "EQ" << std::endl;
@@ -316,12 +320,6 @@ void printTokens(const std::vector<Token>& tokens) {
         break;
       case TOKEN_PRINT:
         std::cout << "PRINT" << std::endl;
-        break;
-      case TOKEN_ADDR:
-        std::cout << "ADDR" << std::endl;
-        break;
-      case TOKEN_AT:
-        std::cout << "AT" << std::endl;
         break;
       case TOKEN_TRUE:
         std::cout << "TRUE" << std::endl;
@@ -377,6 +375,9 @@ void printTokens(const std::vector<Token>& tokens) {
       case TOKEN_SLASHBECOMES:
         std::cout << "SLASHBECOMES" << std::endl;
         break;
+      case TOKEN_PERCBECOMES:
+        std::cout << "PERCBECOMES" << std::endl;
+        break;
       case TOKEN_PRIVATE:
         std::cout << "PRIVATE" << std::endl;
         break;
@@ -385,6 +386,12 @@ void printTokens(const std::vector<Token>& tokens) {
         break;
       case TOKEN_PUBLIC:
         std::cout << "PUBLIC" << std::endl;
+        break;
+      case TOKEN_BREAK:
+        std::cout << "BREAK" << std::endl;
+        break;
+      case TOKEN_CONTINUE:
+        std::cout << "CONTINUE" << std::endl;
         break;
     }
   }

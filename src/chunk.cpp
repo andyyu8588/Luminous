@@ -1,6 +1,6 @@
 #include "chunk.hpp"
 
-ByteCode::ByteCode(uint8_t code, unsigned int line, std::string filename)
+ByteCode::ByteCode(uint8_t code, unsigned int line, const std::string& filename)
     : code{code}, line{line}, filename{filename} {}
 
 size_t Chunk::getBytecodeSize() const { return bytecode.size(); }

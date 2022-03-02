@@ -48,6 +48,7 @@ enum OpCode {
   OP_ARRAY_GET,
   OP_DUPLICATE,
   OP_FIELD,
+  OP_NOP
 };
 
 enum AccessModifier {
@@ -59,9 +60,9 @@ enum AccessModifier {
 struct ByteCode {
   uint8_t code;
   const unsigned int line;
-  std::string filename;
+  const std::string filename;
 
-  ByteCode(uint8_t code, unsigned int line, std::string filename);
+  ByteCode(uint8_t code, unsigned int line, const std::string& filename);
 };
 
 class Chunk {

@@ -1,0 +1,87 @@
+class PriorityQueue {
+	private container;
+	private hashFunction;
+
+	private parent(i) {
+		return floor((i - 1) / 2);
+	}
+
+	private left(i) {
+		return (2 * i + 1);
+	}
+
+	private right(i) {
+		return (2 * i + 2);
+	}
+	
+	private swap(i, j) {
+		temp = this.container[i];
+		this.container[i] = this.container[j];
+		this.container[j] = temp;
+	}
+
+	private get(i) {
+		return this.container[i];
+	}
+
+	private validateSize() {
+		if (size(this.container) equals 0) {
+			throw("ERROR: Cannot perform operation on an empty heap.");
+		}
+	}
+
+	private heapify(i) {
+		l = this.left(i);
+		r = this.right(i);
+		smallest = i;
+
+		if (l < this.size() and this.hashFunction(this.get(l)) < this.hashFunction(this.get(i))) {
+			smallest = l;
+		}
+		if (r < this.size() and this.hashFunction(this.get(r)) < this.hashFunction(this.get(smallest))) {
+			smallest = r;
+		}
+		if (not(smallest equals i)) {
+			this.swap(i, smallest);
+			this.heapify(smallest);	
+		}
+	}
+
+	public constructor(hashFunction) {
+		this.hashFunction = hashFunction;
+		this.container = [];
+	}
+
+	public size() {
+		return size(this.container);
+	}
+
+	public add(x) {
+		this.container += x;
+		i = size(this.container) - 1;
+		while (not (i equals 0) and this.hashFunction(this.get(this.parent(i))) > this.hashFunction(this.get(i))) {
+			this.swap(i, this.parent(i));
+			i = this.parent(i);
+		}
+	}
+
+	public deleteMin() {
+		this.validateSize();
+
+		toReturn = this.get(0);
+		this.container[0] = this.get(this.size() - 1);
+		this.container -= (this.size() - 1);
+		this.heapify(0);
+		return toReturn;
+	}
+
+	public min() {
+		this.validateSize();
+	
+		return this.get(0);
+	}
+
+	public isEmpty() {
+		return this.size() equals 0;
+	}
+}

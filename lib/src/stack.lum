@@ -1,0 +1,30 @@
+class Stack {
+    private container;
+
+    public constructor() {
+        this.container = [];
+    }
+
+    public push(item) {
+        this.container += item;
+    }
+
+    public size() {
+        return size(this.container);
+    }
+
+    public pop() {
+        lastIndex = size(this.container) - 1;
+        toReturn = this.container[lastIndex];
+        this.container -= lastIndex;
+        return toReturn;
+    }
+
+    public top() {
+        return this.container[size(this.container) - 1];
+    }
+
+    public isEmpty() {
+        return size(this.container) equals 0;
+    }
+}

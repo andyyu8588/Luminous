@@ -23,6 +23,14 @@ VM::VM() {
                          std::placeholders::_2));
   defineNative("size", std::bind(&VM::sizeNative, this, std::placeholders::_1,
                                  std::placeholders::_2));
+  defineNative("floor", std::bind(&VM::floorNative, this, std::placeholders::_1,
+                                  std::placeholders::_2));
+  defineNative("ceil", std::bind(&VM::ceilNative, this, std::placeholders::_1,
+                                 std::placeholders::_2));
+  defineNative("type", std::bind(&VM::typeNative, this, std::placeholders::_1,
+                                 std::placeholders::_2));
+  defineNative("throw", std::bind(&VM::throwNative, this, std::placeholders::_1,
+                                  std::placeholders::_2));
 }
 
 Value MemoryStack::getValueAt(size_t index) const { return c[index]; }
@@ -559,6 +567,9 @@ void VM::run() {
         }
         break;
       }
+      case OP_NOP: {
+        break;
+      }
     }
   }
 }
@@ -704,6 +715,79 @@ void VM::defineNative(std::string name, NativeFn function) {
                                   function, nativeName)));
 }
 
+Value VM::throwNative(int argCount, size_t start) {
+  if (argCount != 1) {
+    runtimeError("Expect 1 argument for 'throw', but found %d.", argCount);
+  }
+  Value error = memory.getValueAt(start);
+  if (IS_NUM(error) && std::ceil(AS_NUM(error)) == std::floor(AS_NUM(error)) &&
+      AS_NUM(error) >= 0) {
+    std::string errorMessage = "Program exited with exit code " +
+                               std::to_string((unsigned)AS_NUM(error));
+    runtimeError(errorMessage.c_str());
+  } else if (IS_STRING(error)) {
+    std::string errorMessage = AS_STRING(error);
+    runtimeError(errorMessage.c_str());
+  }
+  runtimeError(
+      "Argument must be a error message string or a non-negative integer exit "
+      "code.");
+  return NULL_VAL;
+}
+
+Value VM::typeNative(int argCount, size_t start) {
+  if (argCount != 1) {
+    runtimeError("Expect 1 argument for 'type', but found %d.", argCount);
+  }
+  Value val = memory.getValueAt(start);
+  if (IS_NUM(val)) {
+    return OBJECT_VAL(std::make_shared<ObjectString>("number"));
+  } else if (IS_BOOL(val)) {
+    return OBJECT_VAL(std::make_shared<ObjectString>("boolean"));
+  } else if (IS_NULL(val)) {
+    return OBJECT_VAL(std::make_shared<ObjectString>("null"));
+  } else if (IS_CLASS(val)) {
+    return OBJECT_VAL(std::make_shared<ObjectString>("class"));
+  } else if (IS_BOUND_METHOD(val) || IS_FUNCTION(val) || IS_NATIVE(val) ||
+             IS_CLOSURE(val)) {
+    return OBJECT_VAL(std::make_shared<ObjectString>("function"));
+  } else if (IS_LIST(val)) {
+    return OBJECT_VAL(std::make_shared<ObjectString>("list"));
+  } else if (IS_INSTANCE(val)) {
+    return OBJECT_VAL(std::make_shared<ObjectString>(
+        AS_INSTANCE(val)->getInstanceOf().getName().getString()));
+  } else if (IS_STRING(val)) {
+    return OBJECT_VAL(std::make_shared<ObjectString>("string"));
+  }
+  return OBJECT_VAL(
+      std::make_shared<ObjectString>("unknown"));  // unreachable by normal user
+}
+
+Value VM::floorNative(int argCount, size_t start) {
+  if (argCount != 1) {
+    runtimeError("Expect 1 argument for 'floor', but found %d.", argCount);
+  }
+  Value num = memory.getValueAt(start);
+  if (!IS_NUM(num)) {
+    runtimeError("Expects a number as argument for 'floor'.");
+  }
+
+  double actualNum = AS_NUM(num);
+  return NUM_VAL(std::floor(actualNum));
+}
+Value VM::ceilNative(int argCount, size_t start) {
+  if (argCount != 1) {
+    runtimeError("Expect 1 argument for 'ceil', but found %d.", argCount);
+  }
+  Value num = memory.getValueAt(start);
+  if (!IS_NUM(num)) {
+    runtimeError("Expects a number as argument for 'ceil'.");
+  }
+
+  double actualNum = AS_NUM(num);
+  return NUM_VAL(std::ceil(actualNum));
+}
+
 Value VM::clockNative(int argCount, size_t index) {
   if (argCount != 0) {
     runtimeError("Expect 0 argument for 'clock', but found %d.", argCount);
@@ -842,9 +926,9 @@ void VM::invoke(std::shared_ptr<ObjectString> name, int argCount) {
   if (field != nullptr) {
     memory.setValueAt(*field, memory.size() - 1 - argCount);
     callValue(*field, argCount);
+  } else {
+    invokeFromClass(instance->getInstanceOf(), name, argCount);
   }
-
-  invokeFromClass(instance->getInstanceOf(), name, argCount);
 }
 
 void VM::invokeFromClass(const ObjectClass& instanceOf,

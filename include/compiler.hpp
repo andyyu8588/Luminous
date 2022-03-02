@@ -42,11 +42,11 @@ struct ParseRule {
 };
 
 struct Local {
-  const Token& name;
+  const Token name;
   int depth;
   bool isCaptured = false;
 
-  Local(const Token& name, int depth);
+  Local(const Token name, int depth);
 
   struct Hash {
     size_t operator()(const std::shared_ptr<Local>& local) const;
@@ -85,8 +85,8 @@ class LocalVariables {
       hash;
 
  public:
-  std::shared_ptr<Local> at(size_t index);
-  std::shared_ptr<Local> back();
+  std::shared_ptr<Local> at(size_t index) const;
+  std::shared_ptr<Local> back() const;
   void clear();
   bool contains(const std::shared_ptr<Local>) const;
   void insert(const std::shared_ptr<Local>);
@@ -126,6 +126,11 @@ class Compiler {
 
   // for classes:
   std::vector<ClassInfo> classes;
+
+  // for loops:
+  std::stack<int> breakNum;
+  std::stack<int> breakJumps;
+  std::stack<int> loopStarts;
 
   // parser token management:
   // advance to the next token in the stream
@@ -198,6 +203,8 @@ class Compiler {
   void whileStatement();
   void emitLoop(int);
   void forStatement();
+  void breakStatement();
+  void continueStatement();
 
   // functions:
   void functionDeclaration();
@@ -213,7 +220,7 @@ class Compiler {
   void classDeclaration();
   void field(const Token*, AccessModifier);
   void method(const Token*, AccessModifier);
-  std::shared_ptr<Token> syntheticToken(const std::string lexeme);
+  Token syntheticToken(const std::string lexeme);
 
   // for error synchronization:
   void synchronize();
@@ -221,6 +228,9 @@ class Compiler {
  public:
   void compile(const std::string& code, std::string currentFile);
   std::shared_ptr<ObjectFunction> getFunction();
+
+  void migrate();
+  void tempClear();
 
   Compiler();
 };

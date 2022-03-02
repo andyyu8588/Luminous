@@ -22,7 +22,7 @@ class MemoryStack : public std::stack<Value> {
 
 struct CallFrame {
   ObjectClosure& closure;
-  size_t stackPos;
+  const size_t stackPos;
   size_t PC;
 };
 
@@ -60,6 +60,10 @@ class VM {
   Value clockNative(int argCount, size_t start);
   Value substringNative(int argCount, size_t start);
   Value sizeNative(int argCount, size_t start);
+  Value floorNative(int argCount, size_t start);
+  Value ceilNative(int argCount, size_t start);
+  Value typeNative(int argCount, size_t start);
+  Value throwNative(int argCount, size_t start);
 
   // for upvalues:
   std::shared_ptr<ObjectUpvalue> captureUpvalue(Value* local, int localIndex);
