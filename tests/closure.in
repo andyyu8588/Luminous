@@ -1,3 +1,5 @@
+// For compiler/VM testing purpose
+
 xd = "xd";
 function outer() {
     message = "Hello World!";

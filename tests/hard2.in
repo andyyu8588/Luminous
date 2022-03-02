@@ -1,3 +1,5 @@
+// For compiler/VM testing purpose
+
 function collatz(a) {
     print(a);
     if(a equals 1) {

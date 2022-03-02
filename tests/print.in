@@ -1,3 +1,5 @@
+// For compiler/VM testing purpose
+
 print(1);
 print("a");
 print((1 + 2) * (3 / 3));

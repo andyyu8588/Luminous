@@ -1,3 +1,5 @@
+// For compiler/VM testing purpose
+
 print(floor(1) equals ceil(1));
 print(floor(3.12398432749827349872394879238) equals 3);
 print(ceil(1.9832579283745982374932) equals 2);

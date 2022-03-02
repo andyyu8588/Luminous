@@ -1,3 +1,5 @@
+// For compiler/VM testing purpose
+
 {
   a = 13;
   while (not(a equals 1)) {

@@ -1,3 +1,8 @@
+# 
+# Copyright (c) Andy Yu and Yunze Zhou
+# Sharing and altering of the source code is restricted under the MIT License.
+#
+
 #!/bin/bash
 tests_failed=false
 echo Running IO Tests...
