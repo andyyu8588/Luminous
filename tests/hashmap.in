@@ -20,6 +20,12 @@ for(i from 0 to 100 by 1) {
     map.insert(i, Object(i, "This object has id " + i));
 }
 
+// Replacement test:
+for(i from 0 to 100 by 1) {
+    map.insert(i, Object(i, "This object has ID " + i));
+}
+
+
 for(i from 0 to 100 by 1) {
     object = map.find(i);
     print(object.message);

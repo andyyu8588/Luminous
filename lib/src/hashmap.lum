@@ -44,6 +44,11 @@ class HashMap {
             if(curIndex + 1 equals size(this.container)) {
                 this.container += null;
             }
+            // If key already exists, replace the value
+            if(this.container[curIndex].getKey() equals key) {
+                this.container[curIndex] = toAdd;
+                return;
+            }
             // PSL check and swap
             if(this.container[curIndex].psl < toAdd.psl) {
                 temp = this.container[curIndex];
