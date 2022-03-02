@@ -1,3 +1,5 @@
+// For compiler/VM testing purpose
+
 class Object1 {
     public x;
     public constructor() {

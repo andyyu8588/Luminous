@@ -1,3 +1,5 @@
+// For compiler/VM testing purpose
+
 if (true) {
   xd = "XD";
   if (not(false)) {

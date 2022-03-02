@@ -1,3 +1,5 @@
+// For compiler/VM testing purpose
+
 {
   xd = 1;
   print(xd);

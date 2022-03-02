@@ -1,3 +1,5 @@
+// For compiler/VM testing purpose
+
 class A { public a; }
 
 class B { public a; }
