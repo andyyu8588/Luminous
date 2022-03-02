@@ -17,9 +17,12 @@ class Scanner {
   const std::string stdPathPrefix = "lib/src/";
   static std::unordered_set<std::string> importedFiles;
   const std::unordered_map<std::string, std::string> stdLibs = {
-      {"Queue", "queue.lum"}, {"Stack", "stack.lum"},
-      {"Math", "math.lum"},   {"Random", "random.lum"},
-      {"Heap", "heap.lum"},   {"HashMap", "hashmap.lum"}};
+      {"Queue", "queue.lum"},
+      {"Stack", "stack.lum"},
+      {"Math", "math.lum"},
+      {"Random", "random.lum"},
+      {"PriorityQueue", "priorityqueue.lum"},
+      {"HashMap", "hashmap.lum"}};
   const std::unordered_map<std::string, TokenType> keywords = {
       {"equals", TOKEN_EQ},
       {"and", TOKEN_AND},
